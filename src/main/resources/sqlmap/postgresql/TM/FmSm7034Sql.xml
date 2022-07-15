@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="SM7034">
+
+    <select id="SM7034.selectOvseaOrplIsuInsttList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+			SELECT OVSEA_ORPL_ISU_INSTT_SN
+			      ,INSTT_CD
+			      ,NATION_CD
+			      ,NATION_KOR
+			      ,NATION_ENG
+			      ,FN_GET_COMMON_CD(#SESSION_COMPANY_CD#, 'C_CNVN_TPCD', OOII.FTA_AGM, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS FTA_AGM_NAME
+			      ,CRTF_SLFC_ISSU_AT
+			      ,PNA_AGM_BASS
+			      ,ISU_INSTT_NM
+			      ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+			      ,CREATE_BY
+			      ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+			      ,UPDATE_BY
+			  FROM CC_OVSEA_ORPL_ISU_INSTT OOII
+			  WHERE 1=1
+			 <isNotEmpty property="INSTT_CD">
+			   AND OOII.INSTT_CD = #INSTT_CD#
+			 </isNotEmpty> 
+		     <isNotEmpty property="NATION_CD">
+		       AND UPPER(OOII.NATION_CD) LIKE '%'||UPPER(#NATION_CD#)||'%'
+			 </isNotEmpty>
+			 <isNotEmpty property="NATION_KOR">
+		       AND UPPER(OOII.NATION_KOR) LIKE '%'||UPPER(#NATION_KOR#)||'%'
+			 </isNotEmpty>
+			 <isNotEmpty property="FTA_AGM">
+		       AND UPPER(OOII.FTA_AGM) LIKE '%'||UPPER(#FTA_AGM#)||'%'
+			 </isNotEmpty>
+	   <include refid="select-paging-end" />
+    </select>
+    
+     <update id="SM7034.insertOvseaOrplIsuInstt" parameterClass="java.util.Map">
+        INSERT INTO CC_OVSEA_ORPL_ISU_INSTT(
+		       OVSEA_ORPL_ISU_INSTT_SN
+		      ,INSTT_CD
+		      ,NATION_CD
+		      ,NATION_KOR
+		      ,NATION_ENG
+		      ,FTA_AGM
+		      ,CRTF_SLFC_ISSU_AT
+		      ,PNA_AGM_BASS
+		      ,ISU_INSTT_NM
+		      ,CREATE_DATE
+		      ,CREATE_BY
+		      ,UPDATE_DATE
+		      ,UPDATE_BY)
+        VALUES(NEXTVAL('CC_OVSEA_ORPL_ISU_INSTT_S')
+		      ,#INSTT_CD#
+		      ,#NATION_CD#
+		      ,#NATION_KOR#
+		      ,#NATION_ENG#
+		      ,#FTA_AGM#
+		      ,#CRTF_SLFC_ISSU_AT#
+		      ,#PNA_AGM_BASS#
+		      ,#ISU_INSTT_NM#
+		      ,NOW()
+		      ,#USER_ID#
+		      ,NOW()
+		      ,#USER_ID#)
+    </update>
+    
+     <update id="SM7034.updateOvseaOrplIsuInstt" parameterClass="java.util.Map">
+	    UPDATE CC_OVSEA_ORPL_ISU_INSTT
+		   SET INSTT_CD = #INSTT_CD#
+		      ,NATION_CD = #NATION_CD#
+		      ,NATION_KOR = #NATION_KOR#
+		      ,NATION_ENG = #NATION_ENG#
+		      ,FTA_AGM = #FTA_AGM#
+		      ,CRTF_SLFC_ISSU_AT = #CRTF_SLFC_ISSU_AT#
+		      ,PNA_AGM_BASS = #PNA_AGM_BASS#
+		      ,ISU_INSTT_NM = #ISU_INSTT_NM#
+		      ,UPDATE_DATE = NOW()
+		      ,UPDATE_BY = #USER_ID#
+		 WHERE OVSEA_ORPL_ISU_INSTT_SN = FN_PG_GET_CAST_NUM(#OVSEA_ORPL_ISU_INSTT_SN#)
+    </update>
+    
+    <delete id="SM7034.deleteOvseaOrplIsuInstt" parameterClass="java.util.Map">
+	    DELETE FROM CC_OVSEA_ORPL_ISU_INSTT
+         WHERE OVSEA_ORPL_ISU_INSTT_SN = FN_PG_GET_CAST_NUM(#OVSEA_ORPL_ISU_INSTT_SN#)
+    </delete>
+</sqlMap>

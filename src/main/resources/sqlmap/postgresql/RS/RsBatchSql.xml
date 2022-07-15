@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="rsbatchsql">
+
+    <select id="RSBATCH.selectServiceMappingList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT MAP.SCHEDULE_CD
+             , MAP.COMPANY_CD
+             , MAP.IF_CD as SERVICE_ID
+             , MAP.IF_PARENT_CD
+             , MAP.REQUIRED_YN
+             , MAP.IF_METHOD
+             , 'S' AS ITEM_TYPE
+             , FN_GET_SYSTEM_CONFIG(MAP.COMPANY_CD, 'CLOUD_SERVER_URL') AS URL
+             , FN_GET_SYSTEM_CONFIG(MAP.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS TOMS_FTA_CERT_KEY
+             , C.BUSINESS_NO
+             , COALESCE(MAP.VALID_CHECK_YN, 'Y') AS VALID_CHECK_YN
+          FROM INTERFACE_SCHEDULE_MAPPING MAP
+               INNER JOIN INTERFACE_SCHEDULE SCH
+                  ON SCH.SCHEDULE_CD = MAP.SCHEDULE_CD
+                 AND SCH.COMPANY_CD = MAP.COMPANY_CD
+                 AND SCH.SYSTEM_BATCH_YN = 'Y'
+                 AND TO_CHAR(NOW(),'YYYYMMDD') BETWEEN SCH.APPLY_FROM_DATE AND SCH.APPLY_TO_DATE
+                LEFT JOIN COMPANY C
+                  ON C.COMPANY_CD = MAP.COMPANY_CD
+         WHERE MAP.SCHEDULE_CD = #SCHEDULE_CD#
+           AND MAP.COMPANY_CD = #COMPANY_CD#
+         <isNotEmpty property="TARGET_IF_CD">
+           AND MAP.IF_CD = #TARGET_IF_CD#
+         </isNotEmpty>
+           AND MAP.IF_METHOD NOT IN('U', 'E')
+         ORDER BY MAP.SCHEDULE_SEQ
+    </select>
+    
+    <select id="RSBATCH.selectServicePlanList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT SM.COMPANY_CD
+              ,SH.SERVICE_HISTORY_ID 
+              ,SH.INTERFACE_HISTORY_ID
+              ,SM.SERVICE_ID
+              ,SP.PLAN_NO
+              ,SP.IF_CD
+              ,IIM.FILE_PATH
+              ,SP.INTERFACE_MTH
+              ,SP.PROCESS_TYPE
+              ,SP.DATA_PATH
+              ,SP.TRAN_ROW_NUM
+              ,SP.SERVER_ID
+              ,SP.ATTRIBUTE02 AS REQ_DATA_FORMAT
+              ,SP.ATTRIBUTE01 AS RES_DATA_FORMAT
+              ,SM1.SERVER_IP
+              ,SM1.SERVER_PORT
+              ,SM1.ATTRIBUTE01 AS SERVER_TYPE
+              ,SM1.ATTRIBUTE02 AS SECURE_YN
+              ,SM1.ATTRIBUTE03 AS PROXY_IP
+              ,SM1.ATTRIBUTE04 AS PROXY_PORT
+              ,SM1.ATTRIBUTE05 AS DATA_SOURCE
+              ,SM1.ATTRIBUTE06 AS PROTOCAL
+              ,SM1.CURRENT_STAT
+              ,SM1.USE_YN AS SERVER_USE_YN
+          FROM SERVICE_MST SM
+               INNER JOIN SERVICE_PLAN SP
+                  ON SP.COMPANY_CD = SM.COMPANY_CD
+                 AND SP.SERVICE_ID = SM.SERVICE_ID
+               <isNotEmpty property="SERVER_ID">
+                 AND SP.SERVER_ID = #SERVER_ID#
+               </isNotEmpty>
+               INNER JOIN INTERFACE_ITEM_MST IIM
+                  ON IIM.COMPANY_CD = SP.COMPANY_CD
+                 AND IIM.IF_CD = SP.IF_CD
+                 AND IIM.USING_YN = 'Y'
+               INNER JOIN SERVER_MST SM1
+                  ON SM1.COMPANY_CD = SP.COMPANY_CD
+                 AND SM1.SERVER_ID = SP.SERVER_ID
+               INNER JOIN SERVICE_HISTORY SH
+                  ON SH.COMPANY_CD = SP.COMPANY_CD
+                 AND SH.SERVICE_HISTORY_ID = #SERVICE_HISTORY_ID#::numeric
+                 AND SH.SERVER_ID = SP.SERVER_ID
+                 AND SH.PLAN_NO = SP.PLAN_NO
+               <isNotEmpty property="TRANS_STATUS">
+                 AND SH.TRANS_STATUS = #TRANS_STATUS#
+               </isNotEmpty>
+         WHERE SM.COMPANY_CD = #COMPANY_CD#
+           AND SM.SERVICE_ID = #SERVICE_ID#
+         ORDER BY SP.PLAN_NO
+    </select>
+    
+    <select id="RSBATCH.selectServiceTranID" resultClass="java.lang.String">
+        SELECT NEXTVAL('SEQ_SERVICE_HISTORY_01') AS INTERFACE_HISTORY_ID 
+    </select>
+    
+    <update id="RSBATCH.insertServiceHistory" parameterClass="java.util.Map">
+        INSERT INTO SERVICE_HISTORY
+		      (COMPANY_CD
+		      ,SERVICE_HISTORY_ID
+		      ,INTERFACE_HISTORY_ID
+		      ,SERVICE_ID
+		      ,SERVER_IP
+		      ,SERVER_PORT
+		      ,SERVER_TYPE
+		      ,SECURE_YN
+		      ,PROXY_IP
+		      ,PROXY_PORT
+		      ,DATA_SOURCE
+		      ,PROTOCAL
+		      ,PLAN_NO
+		      ,IF_CD
+		      ,INTERFACE_MTH
+		      ,SERVER_ID
+		      ,PROCESS_TYPE
+		      ,DATA_PATH
+		      ,SCHEDULE_CD
+		      ,REQUEST_PARAM
+		      ,TRANS_STATUS
+		      ,CREATE_DATE
+		      ,CREATE_BY
+		      ,UPDATE_DATE
+		      ,UPDATE_BY)
+		SELECT SM.COMPANY_CD
+		      ,#SERVICE_HISTORY_ID#::numeric AS SERVICE_HISTORY_ID
+		      ,NEXTVAL('SEQ_INTERFACE_HISTORY_01') AS INTERFACE_HISTORY_ID
+		      ,SM.SERVICE_ID
+		      ,SM1.SERVER_IP
+		      ,SM1.SERVER_PORT
+		      ,SM1.ATTRIBUTE01 AS SERVER_TYPE
+		      ,SM1.ATTRIBUTE02 AS SECURE_YN
+		      ,SM1.ATTRIBUTE03 AS PROXY_IP
+		      ,SM1.ATTRIBUTE04 AS PROXY_PORT
+		      ,SM1.ATTRIBUTE05 AS DATA_SOURCE
+		      ,SM1.ATTRIBUTE06 AS PROTOCAL
+		      ,SP.PLAN_NO
+		      ,SP.IF_CD
+		      ,SP.INTERFACE_MTH
+		      ,SP.SERVER_ID
+		      ,SP.PROCESS_TYPE
+		      ,SP.DATA_PATH
+		      ,#SCHEDULE_CD# AS SCHEDULE_CD
+		      ,NULL AS REQUEST_PARAM
+              ,'1' AS TRANS_STATUS
+		      ,now()::timestamp
+              ,'batch'
+              ,now()::timestamp
+              ,'batch'
+		  FROM SERVICE_MST SM
+		       INNER JOIN SERVICE_PLAN SP
+		          ON SP.COMPANY_CD = SM.COMPANY_CD
+		         AND SP.SERVICE_ID = SM.SERVICE_ID
+		       INNER JOIN SERVER_MST SM1
+		          ON SM1.COMPANY_CD = SP.COMPANY_CD
+		         AND SM1.SERVER_ID = SP.SERVER_ID
+		 WHERE SM.COMPANY_CD = #COMPANY_CD#
+		   AND SM.SERVICE_ID = #SERVICE_ID#
+    </update>
+    
+    <update id="RSBATCH.updateServiceResetHistory" parameterClass="java.util.Map">
+        UPDATE SERVICE_HISTORY SH
+		   SET INTERFACE_HISTORY_ID = NEXTVAL('SEQ_INTERFACE_HISTORY_01')
+		      ,TRANS_STATUS = '1'
+		      ,CREATE_DATE = NOW()
+		      ,UPDATE_DATE = NOW()
+		  FROM (
+		        SELECT SH.COMPANY_CD
+		              ,SH.SERVICE_HISTORY_ID
+		              ,SH.PLAN_NO
+		          FROM SERVICE_HISTORY SH
+		         WHERE SH.COMPANY_CD = #COMPANY_CD#
+		           AND SH.SERVICE_HISTORY_ID = #SERVICE_HISTORY_ID#::numeric
+		         ORDER BY SH.PLAN_NO
+		        ) S
+		 WHERE SH.COMPANY_CD = S.COMPANY_CD
+		   AND SH.SERVICE_HISTORY_ID = S.SERVICE_HISTORY_ID
+		   AND SH.PLAN_NO = S.PLAN_NO
+    </update>
+    
+    <update id="RSBATCH.updateServiceHistoryStatus" parameterClass="java.util.Map">
+        UPDATE SERVICE_HISTORY
+           SET UPDATE_DATE = NOW()
+            <isNotEmpty property="TRANS_STATUS">
+              ,TRANS_STATUS = #TRANS_STATUS#
+            </isNotEmpty>
+            <isNotEmpty property="REQUEST_PARAM">
+              ,REQUEST_PARAM = #REQUEST_PARAM:CLOB#
+            </isNotEmpty>
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND SERVICE_HISTORY_ID = #SERVICE_HISTORY_ID#::numeric
+           AND INTERFACE_HISTORY_ID = #INTERFACE_HISTORY_ID#::numeric
+    </update>
+    
+    <select id="RSBATCH.selectSendDataList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT IHD.*
+		  FROM INTERFACE_HISTORY IH
+		       INNER JOIN INTERFACE_HISTORY_DATA IHD
+		          ON IHD.COMPANY_CD = IH.COMPANY_CD
+		         AND IHD.INTERFACE_HISTORY_ID = IH.INTERFACE_HISTORY_ID
+		         AND IHD.INTERFACE_HISTORY_DATA_ID = #OBJECT_NAME#
+		       INNER JOIN SERVICE_HISTORY SH
+			      ON SH.COMPANY_CD = IH.COMPANY_CD
+			     AND SH.SERVICE_HISTORY_ID = IH.PARENT_HISTORY_ID
+			     AND SH.INTERFACE_HISTORY_ID = IH.INTERFACE_HISTORY_ID
+		 WHERE IHD.COMPANY_CD = #COMPANY_CD#
+		   AND IH.PARENT_HISTORY_ID = #SERVICE_HISTORY_ID#::numeric
+    </select>
+    
+</sqlMap>

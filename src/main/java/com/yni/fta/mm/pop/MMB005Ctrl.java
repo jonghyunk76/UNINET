@@ -1,0 +1,77 @@
+package com.yni.fta.mm.pop;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import kr.yni.frame.Constants;
+import kr.yni.frame.collection.DataMap;
+import kr.yni.frame.controller.YniAbstractController;
+import kr.yni.frame.util.DataMapHelper;
+import kr.yni.frame.util.StringHelper;
+import kr.yni.frame.web.action.WebAction;
+
+/**
+ * 공통 > 잠정신고 컨트롤 클래스
+ * 
+ * @author YNI-maker
+ *
+ */
+@Controller
+public class MMB005Ctrl extends YniAbstractController {
+
+	@Resource(name="MMB005")
+	private MMB005 MMB005;
+	
+	/**
+	 * 잠정신고 메인화면으로 이동
+	 * 
+	 * @param dataMap 요청 파라메터
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/mm/pop/MMB005_01")
+	public ModelAndView MMB005_01Move(DataMap dataMap) throws Exception {
+		return WebAction.forwarding("/POP/MM-B005_01", dataMap);
+	}
+	
+	/**
+	 * 화면으로 이동
+	 * 
+	 * @param dataMap 요청 파라메터
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/mm/pop/MMB005_02")
+	public ModelAndView MMB005_02Move(DataMap dataMap) throws Exception {
+		return WebAction.forwarding("/POP/MM-B005_02", dataMap);
+	}
+	
+	/**
+	 * 잠정신고 정보 조회
+	 * 
+	 * @param req HttpServletRequest
+	 * @param dataMap 요청 파라메터
+	 * @return ModelAndView
+	 * @exception Exception
+	 */
+	@RequestMapping("/mm/pop/MMB005_01/selectMainList")
+	public ModelAndView selectMainList(HttpServletRequest req, DataMap dataMap) throws Exception {
+		List resultList = null;
+		String message = null;
+
+		try {
+			resultList = MMB005.selectMainList(DataMapHelper.getMap(dataMap));
+		} catch (Exception e) {
+			message = getExceptionMessage(req, e, this.getMessage("TXT_SYSTEM_ERROR", null, StringHelper.null2string(dataMap.get("SESSION_DEFAULT_LANGUAGE"), Constants.DEFAULT_LANGUAGE)));
+		}
+
+		return WebAction.returnDataSet(resultList, message);
+	}
+	
+}

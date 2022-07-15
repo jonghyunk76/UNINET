@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jco id="IF_CRM_001">
+    <function name="NONE" desc="Salesforce 데이터 수신 테스트">
+        <!-- 1.요청할 파라메터 구조와 동일하게 설정 -->
+        <import>
+            <parameter name="Interface_id"   type="CHAR"  offset="100"   length="100"   decimals="0"   desc="Salesforce 인터페이스 ID"/>
+            <parameter name="iRecordSeq"    type="CHAR"  offset="200"    length="200"    decimals="0"   desc="후원자 레코드ID"/>
+            <parameter name="queryDebug"      type="CHAR"  offset="5"    length="5"    decimals="0"   desc="디버그 리턴여부(true/false)"/>
+        </import>
+        <!-- 3.개발자 Export클래스에서 값을 직접 생성 -->
+        <export>
+            <parameter name="resultMsg"      type="CHAR"  offset="500"    length="500" trans="ERROR_MESSAGE"   decimals="0"   desc="결과 메시지"/>
+            <parameter name="resultCode"      type="CHAR"  offset="2"    length="2"  trans="BATCH_STATUS"  decimals="0"   desc="결과코드"/>
+        </export>
+        <!-- 4.요청 후 응답된 데이터 구조에 맞게 이력테이블에 저장할 정보 설정 -->
+        <table>
+            <parameter type="itable" name="result">
+                <column name="dtmcanceldate"   type="DATS"  offset="10"   length="8"   decimals="0"   trans="ATTRIBUTE01" format="yyyyMMdd" desc="일자" />
+                <column name="blnapplypoint"   type="CHAR"  offset="20"   length="20"   decimals="0"   trans="ATTRIBUTE02" desc="여부" />
+            </parameter>
+        </table>
+    </function>
+</jco>

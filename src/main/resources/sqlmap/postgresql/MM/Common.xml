@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="CommonSql">
+
+    <sql id="select-paging-start">
+        SELECT COUNT(1) OVER() AS TOTALCOUNT, DATA.* FROM (
+    </sql>
+
+    <sql id="select-paging-end">
+        ) DATA
+    </sql>
+  	<select id="Skip.companySelect" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+  		<![CDATA[
+			SELECT COMPANY_CD,COMPANY_NAME FROM COMPANY
+		]]>
+  	</select>
+</sqlMap>

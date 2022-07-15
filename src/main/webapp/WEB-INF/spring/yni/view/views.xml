@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:util="http://www.springframework.org/schema/util"
+	   xsi:schemaLocation= "http://www.springframework.org/schema/beans
+							http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+							http://www.springframework.org/schema/util
+							http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+
+	<bean name="json" class="net.sf.json.spring.web.servlet.view.JsonView">
+	    <property name="contentType">
+	      <value>text/plain;charset=UTF-8</value>
+	    </property>
+	</bean>
+	
+	<bean name="jrows" class="kr.yni.frame.web.view.JsonView">
+		<property name="contentType">
+	      <value>text/plain;charset=UTF-8</value>
+	    </property>
+	</bean>
+	
+	<bean name="file" class="kr.yni.frame.web.view.FileView">
+		<property name="contentType">
+	      <value>application/octet-stream;charset=UTF-8</value>
+	    </property>
+	</bean>
+	
+	<bean name="excel" class="kr.yni.frame.web.view.ExcelView">
+		<property name="contentType">
+	      <value>doesn/matter;charset=UTF-8</value>
+	    </property>
+	</bean>
+	
+	<bean name="jasper" class="kr.yni.frame.web.view.IreportView">
+        <property name="contentType">
+          <value>application/octet-stream;charset=UTF-8</value>
+        </property>
+    </bean>
+    
+    <bean name="xml" class="kr.yni.frame.web.view.XmlView">
+        <property name="contentType">
+          <value>text/xml;charset=UTF-8</value>
+        </property>
+    </bean>
+    
+</beans>

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
+    <display-name>YNI Solution</display-name>
+    
+    <filter>
+        <filter-name>encodingFilter</filter-name>
+        <filter-class>
+            org.springframework.web.filter.CharacterEncodingFilter
+        </filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>utf-8</param-value>
+        </init-param>
+    </filter>
+    
+    <filter>
+        <filter-name>HTMLTagFilter</filter-name>
+        <filter-class>
+            egovframework.rte.ptl.mvc.filter.HTMLTagFilter
+        </filter-class>
+    </filter>
+    
+    <filter-mapping>
+        <filter-name>encodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    
+    <filter-mapping>
+        <filter-name>HTMLTagFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>
+                classpath*:spring/context-*.xml,
+                /WEB-INF/spring/yni/mvc/servlet-common.xml,
+                /WEB-INF/spring/yni/mvc/urlfilename-servlet.xml
+        </param-value>
+    </context-param>
+    
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+    
+    <listener>
+        <listener-class>org.apache.commons.fileupload.servlet.FileCleanerCleanup</listener-class>
+    </listener>
+    
+    <servlet>
+        <servlet-name>common</servlet-name>
+        <servlet-class>
+            org.springframework.web.servlet.DispatcherServlet
+        </servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>
+                /WEB-INF/spring/mm/mvc/dispatcher-common.xml
+            </param-value>
+        </init-param>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>common</servlet-name>
+        <url-pattern>/mm/*</url-pattern>
+    </servlet-mapping>
+    
+    <servlet>
+        <servlet-name>management</servlet-name>
+        <servlet-class>
+            org.springframework.web.servlet.DispatcherServlet
+        </servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>
+                /WEB-INF/spring/fm/mvc/dispatcher-servlet.xml
+            </param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>management</servlet-name>
+        <url-pattern>/fm/*</url-pattern>
+    </servlet-mapping>
+    
+    <!-- 중계서버 -->
+    <servlet>
+        <servlet-name>relayserver</servlet-name>
+        <servlet-class>
+            org.springframework.web.servlet.DispatcherServlet
+        </servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>
+                /WEB-INF/spring/rs/mvc/dispatcher-servlet.xml
+            </param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>relayserver</servlet-name>
+        <url-pattern>/rs/*</url-pattern>
+    </servlet-mapping>
+    
+    <security-constraint>
+        <web-resource-collection>
+           <web-resource-name>NoAccess</web-resource-name>
+           <url-pattern>/*</url-pattern>
+             <http-method>DELETE</http-method>
+             <http-method>PUT</http-method>
+        </web-resource-collection>
+        <auth-constraint/>
+    </security-constraint>
+    
+    <session-config>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+    </session-config>
+    
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+    
+    <login-config>
+        <auth-method>BASIC</auth-method>
+    </login-config>
+    
+    <error-page>
+        <error-code>404</error-code>
+        <location>/html/error.html</location>
+    </error-page>
+    
+    <!-- javamelody
+	<filter>
+		<filter-name>monitoring</filter-name>
+		<filter-class>net.bull.javamelody.MonitoringFilter</filter-class>
+	</filter
+
+	<filter-mapping>
+		<filter-name>monitoring</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+    <listener>
+            <listener-class>net.bull.javamelody.SessionListener</listener-class>
+    </listener>
+        
+	<security-role>
+		<role-name>monitoring</role-name>
+	</security-role>
+
+	<security-constraint>
+		<web-resource-collection>
+			<web-resource-name>Monitoring</web-resource-name>
+			<url-pattern>/monitoring</url-pattern>
+		</web-resource-collection>
+
+		<auth-constraint>
+			<role-name>monitoring</role-name>
+		</auth-constraint>
+	</security-constraint -->
+
+</web-app>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    - DispatcherServlet application context for Application's web tier.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:p="http://www.springframework.org/schema/p" xmlns:context="http://www.springframework.org/schema/context"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+    
+    <!--
+        - The controllers are autodetected POJOs labeled with the @Controller annotation.
+    -->
+    <context:component-scan base-package="com.yni.rs"/>
+    
+    <bean id="sessionInterceptor" class="com.yni.fta.common.handler.SessionInterceptorHandler" />
+    
+    <bean id="simpleForwardController" class="com.yni.fta.common.controller.SimpleForwardController">
+        <property name="prefixName" value="bypass"/>
+    </bean>
+    
+    <bean id="fileForwardController" class="com.yni.fta.common.controller.FileForwardController" />
+    
+    <bean id="certifyForwordController" class="com.yni.fta.common.controller.CertifyForwordController">
+        <property name="userIden">
+            <ref bean="userIden"/><!-- trace check -->
+        </property>
+        <property name="comboBox">
+            <ref bean="comboBox"/><!-- trace check -->
+        </property>
+        <property name="prefixName" value="certification"/>
+        <property name="certifyType" value="internal"/>
+    </bean>
+    
+    <!--
+        로그인 세션 체크 및 Controller를 거치지 않고 직접 해당 페이지로 이동시키는 설정
+        mapping속성에 key를 등록하면 적용됨.
+    -->
+    <bean id="handlerMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping"
+        p:alwaysUseFullPath="true">
+        <property name="mappings">
+            <props>
+                <prop key="/**/login.htm">simpleForwardController</prop>
+                <prop key="/**/ssoLogin.htm">simpleForwardController</prop>
+                <prop key="/**/mainForward.htm">simpleForwardController</prop>
+                <prop key="/**/mainContents.htm">simpleForwardController</prop>
+                <prop key="/**/ServerDigitalSignature.htm">simpleForwardController</prop>
+                <prop key="/**/checkSession.htm">simpleForwardController</prop>
+                <prop key="/**/docs/**">simpleForwardController</prop>
+                <prop key="/**/**.fle">fileForwardController</prop>
+                <prop key="/fm/authority/logonProcess">certifyForwordController</prop>
+                <prop key="/fm/authority/logoffProcess">certifyForwordController</prop>
+                <!-- <prop key="/fm/authority/logonProcess">certifyForwordController</prop>
+                <prop key="/fm/authority/logoffProcess">certifyForwordController</prop> -->
+                <prop key="/fm/cert/sessionCheck">certifyForwordController</prop>
+            </props>
+        </property>
+        <property name="interceptors">
+            <list>
+                <ref local="sessionInterceptor"/>
+            </list>
+        </property>
+        <property name="order" value="1" />
+    </bean>
+    
+    <!--
+        - This bean configures the 'prefix' and 'suffix' properties of 
+        - InternalResourceViewResolver, which resolves logical view names 
+        - returned by Controllers. For example, a logical view name of "vets" 
+        - will be mapped to "/WEB-INF/jsp/vets.jsp".
+    -->
+    <bean class="org.springframework.web.servlet.view.UrlBasedViewResolver" 
+          p:order="1"
+          p:viewClass="org.springframework.web.servlet.view.JstlView" 
+          p:prefix="/WEB-INF/views/RS/"
+          p:suffix=".jsp"
+    />
+    
+    <!-- 
+      - XTJS Data format을 JSON을 사용했을경우  ViewResolver Spring 3.x 이상
+      - setLocation에 정의한 Bean명칭으로 되어있는 객체가 reponse될 때 최우선으로 해당 resolver가 실행됨.
+    -->
+    <bean id="xmlFileViewResolver" class="org.springframework.web.servlet.view.XmlViewResolver">
+        <property name="location">
+            <value>/WEB-INF/spring/yni/view/views.xml</value>
+        </property>
+        <property name="order">
+            <value>0</value>
+        </property>
+    </bean>
+    
+    <!-- 동적으로 View 페이지를 만들기 위해 Bean Name View Resolver -->
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver" />
+    
+    <!--
+        model로 리턴되는 경우 URL를 지정하지 않으면 자동으로 요청URL를 응답URL로 적용함
+        만약, 요청 URL이 main/main.view라면 main/main.jsp로 응답시킴
+     -->
+    <bean id="viewNameTranslator" class="org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator"/>
+    
+    <!-- 
+        Controller를 거치지 않고 직접 View에 전달하기 위한 설정
+        만약, 요청 URL이 main/main.view라면 main/main.jsp로 응답시킴
+     -->
+    <bean id="urlFilenameViewController" class="org.springframework.web.servlet.mvc.UrlFilenameViewController" />
+    
+    <!--
+        한글처리를 위한 인코딩 방식과 업로드할 파일 최대크기 및 사용할 메모리 설정
+        사용할 Memory가 적은 경우에 dummy-file이 디스크에 저장되어 처리오류가 발생할 수 있음(필요 시 메모리 확장해 줄 것) 
+     -->
+    <bean id="multipartResolver" class="com.yni.fta.common.controller.MultipartResolverController">
+        <property name="defaultEncoding" value="utf-8"/>
+        <property name="maxInMemorySize" value="-1"/>
+        <property name="maxUploadSize" value="-1"/>
+    </bean>
+    
+</beans>

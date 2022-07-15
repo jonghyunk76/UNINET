@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="mmRpcBatch">
+    
+    <select id="MMRPCBATCH.selectRpcTable" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT
+        <dynamic> <!-- ltrim, rtrim은 숫자 타입에서 오류 남. 20190510 -->
+            <iterate property="COLUMN_LIST" conjunction=",">
+                $COLUMN_LIST[].COLUMN_NAME$ AS $COLUMN_LIST[].COLUMN_NAME$
+            </iterate>
+        </dynamic>
+          FROM $SOURCE_TABLE$
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </select>
+    
+    <delete id="MMRPCBATCH.deleteRpcTable" parameterClass="java.util.Map">
+        DELETE FROM $SOURCE_TABLE$
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </delete>
+    
+    <!-- com.yni.fta.common.postgresql.PostgresqlDao 클래스에서 직접 구현
+    <parameterMap id="interfaceRpcCommonParamMap" class="java.util.Map">
+        <parameter property="COMPANY_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="FROM_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="TO_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="BATCH_STATUS" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="ERROR_MESSAGE" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="TOTAL_ROWS" jdbcType="INTEGER" javaType="java.lang.Integer" mode="OUT"/>
+    </parameterMap>
+    
+    <parameterMap id="interfaceRpcMsBomParamMap" class="java.util.Map">
+        <parameter property="COMPANY_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="FROM_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="TO_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="BATCH_STATUS" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="ERROR_MESSAGE" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="TOTAL_ROWS" jdbcType="INTEGER" javaType="java.lang.Integer" mode="OUT"/>
+    </parameterMap>
+    
+    <procedure id="MMRPCBATCH.callRemoteProcedure" parameterMap="interfaceRpcCommonParamMap">
+        { CALL $FUNCTION_NAME$(?, ?, ?, ?, ?, ?) }
+    </procedure>
+    
+    <procedure id="MMRPCBATCH.callMesBomProcedure" parameterMap="interfaceRpcMsBomParamMap">
+        { CALL $FUNCTION_NAME$(?, ?, ?, ?, ?, ?) }
+    </procedure>
+    -->
+</sqlMap>

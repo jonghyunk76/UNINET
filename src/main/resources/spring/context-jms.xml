@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:jee="http://www.springframework.org/schema/jee"
+    xmlns:lang="http://www.springframework.org/schema/lang"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:jms="http://www.springframework.org/schema/jms"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+        http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-2.5.xsd">
+
+    <context:component-scan base-package="com.yni.rs" />
+    
+    <!-- ActiveMQ를 사용하지 위한 설정이나 현재는 해당 설정을 막아 사용하지 않도록 함 
+    <bean id="connectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="tcp://localhost:61616" />
+    </bean>
+    
+    <bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactory" destroy-method="stop">
+        <property name="connectionFactory" ref="connectionFactory"/>
+    </bean>
+
+    <bean id="destination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="TOMS_QUEUE" />
+    </bean>    
+    
+    <bean id="messageConverter" class="com.yni.rs.jms.MessageConverterImpl"/> 
+    
+    <bean id="messageMdp" class="com.yni.rs.delegate.DefaultMessageDelegate"/>
+    
+    <bean id="pureMemberMdp" class="org.springframework.jms.listener.adapter.MessageListenerAdapter">
+        <property name="delegate" ref="messageMdp"/>
+        <property name="defaultListenerMethod" value="processInfo"/>
+        <property name="messageConverter" ref="messageConverter"/>
+    </bean>
+    
+    <bean class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="jmsFactory" />
+        <property name="destination" ref="destination"/>
+        <property name="messageListener" ref="pureMemberMdp"/> 
+        <property name="concurrentConsumers" value="1" />
+        <property name="maxConcurrentConsumers" value="20" />
+        <property name="taskExecutor" ref="listenerThreadPoolTaskExecutor" />
+    </bean>
+    
+    <bean id="listenerThreadPoolTaskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="10" />
+        <property name="maxPoolSize" value="30" />
+        <property name="queueCapacity" value="0" />
+        <property name="keepAliveSeconds" value="10" />
+        <property name="threadNamePrefix" value="TOMS_QUE-" />
+    </bean>
+    
+    <bean id="producerJmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="jmsFactory"/>
+        <property name="defaultDestination" ref="maxDestination"/>
+        <property name="messageConverter" ref="messageConverter"/>
+    </bean>
+    
+    <bean id="producer" class="com.yni.rs.producer.MessageProducerImpl">
+        <property name="jmsTemplate" ref="producerJmsTemplate"/>
+    </bean>
+    -->
+    
+</beans>

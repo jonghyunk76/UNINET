@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="SM7524">
+
+    <select id="SM7524.selectHelpMenuList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+        SELECT HM.PID
+              ,HM.PROGRAM_NAME
+              ,HM.PROGRAM_NAME_ENG
+              ,HM.MENU_ID
+              ,HM.PID_LEVEL
+              ,HM.SORT_NO
+              ,HM.USE_YN
+              ,HM.DOC_YN
+              ,HM.IF_TYPE
+              ,HM.COMMENTS
+          FROM HELP_MENU HM
+          <isNotEmpty property="schKeyWord">
+            WHERE UPPER($schKeyField$) LIKE UPPER(#schKeyWord#)
+          </isNotEmpty>
+          <include refid="select-paging-end" />
+          ORDER BY PID
+    </select>
+    
+    
+    <update id="SM7524.insertHelpMenuList" parameterClass="java.util.Map">
+        INSERT INTO HELP_MENU(
+               PID
+              ,PROGRAM_NAME
+              ,PROGRAM_NAME_ENG
+              ,MENU_ID
+              ,PID_LEVEL
+              ,SORT_NO
+              ,USE_YN
+              ,DOC_YN
+              ,IF_TYPE
+              ,COMMENTS)
+        VALUES(
+               #PID#
+              ,#PROGRAM_NAME#
+              ,#PROGRAM_NAME_ENG#
+              ,#MENU_ID#
+              ,FN_PG_GET_CAST_NUM(#PID_LEVEL#)
+              ,FN_PG_GET_CAST_NUM(#SORT_NO#)
+              ,#USE_YN#
+              ,#DOC_YN#
+              ,#IF_TYPE#
+              ,#COMMENTS#)
+    </update>
+    
+    <update id="SM7524.updateHelpMenuList" parameterClass="java.util.Map">
+        UPDATE HELP_MENU 
+           SET PROGRAM_NAME     = #PROGRAM_NAME#
+              ,PROGRAM_NAME_ENG = #PROGRAM_NAME_ENG#
+              ,MENU_ID          = #MENU_ID#
+              ,PID_LEVEL        = FN_PG_GET_CAST_NUM(#PID_LEVEL#)
+              ,SORT_NO          = FN_PG_GET_CAST_NUM(#SORT_NO#)
+              ,USE_YN           = #USE_YN#
+              ,DOC_YN           = #DOC_YN#
+              ,IF_TYPE          = #IF_TYPE#
+              ,COMMENTS         = #COMMENTS#
+         WHERE PID = #PID#     
+    </update>
+    
+    <delete id="SM7524.deleteHelpMenuList" parameterClass="java.util.Map">
+        DELETE FROM HELP_MENU
+         WHERE PID = #PID#
+    </delete>
+    
+    <select id="SM7524.selectHelpMenuId" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+        SELECT HM.PID
+              ,HM.PROGRAM_NAME
+          FROM HELP_MENU HM
+          <isNotEmpty property="schKeyWord">
+            WHERE UPPER($schKeyField$) LIKE UPPER(#schKeyWord#)
+          </isNotEmpty>
+          <include refid="select-paging-end" />
+          ORDER BY PID
+    </select>
+    
+</sqlMap>

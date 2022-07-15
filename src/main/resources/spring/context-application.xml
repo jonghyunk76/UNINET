@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+                             http://www.springframework.org/schema/beans/spring-beans.xsd
+                             http://www.springframework.org/schema/context 
+                             http://www.springframework.org/schema/context/spring-context.xsd
+                             http://www.springframework.org/schema/util 
+                                http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+                                
+    <!-- properties 설정 파일 등록 -->
+    <util:properties id="properties" location="classpath:config/app_resource.properties"/>
+    <util:properties id="db" location="classpath:config/db.properties"/>
+    
+    <!-- bean id="propertiesUtil" class="kr.yni.frame.util.ReloadPropertiesUtil" init-method="init">
+        <property name="propertyFiles">
+            <list>
+                <value>config/app_secure.properties</value>
+            </list>
+        </property>
+    </bean>
+    
+    <bean id="propertyFileObserver" class="kr.yni.frame.prop.BaseFileObserver">
+        <property name="directories">
+            <list>
+                <value>classpath:config</value>
+            </list>
+        </property>
+        <property name="interval" value="500" />
+        <property name="fileService" ref="propertyFileService" />
+    </bean>
+    
+    <bean id="propertyFileService" class="kr.yni.frame.prop.impl.PropertieFileServiceImpl">
+        <property name="propertiesUtil" ref="propertiesUtil" />
+    </bean -->
+    
+</beans>

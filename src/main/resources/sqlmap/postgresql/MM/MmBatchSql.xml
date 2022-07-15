@@ -1,0 +1,827 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="mmBatch">
+
+    <select id="MMBATCH.selectSchedulerItemList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT DISTINCT A.IF_CD
+             , A.COMPANY_CD
+             , A.SOURCE_TABLE
+             , A.TARGET_TABLE
+             , A.IF_NAME
+             , B.COL_SEQ
+             , B.FROM_COL_ID, case when data_type in ('float', 'number', 'int') then B.FROM_COL_ID||'::numeric' else B.FROM_COL_ID end FROM_COL_ID_TYPE
+             , B.TO_COL_ID
+             , B.REQUIRED_YN
+             , B.DATA_TYPE
+             , B.DATA_LENGTH
+             , B.DATA_FORMAT
+          FROM INTERFACE_ITEM_MST A
+               INNER JOIN INTERFACE_ITEM_DTL B
+		          ON A.IF_CD = B.IF_CD
+		         AND A.COMPANY_CD = B.COMPANY_CD
+         WHERE A.IF_CD = #IF_CD#
+           AND A.COMPANY_CD = #COMPANY_CD#
+         ORDER BY B.COL_SEQ
+    </select>
+
+    <select id="MMBATCH.selectSchedulerItemDetail" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT A.INTERFACE_ITEM_MST_ID
+              ,A.IF_CD
+              ,A.COMPANY_CD
+              ,A.IF_NAME
+              ,A.SOURCE_TABLE
+              ,A.TARGET_TABLE
+              ,A.HISTORY_TABLE
+              ,A.ITEM_TYPE
+              ,A.REMARK
+              ,A.USING_YN
+              ,A.FILE_PATH
+              ,A.FILE_NAME
+              ,A.FILE_TYPE
+              ,A.FILE_STATUS
+              ,FN_GET_SYSTEM_CONFIG(A.COMPANY_CD, 'CLOUD_SERVER_URL') AS CLOUD_SERVER_URL
+              ,FN_GET_SYSTEM_CONFIG(A.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS TOMS_FTA_CERT_KEY
+              ,(CASE WHEN TV.CL_BUSINESS_NO = '' OR TV.CL_BUSINESS_NO IS NULL THEN C.BUSINESS_NO ELSE TV.CL_BUSINESS_NO END) AS BUSINESS_NO
+          FROM INTERFACE_ITEM_MST A
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = A.COMPANY_CD
+                LEFT OUTER JOIN TCH_VENDOR TV
+                  ON TV.COMPANY_CD = C.COMPANY_CD
+                 AND TV.JOIN_STATUS = 'O'
+         WHERE A.IF_CD = #IF_CD#
+           AND A.COMPANY_CD = #COMPANY_CD#
+    </select>
+    
+    <select id="MMBATCH.selectTranID" resultClass="java.lang.String">
+        SELECT NEXTVAL('SEQ_INTERFACE_HISTORY_01') AS INTERFACE_HISTORY_ID 
+    </select>
+
+    <insert id="MMBATCH.insertTransInfoData" parameterClass="java.util.Map">
+        INSERT INTO INTERFACE_HISTORY
+        (
+          INTERFACE_HISTORY_ID, IF_CD, COMPANY_CD, TOTAL_ROWS, TRANS_DATE, FROM_DATE, TO_DATE
+        , TRANS_STATUS, ERROR_MESSAGE, SCHEDULE_CD, IF_PARAM, SUBMIT_STATUS, BATCH_STATUS, PARENT_HISTORY_ID, CREATE_DATE, CREATE_BY, UPDATE_DATE, UPDATE_BY
+        )
+        VALUES
+        (
+          #INTERFACE_HISTORY_ID#::numeric, #IF_CD#, #COMPANY_CD#, #TOTAL_ROWS#::numeric, NOW(),  #FROM_DATE#, #TO_DATE#
+        ,'0', '', #SCHEDULE_CD#, #IF_PARAM#, 'S', 'P', #PARENT_HISTORY_ID#::numeric, NOW(), #CREATE_BY#, NOW(), #CREATE_BY#
+        )
+    </insert>
+
+    <update id="MMBATCH.updateJcoCountData" parameterClass="java.util.Map">
+        UPDATE INTERFACE_HISTORY
+           SET TOTAL_ROWS = #TOTAL_ROWS#::numeric
+           <isNotEmpty prepend="," property="IF_PARAM">
+               IF_PARAM = #IF_PARAM#
+           </isNotEmpty>
+           <isNotEmpty prepend="," property="FROM_DATE">
+               FROM_DATE = #FROM_DATE#
+           </isNotEmpty>
+           <isNotEmpty prepend="," property="TO_DATE">
+               TO_DATE = #TO_DATE#
+           </isNotEmpty>
+           <isNotEmpty prepend="," property="SUBMIT_STATUS">
+               SUBMIT_STATUS = #SUBMIT_STATUS#
+           </isNotEmpty>
+         WHERE INTERFACE_HISTORY_ID = FN_PG_GET_CAST_NUM(#INTERFACE_HISTORY_ID#)
+    </update>
+    
+    <insert id="MMBATCH.insertTransDtlData" parameterClass="java.util.Map">
+        INSERT INTO INTERFACE_HISTORY_DATA
+        (
+            INTERFACE_HISTORY_DATA_ID, INTERFACE_HISTORY_ID, ROW_SEQ, CURRENT_ROW, ERROR_YN, ERROR_MESSAGE, COMPANY_CD,
+            ATTRIBUTE01, ATTRIBUTE02, ATTRIBUTE03, ATTRIBUTE04, ATTRIBUTE05, ATTRIBUTE06, ATTRIBUTE07, ATTRIBUTE08, ATTRIBUTE09, ATTRIBUTE10,
+            ATTRIBUTE11, ATTRIBUTE12, ATTRIBUTE13, ATTRIBUTE14, ATTRIBUTE15, ATTRIBUTE16, ATTRIBUTE17, ATTRIBUTE18, ATTRIBUTE19, ATTRIBUTE20,
+            ATTRIBUTE21, ATTRIBUTE22, ATTRIBUTE23, ATTRIBUTE24, ATTRIBUTE25, ATTRIBUTE26, ATTRIBUTE27, ATTRIBUTE28, ATTRIBUTE29, ATTRIBUTE30,
+            ATTRIBUTE31, ATTRIBUTE32, ATTRIBUTE33, ATTRIBUTE34, ATTRIBUTE35, ATTRIBUTE36, ATTRIBUTE37, ATTRIBUTE38, ATTRIBUTE39, ATTRIBUTE40,
+            ATTRIBUTE41, ATTRIBUTE42, ATTRIBUTE43, ATTRIBUTE44, ATTRIBUTE45, ATTRIBUTE46, ATTRIBUTE47, ATTRIBUTE48, ATTRIBUTE49, ATTRIBUTE50,
+            CREATE_DATE, CREATE_BY, UPDATE_DATE, UPDATE_BY
+        )
+        VALUES
+        (
+            #INTERFACE_HISTORY_DATA_ID#, #INTERFACE_HISTORY_ID#::numeric, #ROW_SEQ#::numeric, #CURRENT_ROW#::numeric, #ERROR_YN#, #ERROR_MESSAGE#, #COMPANY_CD#,
+            #ATTRIBUTE01#, #ATTRIBUTE02#, #ATTRIBUTE03#, #ATTRIBUTE04#, #ATTRIBUTE05#, #ATTRIBUTE06#, #ATTRIBUTE07#, #ATTRIBUTE08#, #ATTRIBUTE09#, #ATTRIBUTE10#,
+            #ATTRIBUTE11#, #ATTRIBUTE12#, #ATTRIBUTE13#, #ATTRIBUTE14#, #ATTRIBUTE15#, #ATTRIBUTE16#, #ATTRIBUTE17#, #ATTRIBUTE18#, #ATTRIBUTE19#, #ATTRIBUTE20#,
+            #ATTRIBUTE21#, #ATTRIBUTE22#, #ATTRIBUTE23#, #ATTRIBUTE24#, #ATTRIBUTE25#, #ATTRIBUTE26#, #ATTRIBUTE27#, #ATTRIBUTE28#, #ATTRIBUTE29#, #ATTRIBUTE30#,
+            #ATTRIBUTE31#, #ATTRIBUTE32#, #ATTRIBUTE33#, #ATTRIBUTE34#, #ATTRIBUTE35#, #ATTRIBUTE36#, #ATTRIBUTE37#, #ATTRIBUTE38#, #ATTRIBUTE39#, #ATTRIBUTE40#,
+            #ATTRIBUTE41#, #ATTRIBUTE42#, #ATTRIBUTE43#, #ATTRIBUTE44#, #ATTRIBUTE45#, #ATTRIBUTE46#, #ATTRIBUTE47#, #ATTRIBUTE48#, #ATTRIBUTE49#, #ATTRIBUTE50#,
+            NOW(), #CREATE_BY#, NOW(), #CREATE_BY#
+        )
+    </insert>
+    
+    <insert id="MMBATCH.insertDirectToTargetData" parameterClass="java.util.Map">
+        INSERT INTO INTERFACE_HISTORY_DATA(INTERFACE_HISTORY_DATA_ID, INTERFACE_HISTORY_ID, ROW_SEQ, CURRENT_ROW, ERROR_YN, ERROR_MESSAGE
+              ,CREATE_DATE, CREATE_BY, UPDATE_DATE, UPDATE_BY,
+        <dynamic>
+            <iterate property="itemList" close = ")" conjunction=",">
+                $itemList[].FROM_COL_ID$
+            </iterate>
+        </dynamic>
+        SELECT #INTERFACE_HISTORY_DATA_ID#, #INTERFACE_HISTORY_ID#::numeric, (ROW_NUMBER() OVER()), NULL, 'N', NULL
+              ,NOW(), #CREATE_BY#, NOW(), #CREATE_BY#,
+        <dynamic>
+            <iterate property="itemList" conjunction=",">
+                D.$itemList[].TO_COL_ID$ AS $itemList[].FROM_COL_ID$
+            </iterate>
+        </dynamic>
+          FROM $SOURCE_TABLE$ D
+         WHERE D.COMPANY_CD = #COMPANY_CD#
+    </insert>
+    
+    <update id="MMBATCH.updateTransInfoData" parameterClass="java.util.Map">
+	    <![CDATA[
+            UPDATE INTERFACE_HISTORY 
+               SET (ERROR_MESSAGE
+                   ,TRANS_STATUS
+                   ,SUBMIT_STATUS
+                   ,TRANS_DATE)
+                  =(SELECT (CASE WHEN COUNT(A.INTERFACE_HISTORY_ID) <> MAX(B.TOTAL_ROWS) THEN FN_GET_MESSAGE_NAME('ERROR_MIGRATION_COUNT', #SESSION_DEFAULT_LANGUAGE#)
+                                                     WHEN SUM((CASE WHEN A.ERROR_YN = 'Y' THEN 1 ELSE 0 END)) > 0 THEN FN_GET_MESSAGE_NAME('MSG_ERROR_VALIDATION', #SESSION_DEFAULT_LANGUAGE#)
+                                                     WHEN COUNT(A.ERROR_YN) = 0 THEN FN_GET_MESSAGE_NAME('WARNING_INPUTDATA_NULL', #SESSION_DEFAULT_LANGUAGE#)
+                                                     ELSE ''
+                                        END) AS ERROR_MESSAGE
+                            ,(CASE SUM((CASE WHEN A.ERROR_YN = 'Y' THEN 1 ELSE 0 END)) WHEN 0 THEN '1' ELSE '2' END) AS TRANS_STATUS
+                            ,(CASE SUM((CASE WHEN A.ERROR_YN = 'Y' THEN 1 ELSE 0 END)) WHEN 0 THEN 'S' ELSE 'R' END) AS SUBMIT_STATUS
+                            ,NOW()
+                        FROM INTERFACE_HISTORY B
+                            LEFT OUTER JOIN INTERFACE_HISTORY_DATA A
+                                ON A.INTERFACE_HISTORY_ID = B.INTERFACE_HISTORY_ID
+                       WHERE B.INTERFACE_HISTORY_ID = #INTERFACE_HISTORY_ID#::numeric
+                       AND B.IF_CD = #IF_CD#
+                       AND B.COMPANY_CD = #COMPANY_CD#
+                     GROUP BY B.INTERFACE_HISTORY_ID
+                   )
+             WHERE INTERFACE_HISTORY.INTERFACE_HISTORY_ID = #INTERFACE_HISTORY_ID#::NUMERIC
+        ]]>
+    </update>
+
+    <insert id="MMBATCH.insertToTargetData" parameterClass="java.util.Map">
+        INSERT INTO $TARGET_TABLE$(CREATE_DATE,
+        <dynamic>
+            <iterate property="itemList" close = ")" conjunction=",">
+                $itemList[].TO_COL_ID$
+            </iterate>
+        </dynamic>
+        SELECT NOW(),
+        <dynamic>
+            <iterate property="itemList" conjunction=",">
+                D.$itemList[].FROM_COL_ID_TYPE$ AS $itemList[].TO_COL_ID$
+            </iterate>
+        </dynamic>
+          FROM (SELECT M.COMPANY_CD, #INTERFACE_HISTORY_ID#::numeric AS INTERFACE_HISTORY_ID, COUNT(B.COMPANY_CD) AS ERROR_CNT
+                  FROM COMPANY M
+                       LEFT OUTER JOIN INTERFACE_HISTORY_DATA B
+                         ON M.COMPANY_CD = B.COMPANY_CD
+                        AND B.INTERFACE_HISTORY_ID = #INTERFACE_HISTORY_ID#::numeric
+                        AND B.ERROR_YN = 'Y'
+                 WHERE M.COMPANY_CD = #COMPANY_CD#
+                 GROUP BY M.COMPANY_CD) C
+         INNER JOIN INTERFACE_HISTORY_DATA D
+            ON C.COMPANY_CD = D.COMPANY_CD
+           AND C.INTERFACE_HISTORY_ID = D.INTERFACE_HISTORY_ID
+         WHERE C.ERROR_CNT = 0
+    </insert>
+    
+    <insert id="MMBATCH.insertTargetFromSourceData" parameterClass="java.util.Map">
+        INSERT INTO $TARGET_TABLE$(CREATE_DATE,
+        <dynamic>
+            <iterate property="itemList" close = ")" conjunction=",">
+                $itemList[].TO_COL_ID$
+            </iterate>
+        </dynamic>
+        SELECT NOW(),
+        <dynamic>
+            <iterate property="itemList" conjunction=",">
+                D.$itemList[].FROM_COL_ID$ AS $itemList[].TO_COL_ID$
+            </iterate>
+        </dynamic>
+          FROM (SELECT M.COMPANY_CD, COUNT(B.COMPANY_CD) AS ERROR_CNT
+                  FROM COMPANY M
+                       LEFT OUTER JOIN INTERFACE_HISTORY_DATA B
+                         ON M.COMPANY_CD = B.COMPANY_CD
+                        AND B.INTERFACE_HISTORY_ID = #INTERFACE_HISTORY_ID#::numeric
+                        AND B.ERROR_YN = 'Y'
+                 WHERE M.COMPANY_CD = #COMPANY_CD#
+                 GROUP BY M.COMPANY_CD) C
+         INNER JOIN $SOURCE_TABLE$ D
+            ON C.COMPANY_CD = D.COMPANY_CD
+         WHERE C.ERROR_CNT = 0
+    </insert>
+    
+    <select id="MMBATCH.selectInterfaceScheduleList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT SCH.SCHEDULE_CD
+             , SCH.COMPANY_CD
+             , SCH.MONTH
+             , SCH.WEEK
+             , SCH.DAY
+             , SCH.HOUR
+             , SCH.MINUTES
+             , SCH.COM_MONTH
+             , SCH.COM_WEEK
+             , SCH.COM_DAY
+             , SCH.COM_HOUR
+             , SCH.COM_MINUTES
+             , SCH.STATUS
+             , SCH.EXECUTION_PROGRAM
+             , SCH.SYSTEM_BATCH_YN
+             , TO_CHAR(SCH.UPDATE_DATE, 'YYYYMMDDHH24MI') AS CURRENT_BATCH_DATE
+          FROM INTERFACE_SCHEDULE SCH 
+         WHERE SCH.SYSTEM_BATCH_YN = 'Y' 
+          AND TO_CHAR(NOW(),'YYYYMMDD') BETWEEN SCH.APPLY_FROM_DATE AND SCH.APPLY_TO_DATE
+        <isNotEmpty property="COMPANY_CD">
+          AND SCH.COMPANY_CD = #COMPANY_CD#
+        </isNotEmpty>
+    </select>
+    
+    <select id="MMBATCH.selectInterfaceMappingList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT MAP.SCHEDULE_CD
+             , MAP.COMPANY_CD
+             , MAP.IF_CD
+             , MAP.IF_PARENT_CD
+             , MAP.REQUIRED_YN
+             , MAP.IF_METHOD
+             , IIM.ITEM_TYPE
+             , IIM.FILE_PATH
+             , FN_GET_SYSTEM_CONFIG(MAP.COMPANY_CD, 'CLOUD_SERVER_URL') AS URL
+             , FN_GET_SYSTEM_CONFIG(MAP.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS TOMS_FTA_CERT_KEY
+             , C.BUSINESS_NO
+             , COALESCE(MAP.VALID_CHECK_YN, 'Y') AS VALID_CHECK_YN
+          FROM INTERFACE_SCHEDULE_MAPPING MAP
+               INNER JOIN INTERFACE_SCHEDULE SCH
+                  ON SCH.SCHEDULE_CD = MAP.SCHEDULE_CD
+                 AND SCH.COMPANY_CD = MAP.COMPANY_CD
+                 AND SCH.SYSTEM_BATCH_YN = 'Y'
+                 AND TO_CHAR(NOW(),'YYYYMMDD') BETWEEN SCH.APPLY_FROM_DATE AND SCH.APPLY_TO_DATE
+               INNER JOIN INTERFACE_ITEM_MST IIM
+                  ON IIM.COMPANY_CD = SCH.COMPANY_CD
+                 AND IIM.IF_CD = MAP.IF_CD
+                 AND IIM.USING_YN = 'Y'
+                 AND IIM.ITEM_TYPE = (CASE WHEN SCH.BATCH_FILTER_TYPE = '' OR SCH.BATCH_FILTER_TYPE IS NULL THEN IIM.ITEM_TYPE ELSE SCH.BATCH_FILTER_TYPE END)
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = MAP.COMPANY_CD
+         WHERE MAP.SCHEDULE_CD = #SCHEDULE_CD#
+           AND MAP.COMPANY_CD = #COMPANY_CD#
+         <isNotEmpty property="TARGET_IF_CD">
+           AND MAP.IF_CD = #TARGET_IF_CD#
+         </isNotEmpty>
+           AND MAP.IF_METHOD NOT IN('U', 'E')
+         ORDER BY MAP.SCHEDULE_SEQ
+    </select>
+    
+    <select id="MMBATCH.selectInterfaceBatchItemList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT ISM.COMPANY_CD <!-- 회사코드-->
+              ,ISM.SCHEDULE_CD <!-- 스케쥴 코드-->
+              ,ISM.SCHEDULE_SEQ
+              ,ISM.IF_CD <!-- 문서 코드-->
+              ,IIM.IF_NAME <!-- 문서명-->
+              ,ISM.IF_METHOD <!-- 문서타입 코드-->
+              ,FN_GET_COMMON_CD(ISM.COMPANY_CD, 'IF_METHOD', ISM.IF_METHOD, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS IF_METHOD_NAME <!-- 문서 타입명-->
+              ,IIM.ITEM_TYPE
+              ,IIM.FILE_PATH
+              ,FN_GET_COMMON_CD(ISM.COMPANY_CD, 'BCTY', IIM.ITEM_TYPE, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS ITEM_TYPE_NAME
+              ,ISM.REQUIRED_YN <!-- 필수여부-->
+              ,FN_GET_COMMON_CD(ISM.COMPANY_CD, 'YN', ISM.REQUIRED_YN, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS REQUIRED_YN_NAME <!-- 필수여부 명칭-->
+              ,COALESCE(ISM.VALID_CHECK_YN, 'Y') AS VALID_CHECK_YN
+          FROM INTERFACE_SCHEDULE_MAPPING ISM
+               INNER JOIN INTERFACE_ITEM_MST IIM
+                  ON IIM.COMPANY_CD = ISM.COMPANY_CD
+                 AND IIM.IF_CD = ISM.IF_CD
+                 AND IIM.USING_YN = 'Y'
+         WHERE ISM.COMPANY_CD = #COMPANY_CD#
+           AND ISM.SCHEDULE_CD = #SCHEDULE_CD#
+           AND ISM.IF_METHOD NOT IN('U', 'E')
+         ORDER BY ISM.SCHEDULE_SEQ
+    </select>
+    
+    <delete id="MMBATCH.deleteInterfaceTable" parameterClass="java.util.Map">
+        DELETE FROM $TARGET_TABLE$
+         WHERE 1 = 1
+        <isNotEmpty prepend="AND" property="INTERFACE_HISTORY_ID">
+            INTERFACE_HISTORY_ID = FN_PG_GET_CAST_NUM(#INTERFACE_HISTORY_ID#)
+        </isNotEmpty>
+        <isNotEmpty prepend="AND" property="COMPANY_CD">
+            COMPANY_CD = #COMPANY_CD#
+        </isNotEmpty>
+    </delete>
+
+    <update id="MMBATCH.updateInterfaceScheduleDate" parameterClass="java.util.Map">
+        UPDATE INTERFACE_SCHEDULE
+           SET STATUS = #STATUS#
+        <dynamic>
+            <isEqual property="STATUS" compareValue="0">
+              , LAST_EXECUTION_DATE = NOW()
+              , BATCH_YYYYMM = NULL
+              , BATCH_TO_YYYYMM = NULL
+              , BATCH_YYYYMM_YN = 'N'
+              , BATCH_FILTER_TYPE = NULL
+              , MONTH = (CASE WHEN COM_MONTH = '' OR COM_MONTH IS NULL THEN MONTH ELSE COM_MONTH END)
+              , WEEK = (CASE WHEN COM_WEEK = '' OR COM_WEEK IS NULL THEN WEEK ELSE COM_WEEK END)
+              , DAY = (CASE WHEN COM_DAY = '' OR COM_DAY IS NULL THEN DAY ELSE COM_DAY END)
+              , HOUR = (CASE WHEN COM_HOUR = '' OR COM_HOUR IS NULL THEN HOUR ELSE COM_HOUR END)
+              , MINUTES = (CASE WHEN COM_MINUTES = '' OR COM_MINUTES IS NULL THEN MINUTES ELSE COM_MINUTES END)
+            </isEqual>
+        </dynamic>
+        <isNotEmpty prepend="," property="EXECUTION_MESSAGE">
+               EXECUTION_MESSAGE = #EXECUTION_MESSAGE#
+        </isNotEmpty>
+         WHERE SCHEDULE_CD = #SCHEDULE_CD#
+           AND COMPANY_CD = #COMPANY_CD#
+    </update>
+
+    <update id="MMBATCH.updateScheduleBatchDate" parameterClass="java.util.Map">
+        UPDATE INTERFACE_SCHEDULE
+           SET UPDATE_DATE = NOW()
+             , UPDATE_BY = #CREATE_BY#
+         WHERE SCHEDULE_CD = #SCHEDULE_CD#
+           AND COMPANY_CD = #COMPANY_CD#
+    </update>
+
+    <select id="MMBATCH.selectBatchResultInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT A.TARGET_TABLE
+             , D.TRANS_STATUS
+             , D.INTERFACE_HISTORY_ID
+             , D.IF_CD
+             , D.SCHEDULE_CD
+             , A.COMPANY_CD
+             , D.SUBMIT_STATUS
+          FROM INTERFACE_SCHEDULE_MAPPING B
+			   INNER JOIN INTERFACE_ITEM_MST A
+			      ON B.IF_CD = A.IF_CD
+			     AND B.COMPANY_CD = A.COMPANY_CD
+			    LEFT JOIN (SELECT C.TRANS_STATUS
+			                    , C.IF_CD
+			                    , C.INTERFACE_HISTORY_ID
+			                    , C.SCHEDULE_CD
+			                    , C.COMPANY_CD
+			                    , C.SUBMIT_STATUS
+			                 FROM INTERFACE_HISTORY C
+			                WHERE C.INTERFACE_HISTORY_ID IN
+			            <dynamic>
+			                <iterate property="transID" open="(" close = ")" conjunction=",">
+			                    $transID[].INTERFACE_HISTORY_ID$
+			                </iterate>
+			            </dynamic>
+			               ) D
+                  ON D.IF_CD = A.IF_CD
+         WHERE B.SCHEDULE_CD = #SCHEDULE_CD#
+           AND B.COMPANY_CD = #COMPANY_CD#
+    </select>
+
+    <update id="MMBATCH.updateProcedureResult" parameterClass="java.util.Map">
+        UPDATE INTERFACE_HISTORY
+           SET UPDATE_DATE = NOW()
+        <isNotEmpty prepend="," property="ERROR_MESSAGE">
+             ERROR_MESSAGE = #ERROR_MESSAGE#
+        </isNotEmpty>
+        <isNotEmpty prepend="," property="TRANS_STATUS">
+             TRANS_STATUS = #TRANS_STATUS#
+        </isNotEmpty>
+        <isNotEmpty prepend="," property="IF_PARAM">
+             IF_PARAM = #IF_PARAM#
+        </isNotEmpty>
+        <isNotEmpty prepend="," property="STATUS">
+             SUBMIT_STATUS = #SUBMIT_STATUS#
+        </isNotEmpty>
+        <isNotEmpty prepend="," property="BATCH_STATUS">
+             BATCH_STATUS = #BATCH_STATUS#
+        </isNotEmpty>
+        <isNotNull prepend="," property="REQUEST_PARAM">
+             REQUEST_PARAM = #REQUEST_PARAM:CLOB#
+        </isNotNull>
+         WHERE INTERFACE_HISTORY_ID=#INTERFACE_HISTORY_ID#::numeric
+    </update>
+
+    <update id="MMBATCH.updateFinishedTime" parameterClass="java.util.Map">
+        UPDATE INTERFACE_HISTORY
+           SET TRANS_DATE = NOW()
+        <isNotEmpty prepend="," property="TRANS_STATUS">
+               TRANS_STATUS = (CASE WHEN TRANS_STATUS = '2' THEN TRANS_STATUS ELSE #TRANS_STATUS# END)
+        </isNotEmpty>
+        <isNotEmpty prepend="," property="ERROR_MESSAGE">
+               ERROR_MESSAGE = (CASE WHEN TRANS_STATUS = '2' THEN ERROR_MESSAGE ELSE #ERROR_MESSAGE# END)
+        </isNotEmpty>
+        <isNotEmpty prepend="," property="BATCH_STATUS">
+               BATCH_STATUS = #BATCH_STATUS#
+        </isNotEmpty>
+         WHERE INTERFACE_HISTORY_ID = #INTERFACE_HISTORY_ID#::numeric
+    </update>
+
+    <select id="MMBATCH.selectCooCertifyList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT PL.VENDOR_CD        AS LIFNR /*거래처 코드*/
+             , PL.DIVISION_CD      AS WERKS /*플랜트 코드*/
+             , PL.COMPANY_CD       AS BUKRS /*회사코드   */
+             , PL.ITEM_CD          AS MATNR /*아이템 코드*/
+             , PL.COO_CERTIFY_TYPE AS GUBUN /*원산지 구분*/
+             , PL.APPLY_DATE       AS SDATE /*포괄시작일 */
+             , PL.END_DATE         AS EDATE /*포괄종료일 */
+          FROM (
+                SELECT ECCM.VENDOR_CD, ECCM.DIVISION_CD, ECCM.COMPANY_CD, ECCD.ITEM_CD
+                     , ECCM.COO_CERTIFY_TYPE, ECCD.APPLY_DATE, ECCD.END_DATE
+                  FROM EXT_COO_CERTIFY_MST ECCM
+                     , EXT_COO_CERTIFY_DTL ECCD
+                 WHERE ECCM.COMPANY_CD = #I_BUKRS#
+                   AND TO_CHAR(ECCM.UPDATE_DATE, 'YYYYMMDD') BETWEEN #I_ERDAT_FROM# AND #I_ERDAT_TO#
+                   AND #I_ERDAT_FROM# BETWEEN ECCD.APPLY_DATE AND ECCD.END_DATE
+                   AND ECCM.COO_CERTIFY_TYPE = 'C' /*포괄원산지 확인서*/
+                   AND ECCM.SUBMIT_STATUS    = '4'
+                   AND ECCM.COO_CERTIFY_NO   =  ECCD.COO_CERTIFY_NO
+                   AND ECCM.VENDOR_CD      =  ECCD.VENDOR_CD
+                   AND ECCM.DIVISION_CD    =  ECCD.DIVISION_CD
+                   AND ECCM.COMPANY_CD     =  ECCD.COMPANY_CD
+              UNION ALL
+                SELECT ECCM.VENDOR_CD, ECCM.DIVISION_CD, ECCM.COMPANY_CD, ECCD.ITEM_CD
+                     , ECCM.COO_CERTIFY_TYPE, ECCD.APPLY_DATE, ECCD.END_DATE
+                  FROM EXT_COO_CERTIFY_MST ECCM
+                     , EXT_COO_CERTIFY_DTL ECCD
+                 WHERE ECCM.COMPANY_CD = #I_BUKRS#
+                   AND TO_CHAR(ECCM.UPDATE_DATE, 'YYYYMMDD') BETWEEN #I_ERDAT_FROM# AND #I_ERDAT_TO#
+                   AND ECCM.COO_CERTIFY_TYPE = 'N' /*개별원산지 확인서*/
+                   AND ECCM.SUBMIT_STATUS    = '4'
+                   AND ECCM.COO_CERTIFY_NO   =  ECCD.COO_CERTIFY_NO
+                   AND ECCM.VENDOR_CD      =  ECCD.VENDOR_CD
+                   AND ECCM.DIVISION_CD    =  ECCD.DIVISION_CD
+                   AND ECCM.COMPANY_CD     =  ECCD.COMPANY_CD
+               ) PL
+         GROUP BY PL.VENDOR_CD, PL.DIVISION_CD, PL.COMPANY_CD, PL.ITEM_CD
+                , PL.COO_CERTIFY_TYPE, PL.APPLY_DATE, PL.END_DATE
+    </select>
+
+    <select id="MMBATCH.selectResultMessage" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT IIT.TRANS_STATUS
+              /*,COALESCE((CASE COALESCE('KOR', 'KOR') WHEN 'KOR' THEN MSG.MESSAGE_KOR WHEN 'ENG' THEN MSG.MESSAGE_ENG ELSE MSG.MESSAGE_LOC END), IIT.ERROR_MESSAGE) AS RETURNMSG*/
+             , COALESCE((CASE COALESCE('KOR', 'KOR') WHEN 'KOR' THEN MSG.MESSAGE_KOR WHEN 'ENG' THEN MSG.MESSAGE_ENG ELSE MSG.MESSAGE_LOC END), IIT.ERROR_MESSAGE) AS RETURNMSG*
+             , IIT.ERROR_MESSAGE
+          FROM INTERFACE_HISTORY IIT
+     LEFT JOIN MESSAGE MSG
+            ON (CASE IIT.TRANS_STATUS WHEN '1' THEN 'MSG_SUCCESS_BODY' ELSE 'TXT_'||IIT.ERROR_MESSAGE END) = MSG.MESSAGE_NAME
+         WHERE IIT.INTERFACE_HISTORY_ID IN
+        <dynamic>
+            <iterate property="transID" open="(" close = ")" conjunction=",">
+                $transID[].INTERFACE_HISTORY_ID$
+            </iterate>
+        </dynamic>
+           AND IIT.COMPANY_CD = #COMPANY_CD#
+    </select>
+
+    <select id="MMBATCH.selectBatchYYYYMM" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT (CASE WHEN ISC.BATCH_YYYYMM_YN = 'Y' THEN ISC.BATCH_YYYYMM ELSE NULL END) AS YYYYMM
+              ,(CASE WHEN ISC.BATCH_YYYYMM_YN = 'Y' THEN ISC.BATCH_TO_YYYYMM ELSE NULL END) AS TO_YYYYMM
+              ,ISC.LAST_EXECUTION_DATE, ISC.EXECUTION_MESSAGE, COALESCE(CD.TXT_VALUE1, '-1') AS BATCH_PREV_NUM
+          FROM INTERFACE_SCHEDULE ISC
+               LEFT OUTER JOIN CODE_DTL CD
+                 ON CD.COMPANY_CD = ISC.COMPANY_CD
+                AND CD.CATEGORY_CD = 'SYS_CONFIG'
+                AND CD.CODE = (CASE WHEN ISC.SCHEDULE_CD = 'MONTHLY_BATCH' THEN 'BATCH_MONTHLY_NUM'
+                                    WHEN ISC.SCHEDULE_CD = 'DAILY_BATCH' THEN 'BATCH_DAILY_NUM' END)
+         WHERE ISC.SCHEDULE_CD = #SCHEDULE_CD#
+           AND ISC.COMPANY_CD = #COMPANY_CD#
+    </select>
+
+    <select id="MMBATCH.selectRptTable" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT
+        <dynamic>
+            <iterate property="COLUMN_LIST" conjunction=",">
+                RTRIM(LTRIM($COLUMN_LIST[].COLUMN_NAME$)) AS $COLUMN_LIST[].COLUMN_NAME$
+            </iterate>
+        </dynamic>
+          FROM $SOURCE_TABLE$
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </select>
+    
+    <select id="MMBATCH.selectSourceTable" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT
+        <dynamic>
+            <iterate property="COLUMN_LIST" conjunction=",">
+                RTRIM(LTRIM($COLUMN_LIST[].COLUMN_NAME$)) AS $COLUMN_LIST[].COLUMN_NAME$
+            </iterate>
+        </dynamic>
+        FROM $SOURCE_TABLE$
+        WHERE COMPANY_CD = #COMPANY_CD#
+        <isNotEmpty property="INTERFACE_HISTORY_ID">
+          AND INTERFACE_HISTORY_ID = FN_PG_GET_CAST_NUM(#INTERFACE_HISTORY_ID#)
+        </isNotEmpty>
+    </select>
+    
+    <delete id="MMBATCH.deleteRptTable" parameterClass="java.util.Map">
+        DELETE FROM $SOURCE_TABLE$
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </delete>
+    
+    <select id="MMBATCH.selectDivisionList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT COMPANY_CD
+              ,DIVISION_CD
+          FROM DIVISION
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </select>
+    
+    <select id="MMBATCH.selectHubOrganizatList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT C.HUB_CERT_ID
+              ,C.COMPANY_CD
+              ,C.ORG_NAME
+              ,C.DATA_TYPE
+          FROM (
+                SELECT C.HUB_CERT_ID
+                      ,C.COMPANY_CD
+                      ,C.COMPANY_NAME AS ORG_NAME
+                      ,'C' AS DATA_TYPE
+                  FROM COMPANY C
+                 WHERE C.COMPANY_CD = #COMPANY_CD#
+                   AND C.HUB_CERT_ID IS NOT NULL
+                UNION ALL
+                SELECT D.HUB_CERT_ID
+                      ,D.COMPANY_CD
+                      ,D.DIVISION_NAME AS ORG_NAME
+                      ,'D' AS DATA_TYPE
+                  FROM DIVISION D 
+                 WHERE D.COMPANY_CD = #COMPANY_CD#
+                   AND D.HUB_CERT_ID IS NOT NULL
+                ) C
+                INNER JOIN CODE_DTL CD
+                   ON CD.COMPANY_CD = C.COMPANY_CD
+                  AND CD.CATEGORY_CD = 'SYS_CONFIG'
+                  AND CD.CODE = 'VAATZ_HUB_UNIT'
+                  AND CD.TXT_VALUE1 = C.DATA_TYPE
+         WHERE C.HUB_CERT_ID IS NOT NULL AND C.HUB_CERT_ID != ''
+    </select>
+    
+    <select id="MMBATCH.selectHubNoComplateList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT HCIM.COMPANY_CD
+              ,HCIM.DIVISION_CD
+              ,HCIM.REFERENCE_ID
+              ,HCIM.SEND_RECEIVE_FLAG
+              ,HCIM.DOCUMENT_ID
+              ,HCIM.SEND_SEQ
+              ,HCIM.VENDOR_CD
+              ,TO_CHAR(HCIM.DOC_CREATE_DATE, 'YYYYMMDD') AS SEND_DATE
+              ,HCIM.FILE_NAME
+          FROM HUB_CO_ISSUE_MST HCIM  
+           INNER JOIN HUB_CO_REQ_MST HCRM
+              ON HCRM.REFERENCE_ID = HCIM.REFERENCE_ID
+             AND HCRM.SEND_RECEIVE_FLAG = 'R'
+             AND HCRM.DOCUMENT_ID = HCIM.DOCUMENT_ID
+             AND HCRM.DOCUMENT_TYPE_CD = 'F103'
+         WHERE HCIM.COMPANY_CD = #COMPANY_CD#
+           AND TO_CHAR(HCIM.DOC_CREATE_DATE, 'YYYYMMDD') BETWEEN TO_CHAR(NOW() - INTERVAL '7' DAY, 'YYYYMMDD') AND TO_CHAR(NOW() - INTERVAL '1' DAY, 'YYYYMMDD')
+           AND NOT EXISTS(SELECT 1
+                            FROM HUB_REQ_RESULT HRR
+                           WHERE HRR.REFERENCE_ID = HCIM.REFERENCE_ID
+                             AND HRR.SEND_RECEIVE_FLAG = HCRM.SEND_RECEIVE_FLAG)
+    </select>
+    
+    <select id="MMBATCH.selectMailSendBatchList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT DISTINCT MSS.COMPANY_CD
+              ,C.COMPANY_NAME AS SESSION_COMPANY_NAME
+              ,MSS.MAIL_SEND_MST_ID AS REV_MAIL_SEND_MST_ID
+              ,MSV.DIVISION_CD
+              ,MSS.DUAL_COMPANY_CD AS VENDOR_CD
+              ,MSS.DUAL_COMPANY_CD
+              ,MSS.DUAL_COMPANY_TYPE
+              ,MAX(MSSH.MAIL_SEND_SCHE_HIST_ID) OVER() AS MAIL_SEND_SCHE_HIST_ID
+              ,V.VENDOR_NAME
+              ,MSS.MAIL_TYPE
+              ,MSM.SUBJECT
+              ,MSM.WRITER
+              ,MSM.WRITE_EMAIL
+              ,MSV.WRITE_CONTECTS
+              ,TO_CHAR(NOW(), 'YYYYMMDD') AS TCH_REQUEST_DATE
+              ,(CASE WHEN MSS.REPEAT_YN = 'Y' THEN TO_CHAR(NOW(), 'YYYY') ELSE MSS.YEAR END)
+                ||'.'||MSS.SEND_FROM_MON||'.'||MSS.SEND_FROM_DAY AS APPLY_DATE
+              ,(CASE WHEN MSS.REPEAT_YN = 'Y' THEN TO_CHAR(NOW(), 'YYYY') ELSE MSS.YEAR END)
+                ||'.'||MSS.SEND_TO_MON||'.'||MSS.SEND_TO_DAY AS END_DATE
+              ,MSM.SMS_SEND_YN
+              ,FU.MAIL_ID
+              ,FU.MAIL_PASSWORD
+              ,REPLACE(SUBSTR(MSM.EMAIL, 1, POSITION(',CC=' IN MSM.EMAIL)-1), 'To=', '') AS EMAIL
+              ,REPLACE(SUBSTR(MSM.EMAIL, POSITION(',CC=' IN MSM.EMAIL), LENGTH(MSM.EMAIL)), ',CC=', '') AS REDER_EMAIL
+              ,MSM.CELL_PHONE_NO
+              ,MSM.FILE_ATTACH_YN
+              ,MSS.COMMENTS
+              ,MSV.REQUEST_TYPE
+              ,CD1.WORD AS REQUEST_TYPE_NAME
+              ,C.COMPANY_NAME
+              ,MSS.SEARCH_CONDITION3 AS CO_TARGET_YN
+              ,MSS.SEARCH_CONDITION1 AS YYYYMM
+              ,TO_CHAR(NOW(), 'YYYYMM') AS TO_YYYYMM
+              ,MSS.SEARCH_CONDITION2 AS CO_COVER_YEAR
+              ,MSS.SEARCH_CONDITION4 AS FTA_CD
+              ,MSS.SEARCH_CONDITION5 AS SESSION_DEFAULT_LANGUAGE
+              ,MSS.SEARCH_CONDITION6 AS ITEM_ATTACH_YN
+              ,MSS.SEARCH_CONDITION7 AS INPUT_TYPE
+              ,MSS.CREATE_BY
+              ,MSS.UPDATE_BY
+              ,MSS.UPDATE_BY AS USER_ID
+          FROM MAIL_SEND_SCHEDULE MSS
+               INNER JOIN MAIL_SEND_SCHEDULE_HIST MSSH
+                  ON MSSH.COMPANY_CD = MSS.COMPANY_CD
+                 AND MSSH.DUAL_COMPANY_CD = MSS.DUAL_COMPANY_CD
+                 AND MSSH.DUAL_COMPANY_TYPE = MSS.DUAL_COMPANY_TYPE
+                 AND MSSH.MAIL_TYPE = MSS.MAIL_TYPE
+                 AND MSSH.STATUS = '1'
+               <![CDATA[
+                 AND MSSH.RESERVATION_DATE <= TO_CHAR(NOW(), 'YYYYMMDD')
+                 AND MSSH.RESERVATION_TIME <= TO_CHAR(NOW(), 'HH24')
+               ]]>
+               INNER JOIN MAIL_SEND_MST MSM
+                  ON MSM.COMPANY_CD = MSS.COMPANY_CD
+                 AND MSM.MAIL_SEND_MST_ID = MSS.MAIL_SEND_MST_ID
+               INNER JOIN FTA_USER FU 
+                  ON FU.COMPANY_CD = MSS.COMPANY_CD
+                 AND FU.USER_ID = MSS.UPDATE_BY
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = MSM.COMPANY_CD
+                LEFT OUTER JOIN VENDOR V
+                  ON V.COMPANY_CD = MSS.COMPANY_CD
+                 AND V.VENDOR_CD = MSS.DUAL_COMPANY_CD
+                LEFT OUTER JOIN MAIL_SEND_VENDOR MSV
+                  ON MSV.COMPANY_CD = MSS.COMPANY_CD
+                 AND MSV.VENDOR_CD = MSS.DUAL_COMPANY_CD
+                 AND MSV.MAIL_SEND_MST_ID = MSS.MAIL_SEND_MST_ID
+                LEFT OUTER JOIN CODE_LANG_DIC CD1
+                  ON CD1.COMPANY_CD = MSS.COMPANY_CD
+                 AND CD1.CATEGORY_CD = 'REQT' 
+                 AND CD1.CODE = MSV.REQUEST_TYPE
+                 AND CD1.LANGUAGE_CAT = COALESCE(MSS.SEARCH_CONDITION5, 'EN')
+         WHERE MSS.COMPANY_CD = #COMPANY_CD#
+           AND MSS.DUAL_COMPANY_TYPE = 'V'
+           AND MSS.MAIL_TYPE = 'O'
+           AND MSS.AUTO_MAIL_YN = '1'
+    </select>
+    
+    <select id="MMBATCH.selectAdjustProductList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT S.COMPANY_CD
+              ,S.DIVISION_CD
+              ,S.ITEM_CD
+              ,MAX(S.FROM_DATE) AS FROM_DATE
+          FROM (
+                SELECT SD.COMPANY_CD
+                      ,SD.PRODUCT_DIVISION_CD AS DIVISION_CD
+                      ,SD.PRODUCT_ITEM_CD AS ITEM_CD
+                      ,SUBSTR(COALESCE(SD.PRODUCT_YYYYMM, SD.YYYYMM), 1, 6)||'01' AS FROM_DATE
+                      ,COALESCE(SD.PRODUCT_YYYYMM, SD.YYYYMM) AS PRODUCT_YYYYMM
+                  FROM TR_SALES_DOM_ADJUST SD
+                 WHERE SD.COMPANY_CD = #COMPANY_CD#
+                UNION ALL
+                SELECT SE.COMPANY_CD
+                      ,SE.PRODUCT_DIVISION_CD AS DIVISION_CD
+                      ,SE.PRODUCT_ITEM_CD AS ITEM_CD
+                      ,COALESCE(SE.PRODUCT_YYYYMM||'01', SE.INVOICE_DATE) AS FROM_DATE
+                      ,SUBSTR(COALESCE(SE.PRODUCT_YYYYMM, SE.INVOICE_DATE), 1, 6) AS PRODUCT_YYYYMM
+                  FROM TR_SALES_EXP_ADJUST SE
+                 WHERE SE.COMPANY_CD = #COMPANY_CD#
+                ) S
+         WHERE NOT EXISTS(SELECT 1 
+                            FROM FTA_BOM_DTL FBD
+                           WHERE FBD.COMPANY_CD = S.COMPANY_CD
+                             AND FBD.DIVISION_CD = S.DIVISION_CD
+                             AND FBD.PRODUCT_ITEM_CD = S.ITEM_CD
+                             AND FBD.YYYYMM = S.PRODUCT_YYYYMM
+                             AND TO_CHAR(NOW(), 'YYYYMM') > FBD.YYYYMM
+                          )
+         GROUP BY S.COMPANY_CD
+                 ,S.DIVISION_CD
+                 ,S.ITEM_CD
+    </select>
+    
+    <select id="MMBATCH.selectReqProductList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT S.COMPANY_CD
+              ,S.DIVISION_CD
+              ,S.ITEM_CD
+              ,MAX(S.FROM_DATE) AS FROM_DATE
+          FROM (
+                SELECT TSM.COMPANY_CD
+                      ,COALESCE(TSD.PRODUCT_DIVISION_CD, TSM.DIVISION_CD) AS DIVISION_CD
+                      ,TSD.PRODUCT_ITEM_CD AS ITEM_CD
+                      ,TSM.INVOICE_DATE AS FROM_DATE
+                  FROM TR_SALES_MST TSM
+                       INNER JOIN TR_SALES_DTL TSD
+                          ON TSD.SALES_NO = TSM.SALES_NO
+                         AND TSD.DIVISION_CD = TSM.DIVISION_CD
+                         AND TSD.COMPANY_CD = TSM.COMPANY_CD
+                       INNER JOIN (SELECT FN_GET_SYSTEM_CONFIG(#COMPANY_CD#, 'DAILY_SAELS_DE') AS S_DE) DE
+                          ON TSM.EXPORT_FLAG = (CASE WHEN DE.S_DE = 'DE' OR DE.S_DE IS NULL THEN TSM.EXPORT_FLAG ELSE DE.S_DE END)
+                 WHERE TSM.COMPANY_CD = #COMPANY_CD#
+                   AND TSM.INVOICE_DATE BETWEEN #FROM_DATE# AND #TO_DATE#
+                   AND TSD.ITEM_TYPE IN('P', 'H')
+                UNION ALL
+                SELECT S.COMPANY_CD
+                      ,COALESCE(S.PRODUCT_DIVISION_CD, S.DIVISION_CD) AS DIVISION_CD
+                      ,S.PRODUCT_ITEM_CD AS ITEM_CD
+                      ,S.INVOICE_DATE AS FROM_DATE
+                  FROM SALES S
+                       INNER JOIN (SELECT FN_GET_SYSTEM_CONFIG(#COMPANY_CD#, 'DAILY_SAELS_DE') AS S_DE) DE
+                          ON S.EXPORT_FLAG = (CASE WHEN DE.S_DE = 'DE' OR DE.S_DE IS NULL THEN S.EXPORT_FLAG ELSE DE.S_DE END)
+                 WHERE S.COMPANY_CD = #COMPANY_CD#
+                   AND S.INVOICE_DATE BETWEEN #FROM_DATE# AND #TO_DATE#
+                   AND S.ITEM_TYPE IN('P', 'H')
+                ) S
+         GROUP BY S.COMPANY_CD
+                 ,S.DIVISION_CD
+                 ,S.ITEM_CD
+    </select>
+    
+    <select id="MMBATCH.selectFtaPassDoList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT PCRM.CO_DOC_NO
+		      ,PCRM.COMPANY_CD
+		      ,PCRM.VENDOR_CD
+		      ,C.PASS_COMPANY_CD AS SENDER_PASS_ID
+		      ,C.PASS_DOCBOX_NO AS SENDER_DOCBOX_NO
+		      ,V.PASS_COMPANY_CD
+		      ,V.PASS_DOCBOX_NO
+		      ,SUM(CASE WHEN RCCD.CO_DOC_NO IS NOT NULL THEN 1 ELSE 0 END) AS DUP_CNT
+		  FROM PASS_CO_REQ_MST PCRM
+		       INNER JOIN PASS_CO_REQ_ITEM PCRI
+		          ON PCRI.COMPANY_CD = PCRM.COMPANY_CD
+		         AND PCRI.CO_DOC_NO = PCRM.CO_DOC_NO
+		         AND PCRI.VENDOR_CD = PCRM.VENDOR_CD
+		       INNER JOIN COMPANY C
+		        ON C.COMPANY_CD = PCRM.COMPANY_CD
+		       INNER JOIN VENDOR V
+		          ON V.COMPANY_CD = PCRM.COMPANY_CD
+		         AND V.VENDOR_CD = PCRM.VENDOR_CD
+		        LEFT OUTER JOIN RCV_CO_CERTIFICATE_MST RCCM
+		          ON RCCM.COMPANY_CD = PCRI.COMPANY_CD
+		         AND RCCM.VENDOR_CD = PCRI.VENDOR_CD
+		         AND PCRI.END_DATE BETWEEN RCCM.APPLY_DATE AND RCCM.END_DATE
+		        LEFT OUTER JOIN RCV_CO_CERTIFICATE_DTL RCCD
+		          ON RCCD.COMPANY_CD = RCCM.COMPANY_CD
+		         AND RCCD.VENDOR_CD = RCCM.VENDOR_CD
+		         AND RCCD.DIVISION_CD = RCCM.DIVISION_CD
+		         AND RCCD.CO_DOC_NO = RCCM.CO_DOC_NO
+		         AND RCCD.ITEM_CD = PCRI.ITEM_CD
+		         AND RCCD.FTA_CD = PCRI.FTA_CD
+		 WHERE PCRM.COMPANY_CD = #COMPANY_CD#
+		   AND PCRM.STATUS = '1'
+		 GROUP BY PCRM.CO_DOC_NO
+		         ,PCRM.COMPANY_CD
+		         ,PCRM.VENDOR_CD
+		         ,C.PASS_COMPANY_CD
+		         ,C.PASS_DOCBOX_NO
+		         ,V.PASS_COMPANY_CD
+		         ,V.PASS_DOCBOX_NO
+    </select>
+    
+    <update id="MMBATCH.updatePassReqStatus" parameterClass="java.util.Map">
+        UPDATE PASS_CO_REQ_MST
+           SET STATUS = #STATUS#
+              ,REJECT_REASON = #REJECT_REASON#
+              ,RESPONSE_DATE = GETDATE()
+              ,UPDATE_DATE = GETDATE()
+              ,UPDATE_BY = 'Auto'
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND VENDOR_CD = #VENDOR_CD#
+           AND CO_DOC_NO = #CO_DOC_NO#
+    </update>
+    <!-- com.yni.fta.common.postgresql.PostgresqlDao 클래스에서 직접 구현
+    <parameterMap id="interfaceProcedureMap" class="java.util.Map">
+        <parameter property="COMPANY_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="FROM_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="TO_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="IF_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="O_RETURN" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_RETURNMSG" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_LINES" jdbcType="INTEGER" javaType="java.lang.String" mode="OUT"/>
+    </parameterMap>
+
+    <procedure id="MMBATCH.executeProcedureProcess" parameterMap="interfaceProcedureMap">
+        { CALL $FUNCTION_NAME$(?, ?, ?, ?, ?, ?, ?) }
+    </procedure>
+    
+    <parameterMap id="interfaceRCFProcedureMap" class="java.util.Map">
+        <parameter property="COMPANY_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="YYYYMM" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="SALES_MGMT_NO" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="ERROR_MESSAGE" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+    </parameterMap>
+
+    <procedure id="MMBATCH.executeFCRProcedureProcess" parameterMap="interfaceRCFProcedureMap">
+        { CALL $FUNCTION_NAME$(?, ?, ?, ?) }
+    </procedure>
+    
+    <parameterMap id="interfaceInvoiceRCFProcedureMap" class="java.util.Map">
+        <parameter property="COMPANY_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="FROM_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="TO_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="SALES_MGMT_NO" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="ERROR_MESSAGE" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+    </parameterMap>
+
+    <procedure id="MMBATCH.executeInvoiceFCRProcedureProcess" parameterMap="interfaceInvoiceRCFProcedureMap">
+        { CALL $FUNCTION_NAME$(?, ?, ?, ?, ?) }
+    </procedure>
+    
+    <parameterMap id="interfaceErpSenderMap" class="java.util.Map">
+        <parameter property="COMPANY_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="FROM_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="TO_DATE" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="INTERFACE_HISTORY_ID" jdbcType="INTEGER" javaType="java.lang.String" mode="IN"/>
+        <parameter property="O_RETURN" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_RETURNMSG" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_LINES" jdbcType="INTEGER" javaType="java.lang.String" mode="OUT"/>
+    </parameterMap>
+    
+    <procedure id="MMBATCH.executeErpSenderProcess" parameterMap="interfaceErpSenderMap">
+        { CALL $FUNCTION_NAME$(?, ?, ?, ?, ?, ?, ?) }
+    </procedure>
+    -->
+</sqlMap>

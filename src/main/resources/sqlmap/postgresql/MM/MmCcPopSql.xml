@@ -1,0 +1,3469 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="MmCcPopSql">
+    
+    <sql id="MMCCPOP.userEntrBcncJoin">
+		<isEqual property="SESSION_MANAGER_YN" compareValue="C">
+		JOIN   (SELECT BCNC_CD
+		        FROM   USER_ENTR_BCNC UEB
+		        WHERE  UEB.COMPANY_CD = #COMPANY_CD#
+		        AND    UEB.USER_ID = #USER_ID#) UEB
+		ON     CB.BCNC_CD = UEB.BCNC_CD
+		</isEqual>
+	</sql>
+    
+    <select id="MMCCPOP.selectComboSttOdr" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+	    SELECT CPU.STT_ODR AS CODE
+		      ,CPU.STT_ODR||'차' AS NAME
+		  FROM CC_PL_UPLO CPU
+		 WHERE CPU.COMPANY_CD = #COMPANY_CD#
+		   AND CPU.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+		   AND CPU.STT_ODR IS NOT NULL
+           AND CPU.STT_ODR != ''
+		 GROUP BY CPU.STT_ODR
+		 ORDER BY CPU.STT_ODR
+    </select>
+    
+    <select id="MMCCPOP.selectMaxInvUpSetupNo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CIUS.COMPANY_CD
+              ,CIUS.BCNC_CD
+              ,CB.BCNC_MTLTY
+              ,CIUS.FORM_SETUP_SN
+              ,CIUS.IMP_EXP_SE_CD
+              ,CIUS.DATA_SE
+              ,CIUS.FORM_SETUP_NM
+              ,CIUS.SHEET_NO
+              ,CIUS.BEGIN_ROW
+          FROM CC_INVC_UP_SETUP CIUS
+               LEFT OUTER JOIN CC_BCNC CB
+                 ON CB.COMPANY_CD = CIUS.COMPANY_CD
+                AND CB.BCNC_CD = CIUS.BCNC_CD
+         WHERE CIUS.COMPANY_CD     = #COMPANY_CD#
+           AND CIUS.BCNC_CD        = #BCNC_CD#
+           AND CIUS.IMP_EXP_SE_CD  = #IMP_EXP_SE_CD#
+           AND CIUS.DATA_SE        = #DATA_SE#
+           AND CIUS.FORM_SETUP_SN = (SELECT MAX(C.FORM_SETUP_SN)
+                                       FROM CC_INVC_UP_SETUP C
+                                      WHERE C.COMPANY_CD = CIUS.COMPANY_CD
+							            AND C.BCNC_CD = CIUS.BCNC_CD
+							            AND C.IMP_EXP_SE_CD = CIUS.IMP_EXP_SE_CD
+							            AND C.DATA_SE = CIUS.DATA_SE 
+							          GROUP BY C.COMPANY_CD
+								              ,C.BCNC_CD
+								              ,C.IMP_EXP_SE_CD
+								              ,C.DATA_SE)
+    </select>
+    
+    <select id="MMCCPOP.selectInvUpSetupInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CIUS.COMPANY_CD
+              ,CIUS.BCNC_CD
+              ,CB.BCNC_MTLTY
+              ,CIUS.FORM_SETUP_SN
+              ,CIUS.IMP_EXP_SE_CD
+              ,CIUS.DATA_SE
+              ,CIUS.FORM_SETUP_NM
+              ,CIUS.BEGIN_ROW
+              ,CIUS.SHEET_NO
+              ,TO_CHAR(CIUS.REGIST_DE, 'YYYYMMDD') AS REGIST_DE
+              ,CIUS.REGIST_ID
+              ,TO_CHAR(CIUS.UPDATE_DE, 'YYYYMMDD') AS UPDATE_DE
+              ,CIUS.UPDATE_ID
+          FROM CC_INVC_UP_SETUP CIUS
+               LEFT OUTER JOIN CC_BCNC CB
+                 ON CB.COMPANY_CD = CIUS.COMPANY_CD
+                AND CB.BCNC_CD = CIUS.BCNC_CD
+         WHERE CIUS.COMPANY_CD     = #COMPANY_CD#
+         <isNotEmpty property="BCNC_CD">
+           AND CIUS.BCNC_CD        = #BCNC_CD#
+         </isNotEmpty>
+         <isEmpty property="BCNC_CD">
+           AND (CIUS.BCNC_CD IS NOT NULL AND CIUS.BCNC_CD != '')
+         </isEmpty>
+         <isNotEmpty property="BCNC_NM">
+           AND UPPER(CB.BCNC_MTLTY) LIKE UPPER('%'||#BCNC_NM#||'%')
+         </isNotEmpty>
+         <isNotEmpty property="FORM_SETUP_NM">
+           AND UPPER(CIUS.FORM_SETUP_NM) LIKE UPPER('%'||#FORM_SETUP_NM#||'%')
+         </isNotEmpty>
+           AND CIUS.IMP_EXP_SE_CD  = #IMP_EXP_SE_CD#
+           AND CIUS.DATA_SE        = #DATA_SE#
+         <isNotEmpty property="FORM_SETUP_SN">
+           AND CIUS.FORM_SETUP_SN  = fn_pg_get_cast_num(#FORM_SETUP_SN#)
+         </isNotEmpty>
+         ORDER BY CIUS.BCNC_CD, CIUS.FORM_SETUP_NM
+    </select>
+    
+    <insert id="MMCCPOP.insertInvUpSetupInfo" parameterClass="java.util.Map">
+        <selectKey resultClass="java.lang.String" keyProperty="FORM_SETUP_SN">
+            SELECT (CASE WHEN COUNT(*) = 0 THEN 1 ELSE MAX(FORM_SETUP_SN) + 1 END)
+			  FROM CC_INVC_UP_SETUP
+			 WHERE COMPANY_CD     = #COMPANY_CD#
+			   AND BCNC_CD        = #BCNC_CD#
+			   AND IMP_EXP_SE_CD  = #IMP_EXP_SE_CD#
+			   AND DATA_SE        = #DATA_SE#
+        </selectKey>
+        
+        INSERT INTO CC_INVC_UP_SETUP(
+             COMPANY_CD
+            ,BCNC_CD
+            ,FORM_SETUP_SN
+            ,IMP_EXP_SE_CD
+            ,DATA_SE
+            ,FORM_SETUP_NM
+            ,BEGIN_ROW
+            ,SHEET_NO
+            ,REGIST_DE
+            ,REGIST_ID
+            ,UPDATE_DE
+            ,UPDATE_ID)
+        VALUES(
+             #COMPANY_CD#
+            ,#BCNC_CD#
+            ,fn_pg_get_cast_num(#FORM_SETUP_SN#)
+            ,#IMP_EXP_SE_CD#
+            ,#DATA_SE#
+            ,#FORM_SETUP_NM#
+            ,#BEGIN_ROW#
+            ,#SHEET_NO#
+            ,NOW()::TIMESTAMP
+            ,#USER_ID#
+            ,NOW()::TIMESTAMP
+            ,#USER_ID#)
+    </insert>
+    
+    <update id="MMCCPOP.updateInvUpSetupInfo" parameterClass="java.util.Map">
+        UPDATE CC_INVC_UP_SETUP
+           SET FORM_SETUP_NM  = #FORM_SETUP_NM#
+              ,BEGIN_ROW      = #BEGIN_ROW#
+              ,SHEET_NO       = #SHEET_NO#
+              ,UPDATE_DE      = NOW()::TIMESTAMP
+              ,UPDATE_ID      = #USER_ID#
+         WHERE COMPANY_CD     = #COMPANY_CD#
+           AND BCNC_CD        = #BCNC_CD#
+           AND FORM_SETUP_SN  = fn_pg_get_cast_num(#FORM_SETUP_SN#)
+           AND IMP_EXP_SE_CD  = #IMP_EXP_SE_CD#
+           AND DATA_SE        = #DATA_SE#
+    </update>
+    
+    <delete id="MMCCPOP.deleteInvUpSetupInfo" parameterClass="java.util.Map">  
+        DELETE FROM CC_INVC_UP_SETUP
+         WHERE COMPANY_CD     = #COMPANY_CD#
+           AND BCNC_CD        = #BCNC_CD#
+           AND FORM_SETUP_SN  = fn_pg_get_cast_num(#FORM_SETUP_SN#)
+           AND IMP_EXP_SE_CD  = #IMP_EXP_SE_CD#
+           AND DATA_SE        = #DATA_SE#
+    </delete>
+    
+    <select id="MMCCPOP.selectBaseInvUpList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CD.COMPANY_CD
+		      ,CD.CODE AS CELL_ID
+		      ,CD.CODE_NAME AS CELL_NM
+		      ,NULL AS CELL_LC
+		      ,CD.TXT_VALUE1 AS CELL_SETUP_1
+		      ,FN_GET_COMMON_CD(CD.COMPANY_CD, 'CELL_DATA_TYPE', CD.TXT_VALUE1, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS CELL_SETUP_1_NM
+		      ,(CASE COALESCE(CD.TXT_VALUE2, 'N') WHEN '' THEN 'N' ELSE COALESCE(CD.TXT_VALUE2, 'N') END) AS CELL_SETUP_2
+		      ,FN_GET_COMMON_CD(CD.COMPANY_CD, 'YN', (CASE COALESCE(CD.TXT_VALUE2, 'N') WHEN '' THEN 'N' ELSE COALESCE(CD.TXT_VALUE2, 'N') END), 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS CELL_SETUP_2_NM
+		      ,CD.TXT_VALUE3 AS CELL_SETUP_3
+		      ,CD.TXT_VALUE4 AS CELL_SETUP_4
+		      ,CD.TXT_VALUE5 AS CELL_SETUP_5
+		      ,CD.SORT_NO
+		  FROM CODE_DTL CD
+		 WHERE CD.COMPANY_CD = #COMPANY_CD#
+		   AND CD.CATEGORY_CD = #CATEGORY_CD#
+		 ORDER BY CD.SORT_NO
+    </select>
+    
+    <select id="MMCCPOP.selectInvUpMasterInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CD.COMPANY_CD AS COMPANY_CD
+              <isNotEmpty property="ORG_BCNC_CD">,#ORG_BCNC_CD# AS BCNC_CD</isNotEmpty>
+              <isEmpty property="ORG_BCNC_CD">,COALESCE(CIUM.BCNC_CD, #BCNC_CD#) AS BCNC_CD</isEmpty>
+              ,COALESCE(CIUM.FORM_SETUP_SN, FN_PG_GET_CAST_NUM(#FORM_SETUP_SN#)) AS FORM_SETUP_SN
+              ,COALESCE(CIUM.IMP_EXP_SE_CD, #IMP_EXP_SE_CD#) AS IMP_EXP_SE_CD
+              ,COALESCE(CIUM.DATA_SE, #DATA_SE#) AS DATA_SE
+              ,COALESCE(CIUM.CELL_ID, CD.CODE) AS CELL_ID
+              ,COALESCE(CIUM.CELL_NM, CD.CODE_NAME) AS CELL_NM
+              ,REPLACE(CIUM.CELL_LC, '＂', '"') AS CELL_LC
+              ,CIUM.CELL_SETUP_1
+              ,FN_GET_COMMON_CD(CD.COMPANY_CD, 'CELL_DATA_TYPE', CIUM.CELL_SETUP_1, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS CELL_SETUP_1_NM
+              ,(CASE COALESCE(CIUM.CELL_SETUP_2, CD.TXT_VALUE2) WHEN '' THEN 'N' WHEN NULL THEN 'N' ELSE COALESCE(CIUM.CELL_SETUP_2, CD.TXT_VALUE2) END) AS CELL_SETUP_2
+              ,FN_GET_COMMON_CD(CD.COMPANY_CD, 'YN', (CASE COALESCE(CIUM.CELL_SETUP_2, CD.TXT_VALUE2) WHEN '' THEN 'N' WHEN NULL THEN 'N' ELSE COALESCE(CIUM.CELL_SETUP_2, CD.TXT_VALUE2) END), 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS CELL_SETUP_2_NM
+              ,CIUM.CELL_SETUP_3
+              ,CIUM.CELL_SETUP_4
+              ,CIUM.CELL_SETUP_5
+              ,FN_GET_COMMON_CD(CD.COMPANY_CD, 'C_FLOAT_METH', CIUM.CELL_SETUP_5, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS CELL_SETUP_5_NM
+              ,CIUM.CELL_SETUP_6
+              ,CIUM.CELL_SETUP_7
+              ,CIUM.CELL_SETUP_8
+              ,CIUM.CELL_SETUP_9
+              ,CIUM.CELL_SETUP_10
+              ,CIUM.QY_SSUM_AT
+              ,CIUM.AMT_SSUM_AT
+              ,CIUM.NETWGHT_SSUM_AT
+              ,CIUM.TOT_WT_SSUM_AT
+              ,CIUM.PKNG_CO_SSUM_AT
+              ,CIUM.ADAMT_SSUM_AT
+              ,CIUM.DDC_AMT_SSUM_AT
+              ,CD.SORT_NO
+              ,TO_CHAR(CIUM.REGIST_DE, 'YYYYMMDD') AS REGIST_DE
+              ,CIUM.REGIST_ID
+              ,TO_CHAR(CIUM.UPDATE_DE, 'YYYYMMDD') AS UPDATE_DE
+              ,CIUM.UPDATE_ID
+          FROM CODE_DTL CD
+                LEFT OUTER JOIN CC_INVC_UP_MASTR CIUM
+                  ON CIUM.COMPANY_CD = CD.COMPANY_CD
+                 AND CIUM.CELL_ID = CD.CODE
+                 AND CIUM.BCNC_CD = #BCNC_CD#
+                 AND CIUM.FORM_SETUP_SN = FN_PG_GET_CAST_NUM(#FORM_SETUP_SN#)
+                 AND CIUM.IMP_EXP_SE_CD = #IMP_EXP_SE_CD#
+                 AND CIUM.DATA_SE = #DATA_SE#
+         WHERE CD.COMPANY_CD = #COMPANY_CD#
+           AND CD.CATEGORY_CD = #CATEGORY_CD#
+         ORDER BY CD.SORT_NO
+    </select>
+    
+    <update id="MMCCPOP.insertInvUpMasterInfo" parameterClass="java.util.Map">
+        INSERT INTO CC_INVC_UP_MASTR(
+             COMPANY_CD
+            ,BCNC_CD
+            ,FORM_SETUP_SN
+            ,IMP_EXP_SE_CD
+            ,DATA_SE
+            ,CELL_ID
+            ,CELL_NM
+            ,CELL_LC
+            ,CELL_SETUP_1
+            ,CELL_SETUP_2
+            ,CELL_SETUP_3
+            ,CELL_SETUP_4
+            ,CELL_SETUP_5
+            ,CELL_SETUP_6
+            ,CELL_SETUP_7
+            ,CELL_SETUP_8
+            ,CELL_SETUP_9
+            ,CELL_SETUP_10
+            ,QY_SSUM_AT
+            ,AMT_SSUM_AT
+            ,NETWGHT_SSUM_AT
+            ,TOT_WT_SSUM_AT
+            ,PKNG_CO_SSUM_AT
+            ,ADAMT_SSUM_AT
+            ,DDC_AMT_SSUM_AT
+            ,SORT_NO
+            ,REGIST_DE
+            ,REGIST_ID
+            ,UPDATE_DE
+            ,UPDATE_ID)
+        VALUES( 
+             #COMPANY_CD#
+            ,#BCNC_CD#
+            ,fn_pg_get_cast_num(#FORM_SETUP_SN#)
+            ,#IMP_EXP_SE_CD#
+            ,#DATA_SE#
+            ,#CELL_ID#
+            ,#CELL_NM#
+            ,#CELL_LC#
+            ,#CELL_SETUP_1#
+            ,#CELL_SETUP_2#
+            ,#CELL_SETUP_3#
+            ,#CELL_SETUP_4#
+            ,#CELL_SETUP_5#
+            ,#CELL_SETUP_6#
+            ,#CELL_SETUP_7#
+            ,#CELL_SETUP_8#
+            ,#CELL_SETUP_9#
+            ,#CELL_SETUP_10#
+            ,<isNull property="QY_SSUM_AT">'N'</isNull><isNotNull property="QY_SSUM_AT">#QY_SSUM_AT#</isNotNull>
+            ,<isNull property="AMT_SSUM_AT">'N'</isNull><isNotNull property="AMT_SSUM_AT">#AMT_SSUM_AT#</isNotNull>
+            ,<isNull property="NETWGHT_SSUM_AT">'N'</isNull><isNotNull property="NETWGHT_SSUM_AT">#NETWGHT_SSUM_AT#</isNotNull>
+            ,<isNull property="TOT_WT_SSUM_AT">'N'</isNull><isNotNull property="TOT_WT_SSUM_AT">#TOT_WT_SSUM_AT#</isNotNull>
+            ,<isNull property="PKNG_CO_SSUM_AT">'N'</isNull><isNotNull property="PKNG_CO_SSUM_AT">#PKNG_CO_SSUM_AT#</isNotNull>
+            ,<isNull property="ADAMT_SSUM_AT">'N'</isNull><isNotNull property="ADAMT_SSUM_AT">#ADAMT_SSUM_AT#</isNotNull>
+            ,<isNull property="DDC_AMT_SSUM_AT">'N'</isNull><isNotNull property="DDC_AMT_SSUM_AT">#DDC_AMT_SSUM_AT#</isNotNull>
+            ,fn_pg_get_cast_num(#SORT_NO#)
+            ,NOW()::TIMESTAMP
+            ,#USER_ID#
+            ,NOW()::TIMESTAMP
+            ,#USER_ID#)
+    </update>  
+    
+    <update id="MMCCPOP.updateInvUpMasterInfo" parameterClass="java.util.Map"> 
+        UPDATE CC_INVC_UP_MASTR
+           SET ,CELL_NM       = #CELL_NM#
+               ,CELL_LC       = #CELL_LC#
+               ,CELL_SETUP_1  = #CELL_SETUP_1#
+               ,CELL_SETUP_2  = #CELL_SETUP_2#
+               ,CELL_SETUP_3  = #CELL_SETUP_3#
+               ,CELL_SETUP_4  = #CELL_SETUP_4#
+               ,CELL_SETUP_5  = #CELL_SETUP_5#
+               ,CELL_SETUP_6  = #CELL_SETUP_6#
+               ,CELL_SETUP_7  = #CELL_SETUP_7#
+               ,CELL_SETUP_8  = #CELL_SETUP_8#
+               ,CELL_SETUP_9  = #CELL_SETUP_9#
+               ,CELL_SETUP_10 = #CELL_SETUP_10#
+               ,QY_SSUM_AT    = <isNull property="QY_SSUM_AT">'N'</isNull><isNotNull property="QY_SSUM_AT">#QY_SSUM_AT#</isNotNull>
+	           ,AMT_SSUM_AT   = <isNull property="AMT_SSUM_AT">'N'</isNull><isNotNull property="AMT_SSUM_AT">#AMT_SSUM_AT#</isNotNull>
+	           ,NETWGHT_SSUM_AT  = <isNull property="NETWGHT_SSUM_AT">'N'</isNull><isNotNull property="NETWGHT_SSUM_AT">#NETWGHT_SSUM_AT#</isNotNull>
+	           ,TOT_WT_SSUM_AT   = <isNull property="TOT_WT_SSUM_AT">'N'</isNull><isNotNull property="TOT_WT_SSUM_AT">#TOT_WT_SSUM_AT#</isNotNull>
+	           ,PKNG_CO_SSUM_AT  = <isNull property="PKNG_CO_SSUM_AT">'N'</isNull><isNotNull property="PKNG_CO_SSUM_AT">#PKNG_CO_SSUM_AT#</isNotNull>
+	           ,ADAMT_SSUM_AT    = <isNull property="ADAMT_SSUM_AT">'N'</isNull><isNotNull property="ADAMT_SSUM_AT">#ADAMT_SSUM_AT#</isNotNull>
+	           ,DDC_AMT_SSUM_AT  = <isNull property="DDC_AMT_SSUM_AT">'N'</isNull><isNotNull property="DDC_AMT_SSUM_AT">#DDC_AMT_SSUM_AT#</isNotNull>
+               ,SORT_NO       = fn_pg_get_cast_num(#SORT_NO#)
+               ,UPDATE_DE     = NOW()::TIMESTAMP
+               ,UPDATE_ID     = #USER_ID#
+         WHERE COMPANY_CD     = #COMPANY_CD#
+           AND BCNC_CD        = #BCNC_CD#
+           AND FORM_SETUP_SN  = fn_pg_get_cast_num(#FORM_SETUP_SN#)
+           AND IMP_EXP_SE_CD  = #IMP_EXP_SE_CD#
+           AND DATA_SE        = #DATA_SE#
+           AND CELL_ID        = #CELL_ID#
+    </update>
+    
+    <delete id="MMCCPOP.deleteInvUpMasterInfo" parameterClass="java.util.Map">
+        DELETE FROM CC_INVC_UP_MASTR
+         WHERE COMPANY_CD     = #COMPANY_CD#
+           AND BCNC_CD        = #BCNC_CD#
+           AND FORM_SETUP_SN  = fn_pg_get_cast_num(#FORM_SETUP_SN#)
+           AND IMP_EXP_SE_CD  = #IMP_EXP_SE_CD#
+           AND DATA_SE        = #DATA_SE#
+         <isNotEmpty property="CELL_ID">
+           AND CELL_ID        = #CELL_ID#
+         </isNotEmpty>
+    </delete>
+    
+    <select id="MMCCPOP.selectUploadHistList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+	    SELECT CPU.COMPANY_CD
+		      ,CPU.IMP_BCNC_SETUP_SN
+		      ,CPU.DOC_STLE_SE
+		      ,CPU.PL_UPLO_SN
+		      ,COALESCE(CPU.INVE_NO, CIU.INVE_NO) AS INVE_NO
+              ,(CASE WHEN COALESCE(CPU.CNR_NO, '') != '' THEN CPU.CNR_NO
+		             WHEN CIBS.IMP_BCNC_SETUP_SN IS NOT NULL THEN CIBS.CNR_NO
+		             WHEN CEBS.EXP_BCNC_SETUP_SN IS NOT NULL THEN CEBS.FILE_NO_01
+		        END) AS CNR_NO
+              ,COALESCE(CPU.INVE_DE, CIU.INVE_DE) AS INVE_DE
+		      ,CPU.HS_CD
+		      ,CPU.ITEM_CD
+		      ,CPU.STARD_01
+		      ,CPU.STARD_02
+		      ,CPU.STARD_03
+		      ,CPU.STARD_04
+		      ,CPU.STARD_05
+		      ,CPU.STARD_06
+		      ,CPU.STARD_07
+		      ,CPU.STARD_08
+		      ,CPU.FTA_CRTF_ISSU_AT
+		      ,CPU.IRDNT_01
+		      ,CPU.IRDNT_02
+		      ,CPU.IRDNT_03
+		      ,CPU.QY
+		      ,CPU.QY_UNIT
+		      ,CPU.UNTPC
+		      ,CPU.AMT
+		      ,CPU.AMT_UNIT
+		      ,CPU.PKNG_CO
+		      ,CPU.NETWGHT
+		      ,CPU.TOT_WT
+		      ,CPU.WT_UNIT
+		      ,CPU.ORPL
+		      ,CPU.BRAND_CD
+		      ,CPU.BRAND_NM
+		      ,CIU.TOT_QY
+		      ,CIU.TOT_AMT
+		      ,CIU.NETWGHT_SM
+		      ,CIU.TOT_WT_SM
+		      ,CPU.ORPL_ISSU_NO
+              ,CPU.ORPL_ISSU_DE
+              ,CPU.KOREA_CHINA_ROW_NO
+              ,CPU.USE_PRPOS
+              ,CPU.SP
+              ,CPU.ADAMT
+              ,CPU.DDC_AMT
+              ,CPU.RM
+			  ,CPU.INTE
+			  ,CPU.CNR_NO
+			  ,CPU.INNER_BIB
+			  ,CPU.CUST_PURC
+			  ,CPU.LINE_NO
+			  ,CPU.REF_ORR_NO
+			  ,CPU.PKNG_UNIT
+			  ,CPU.REU_PRDUCT_CD
+              ,(CASE WHEN CEDMC.EXP_BCNC_SETUP_SN IS NOT NULL THEN '1' ELSE CPU.STT_ODR END) AS STT_ODR
+              ,(CASE WHEN CIDMC.IMP_BCNC_SETUP_SN IS NOT NULL THEN CIDMC.LNE_NO
+                     WHEN CEDMC.EXP_BCNC_SETUP_SN IS NOT NULL THEN CEDMC.LNE_NO END) AS LNE_NO
+              ,CPU.DUEX
+              ,CPU.SCTAX
+              ,CPU.SETLE_MTH
+			  ,CPU.DEAL_SE
+			  ,CPU.RQI_NO
+			  ,CPU.ISSU_DE
+			  ,CPU.ITEM_IDNT_SL
+			  ,CPU.LNE_CL_SEN
+			  ,CPU.CC_NATION_AGM_CD
+			  ,CPU.STT_ITEM_CD
+			  ,CPU.COTDOO
+		      ,TO_CHAR(CPU.CREATE_DATE, 'YYYY-MM-DD') AS CREATE_DAY
+		      ,TO_CHAR(CPU.CREATE_DATE, 'HH24:MI:SS') AS CREATE_TIME
+		  FROM CC_PL_UPLO CPU
+		        LEFT OUTER JOIN CC_INVE_UPLO CIU 
+		          ON CPU.COMPANY_CD = CIU.COMPANY_CD
+		         AND CPU.IMP_BCNC_SETUP_SN = CIU.IMP_BCNC_SETUP_SN
+		         AND CPU.DOC_STLE_SE = CIU.DOC_STLE_SE
+		         AND CPU.INVE_NO = CIU.INVE_NO
+		        LEFT OUTER JOIN CC_IMP_BCNC_SETUP CIBS
+                  ON CIBS.COMPANY_CD = CPU.COMPANY_CD
+                 AND CIBS.IMP_BCNC_SETUP_SN = CPU.IMP_BCNC_SETUP_SN
+		        LEFT OUTER JOIN CC_IMP_DCLRT_MEL_CL CIDMC
+                  ON CIDMC.COMPANY_CD = CIBS.COMPANY_CD
+                 AND CIDMC.IMP_BCNC_SETUP_SN = CIBS.IMP_BCNC_SETUP_SN
+                 AND CIDMC.PL_UPLO_SN = CPU.PL_UPLO_SN
+                LEFT OUTER JOIN CC_EXP_BCNC_SETUP CEBS
+                  ON CEBS.COMPANY_CD = CPU.COMPANY_CD
+                 AND CEBS.EXP_BCNC_SETUP_SN = CPU.IMP_BCNC_SETUP_SN
+                LEFT OUTER JOIN CC_EXP_DCLRT_MEL_CL CEDMC
+                  ON CEDMC.COMPANY_CD = CEBS.COMPANY_CD
+                 AND CEDMC.EXP_BCNC_SETUP_SN = CEBS.EXP_BCNC_SETUP_SN
+                 AND CEDMC.PL_UPLO_SN = CPU.PL_UPLO_SN
+		WHERE CPU.COMPANY_CD = #COMPANY_CD#
+		  AND CPU.IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+		  AND CPU.DOC_STLE_SE = #DOC_STLE_SE#
+        <include refid="select-paging-end" />
+		ORDER BY PL_UPLO_SN, INVE_NO
+    </select>
+    
+    <update id="MMCCPOP.insertInvUploadHist" parameterClass="java.util.Map">
+        INSERT INTO CC_INVE_UPLO(
+			 COMPANY_CD
+			,IMP_BCNC_SETUP_SN
+			,DOC_STLE_SE
+			,INVE_NO
+			,INVE_DE
+			<isNotEmpty property="TOT_QY">,TOT_QY</isNotEmpty>
+			<isNotEmpty property="TOT_AMT">,TOT_AMT</isNotEmpty>
+			<isNotEmpty property="NETWGHT_SM">,NETWGHT_SM</isNotEmpty>
+			<isNotEmpty property="TOT_WT_SM">,TOT_WT_SM</isNotEmpty>
+			,RM
+			,CNR_NO
+			,INTE
+			,SETLE_MTH
+			,DEAL_SE
+			,CREATE_DATE
+			,CREATE_BY
+			,UPDATE_DATE
+			,UPDATE_BY)
+		VALUES(
+			 #COMPANY_CD#
+			,FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+			,#DOC_STLE_SE#
+			,#INVE_NO#
+			,#INVE_DE#
+			<isNotEmpty property="TOT_QY">,FN_PG_GET_CAST_NUM(#TOT_QY#)</isNotEmpty>
+			<isNotEmpty property="TOT_AMT">,FN_PG_GET_CAST_NUM(#TOT_AMT#)</isNotEmpty>
+			<isNotEmpty property="NETWGHT_SM">,FN_PG_GET_CAST_NUM(#NETWGHT_SM#)</isNotEmpty>
+			<isNotEmpty property="TOT_WT_SM">,FN_PG_GET_CAST_NUM(#TOT_WT_SM#)</isNotEmpty>
+			,#RM#
+			,#CNR_NO#
+			,#INTE#
+            ,#SETLE_MTH#
+            ,#DEAL_SE#
+			,NOW()::TIMESTAMP
+			,#USER_ID#
+			,NOW()::TIMESTAMP
+			,#USER_ID#)
+    </update>
+    
+    <update id="MMCCPOP.updateImportSetupFileNo" parameterClass="java.util.Map">
+      <isEqual property="DOC_STLE_SE" compareValue="GOVCBR929">
+        UPDATE CC_IMP_BCNC_SETUP CIBS
+           SET UPDATE_DATE = NOW()
+              <isNotEmpty property="CNR_NO">,CNR_NO = #CNR_NO#</isNotEmpty>
+              <isNotEmpty property="CNR_NO">,FILE_NO_01 = #CNR_NO#</isNotEmpty>
+              <isNotEmpty property="INTE">,INTE = #INTE#</isNotEmpty>
+              <isNotEmpty property="SETLE_MTH">,SETLE_MTH = #SETLE_MTH#</isNotEmpty>
+              <isNotEmpty property="DEAL_SE">,DEAL_SE = #DEAL_SE#</isNotEmpty>
+              <!-- 
+              ,TNPAKG = (CASE WHEN CIBS.TNPAKG IS NULL OR CIBS.TNPAKG = 0 THEN CPU.PKNG_CO ELSE CIBS.TNPAKG END)
+              ,TOT_WT = (CASE WHEN CIBS.TOT_WT IS NULL OR CIBS.TOT_WT = 0 THEN CPU.TOT_WT ELSE CIBS.TOT_WT END)
+              -->
+          FROM (SELECT CIBS.COMPANY_CD
+                      ,CIBS.IMP_BCNC_SETUP_SN
+                      ,SUM(CPU.PKNG_CO) AS PKNG_CO
+                      ,SUM(CPU.TOT_WT) AS TOT_WT
+                  FROM CC_IMP_BCNC_SETUP CIBS
+                       LEFT OUTER JOIN CC_PL_UPLO CPU
+                         ON CPU.COMPANY_CD = CIBS.COMPANY_CD
+                        AND CPU.IMP_BCNC_SETUP_SN = CIBS.IMP_BCNC_SETUP_SN
+                 WHERE CIBS.COMPANY_CD = #COMPANY_CD#
+                   AND CIBS.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+                 GROUP BY CIBS.COMPANY_CD
+                         ,CIBS.IMP_BCNC_SETUP_SN
+                ) CPU
+         WHERE CIBS.COMPANY_CD = CPU.COMPANY_CD
+           AND CIBS.IMP_BCNC_SETUP_SN = CPU.IMP_BCNC_SETUP_SN
+      </isEqual>
+      <isEqual property="DOC_STLE_SE" compareValue="GOVCBR830">
+        UPDATE CC_EXP_BCNC_SETUP CEBS
+           SET UPDATE_DATE = NOW()
+              <isNotEmpty property="CNR_NO">,FILE_NO_01 = #CNR_NO#</isNotEmpty>
+              <isNotEmpty property="INTE">,INTE = #INTE#</isNotEmpty>
+              <isNotEmpty property="SETLE_MTH">,SETLE_MTH = #SETLE_MTH#</isNotEmpty>
+              <isNotEmpty property="DEAL_SE">,DEAL_SE = #DEAL_SE#</isNotEmpty>
+              ,TNPAKG = (CASE WHEN CEBS.TNPAKG IS NULL OR CEBS.TNPAKG = 0 THEN CPU.PKNG_CO ELSE CEBS.TNPAKG END)
+              ,TOT_WT = (CASE WHEN CEBS.TOT_WT IS NULL OR CEBS.TOT_WT = 0 THEN CPU.TOT_WT ELSE CEBS.TOT_WT END)
+          FROM (SELECT CEBS.COMPANY_CD
+                      ,CEBS.EXP_BCNC_SETUP_SN
+                      ,SUM(CPU.PKNG_CO) AS PKNG_CO
+                      ,SUM(CPU.TOT_WT) AS TOT_WT
+                  FROM CC_EXP_BCNC_SETUP CEBS
+                       LEFT OUTER JOIN CC_PL_UPLO CPU
+                         ON CPU.COMPANY_CD = CEBS.COMPANY_CD
+                        AND CPU.IMP_BCNC_SETUP_SN = CEBS.EXP_BCNC_SETUP_SN
+                 WHERE CEBS.COMPANY_CD = #COMPANY_CD#
+                   AND CEBS.EXP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+                 GROUP BY CEBS.COMPANY_CD
+                         ,CEBS.EXP_BCNC_SETUP_SN
+                ) CPU
+         WHERE CEBS.COMPANY_CD = CPU.COMPANY_CD
+           AND CEBS.EXP_BCNC_SETUP_SN = CPU.EXP_BCNC_SETUP_SN
+      </isEqual>
+    </update>
+    
+    <update id="MMCCPOP.updateInvUploadHist" parameterClass="java.util.Map">
+        WITH UPSERT AS (
+            SELECT CIU.COMPANY_CD
+                  ,CIU.IMP_BCNC_SETUP_SN
+                  ,CIU.DOC_STLE_SE
+                  ,CIU.INVE_NO
+                  ,MAX(CIU.INVE_DE) AS INVE_DE
+                  ,SUM(COALESCE(CIU.QY, 0)) AS TOT_QY
+                  ,SUM(COALESCE(CIU.AMT, 0)) AS TOT_AMT
+                  ,SUM(COALESCE(CIU.NETWGHT, 0)) AS NETWGHT_SM
+                  ,SUM(COALESCE(CIU.TOT_WT, 0)) AS TOT_WT_SM
+                  ,'SYSTEM' AS CREATE_BY
+                  ,#USER_ID# AS UPDATE_BY
+              FROM CC_PL_UPLO CIU
+             WHERE CIU.COMPANY_CD = #COMPANY_CD#
+               AND CIU.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+               AND CIU.DOC_STLE_SE = #DOC_STLE_SE#
+             GROUP BY CIU.COMPANY_CD
+                     ,CIU.IMP_BCNC_SETUP_SN
+                     ,CIU.DOC_STLE_SE
+                     ,CIU.INVE_NO
+        ),
+        UPDATE_OPTOIN AS
+        ( 
+        UPDATE CC_INVE_UPLO CIU
+           SET INVE_DE = RR.INVE_DE
+              ,TOT_QY = RR.TOT_QY
+              ,TOT_AMT = RR.TOT_AMT
+              ,NETWGHT_SM = RR.NETWGHT_SM
+              ,TOT_WT_SM = RR.TOT_WT_SM
+              ,UPDATE_DATE = NOW()::TIMESTAMP
+              ,UPDATE_BY = RR.UPDATE_BY 
+          FROM UPSERT RR
+         WHERE CIU.COMPANY_CD = RR.COMPANY_CD
+           AND CIU.IMP_BCNC_SETUP_SN = RR.IMP_BCNC_SETUP_SN
+           AND CIU.DOC_STLE_SE = RR.DOC_STLE_SE
+           AND CIU.INVE_NO = RR.INVE_NO
+           and CIU.CREATE_BY = 'SYSTEM'
+        ) 
+        INSERT INTO CC_INVE_UPLO
+            (COMPANY_CD
+            ,IMP_BCNC_SETUP_SN
+            ,DOC_STLE_SE
+            ,INVE_NO
+            ,INVE_DE
+            ,TOT_QY
+            ,TOT_AMT
+            ,NETWGHT_SM
+            ,TOT_WT_SM
+            ,CREATE_DATE
+            ,CREATE_BY
+            ,UPDATE_DATE
+            ,UPDATE_BY)
+            SELECT RR.COMPANY_CD
+                  ,RR.IMP_BCNC_SETUP_SN
+                  ,RR.DOC_STLE_SE
+                  ,RR.INVE_NO
+                  ,RR.INVE_DE
+                  ,RR.TOT_QY
+                  ,RR.TOT_AMT
+                  ,RR.NETWGHT_SM
+                  ,RR.TOT_WT_SM
+                  ,NOW()::TIMESTAMP
+                  ,RR.CREATE_BY
+                  ,NOW()::TIMESTAMP
+                  ,RR.UPDATE_BY
+              FROM UPSERT RR
+             WHERE NOT EXISTS(SELECT 1
+                                FROM CC_INVE_UPLO CIU
+                               WHERE CIU.COMPANY_CD = RR.COMPANY_CD
+                                 AND CIU.IMP_BCNC_SETUP_SN = RR.IMP_BCNC_SETUP_SN
+                                 AND CIU.DOC_STLE_SE = RR.DOC_STLE_SE
+                                 AND CIU.INVE_NO = RR.INVE_NO)
+    </update>
+    
+    <delete id="MMCCPOP.deleteInvUploadHist" parameterClass="java.util.Map">
+        DELETE FROM CC_INVE_UPLO
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND DOC_STLE_SE = #DOC_STLE_SE#
+           AND INVE_NO = #INVE_NO#
+    </delete>
+    
+    <select id="MMCCPOP.selectPlHistMaxNo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT (CASE WHEN COUNT(1) = 0 THEN 0 ELSE MAX(PL_UPLO_SN) END) + 1 AS PL_UPLO_SN
+          FROM CC_PL_UPLO
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND DOC_STLE_SE = #DOC_STLE_SE#
+           AND INVE_NO = #INVE_NO#
+    </select>
+    
+    <update id="MMCCPOP.insertPlUploadHist" parameterClass="java.util.Map">
+	    WITH UPSERT AS (
+            SELECT #COMPANY_CD# AS COMPANY_CD
+                  ,fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#) AS IMP_BCNC_SETUP_SN
+                  ,#DOC_STLE_SE# AS DOC_STLE_SE
+                  ,#INVE_NO# AS INVE_NO
+                <isNotEqual property="TAB_NM" compareValue="2">
+                  ,NEXTVAL('cc_pl_uplo_s') AS PL_UPLO_SN
+                </isNotEqual>
+                <isEqual property="TAB_NM" compareValue="2">
+                  ,0 AS PL_UPLO_SN
+                </isEqual>
+                  ,REGEXP_REPLACE(#INVE_DE#, '[^0-9]+', '', 'g') AS INVE_DE
+                  ,#HS_CD# AS HS_CD
+                  ,#ITEM_CD# AS ITEM_CD
+                  ,UPPER(#STARD_01#) AS STARD_01
+                  ,UPPER(#STARD_02#) AS STARD_02
+                  ,UPPER(#STARD_03#) AS STARD_03
+                  ,UPPER(#STARD_04#) AS STARD_04
+	              ,UPPER(#STARD_05#) AS STARD_05
+	              ,UPPER(#STARD_06#) AS STARD_06
+	              ,UPPER(#STARD_07#) AS STARD_07
+	              ,UPPER(#STARD_08#) AS STARD_08
+	              ,#FTA_CRTF_ISSU_AT# AS FTA_CRTF_ISSU_AT
+                  ,#IRDNT_01# AS IRDNT_01
+                  ,#IRDNT_02# AS IRDNT_02
+                  ,#IRDNT_03# AS IRDNT_03
+                  ,fn_pg_get_cast_num(#QY#) AS QY
+                  ,#QY_UNIT# AS QY_UNIT
+                  ,fn_pg_get_cast_num(#UNTPC#) AS UNTPC
+                  ,fn_pg_get_cast_num(#AMT#) AS AMT
+                  ,#AMT_UNIT# AS AMT_UNIT
+                  ,fn_pg_get_cast_num(#PKNG_CO#) AS PKNG_CO 
+                  ,fn_pg_get_cast_num(#NETWGHT#) AS NETWGHT
+                  ,fn_pg_get_cast_num(#TOT_WT#) AS TOT_WT
+                  ,#WT_UNIT# AS WT_UNIT
+                  ,UPPER(#ORPL#) AS ORPL
+                  ,#BRAND_CD# AS BRAND_CD
+                  ,#BRAND_NM# AS BRAND_NM
+                  ,#RM# AS RM
+                  ,#ORPL_ISSU_NO# AS ORPL_ISSU_NO
+                  ,REGEXP_REPLACE(#ORPL_ISSU_DE#, '[^0-9]+', '', 'g') AS ORPL_ISSU_DE
+                  ,#KOREA_CHINA_ROW_NO# AS KOREA_CHINA_ROW_NO
+                  ,#USE_PRPOS# AS USE_PRPOS
+                  ,#SP# AS SP
+                  ,fn_pg_get_cast_num(#ADAMT#) AS ADAMT
+                  ,fn_pg_get_cast_num(#DDC_AMT#) AS DDC_AMT
+                  ,#INTE# AS INTE
+				  ,#CNR_NO# AS CNR_NO
+				  ,#INNER_BIB# AS INNER_BIB
+				  ,#CUST_PURC# AS CUST_PURC
+				  ,#LINE_NO# AS LINE_NO
+				  ,#REF_ORR_NO# AS REF_ORR_NO
+				  ,#PKNG_UNIT# AS PKNG_UNIT
+				  ,#REU_PRDUCT_CD# AS REU_PRDUCT_CD
+				  ,#DUEX# AS DUEX
+                  ,#SCTAX# AS SCTAX
+                  ,#SETLE_MTH# AS SETLE_MTH
+				  ,#DEAL_SE# AS DEAL_SE
+				  ,#RQI_NO# AS RQI_NO
+				  ,#ISSU_DE# AS ISSU_DE
+				  ,#ITEM_IDNT_SL# AS ITEM_IDNT_SL
+				  ,#LNE_CL_SEN# AS LNE_CL_SEN
+				  ,#CC_NATION_AGM_CD# AS CC_NATION_AGM_CD
+				  ,#STT_ITEM_CD# AS STT_ITEM_CD
+				  ,#COTDOO# AS COTDOO
+                  ,#USER_ID# AS CREATE_BY
+                  ,#USER_ID# AS UPDATE_BY
+                <isEqual property="MIGRATION_YN" compareValue="Y">
+                  ,#FTA_AFTFAT_AT# AS FTA_AFTFAT_AT
+                  ,#FTA_BEFF_AT# AS FTA_BEFF_AT
+                  ,#LAST_HS_CD# AS LAST_HS_CD
+                  ,#PL_NO# AS PL_NO
+                  ,#STT_ODR# AS STT_ODR
+                  ,#STT_TAXTY# AS STT_TAXTY
+                  ,fn_pg_get_cast_num(#VL#) AS VL
+                  ,fn_pg_get_cast_num(#PL_UPLO_SN#) AS ORGIL_PL_UPLO_SN
+                </isEqual>
+                <isNotEqual property="MIGRATION_YN" compareValue="Y">
+                  ,NULL AS FTA_AFTFAT_AT
+                  ,NULL AS FTA_BEFF_AT
+                  ,NULL AS LAST_HS_CD
+                  ,NULL AS PL_NO
+                  ,NULL AS STT_ODR
+                  ,NULL AS STT_TAXTY
+                  ,fn_pg_get_cast_num(NULL) AS VL
+                  ,fn_pg_get_cast_num(NULL) AS ORGIL_PL_UPLO_SN
+                </isNotEqual>
+        ),
+        UPDATE_OPTOIN AS
+        ( 
+        UPDATE CC_PL_UPLO CB
+           SET INVE_DE            = (CASE WHEN RR.INVE_DE IS NULL OR RR.INVE_DE = '' THEN CB.INVE_DE ELSE RR.INVE_DE END)
+              ,HS_CD              = (CASE WHEN RR.HS_CD IS NULL OR RR.HS_CD = '' THEN CB.HS_CD ELSE RR.HS_CD END)
+              ,STARD_01           = (CASE WHEN RR.STARD_01 IS NULL OR RR.STARD_01 = '' THEN CB.STARD_01 ELSE RR.STARD_01 END)
+              ,STARD_02           = (CASE WHEN RR.STARD_02 IS NULL OR RR.STARD_02 = '' THEN CB.STARD_02 ELSE RR.STARD_02 END)
+              ,STARD_03           = (CASE WHEN RR.STARD_03 IS NULL OR RR.STARD_03 = '' THEN CB.STARD_03 ELSE RR.STARD_03 END)
+              ,STARD_04           = (CASE WHEN RR.STARD_04 IS NULL OR RR.STARD_04 = '' THEN CB.STARD_04 ELSE RR.STARD_04 END)
+              ,STARD_05           = (CASE WHEN RR.STARD_05 IS NULL OR RR.STARD_05 = '' THEN CB.STARD_05 ELSE RR.STARD_05 END)
+              ,STARD_06           = (CASE WHEN RR.STARD_06 IS NULL OR RR.STARD_06 = '' THEN CB.STARD_06 ELSE RR.STARD_06 END)
+              ,STARD_07           = (CASE WHEN RR.STARD_07 IS NULL OR RR.STARD_07 = '' THEN CB.STARD_07 ELSE RR.STARD_07 END)
+              ,STARD_08           = (CASE WHEN RR.STARD_08 IS NULL OR RR.STARD_08 = '' THEN CB.STARD_08 ELSE RR.STARD_08 END)
+              ,FTA_CRTF_ISSU_AT   = (CASE WHEN RR.FTA_CRTF_ISSU_AT IS NULL OR RR.FTA_CRTF_ISSU_AT = '' THEN CB.FTA_CRTF_ISSU_AT ELSE RR.FTA_CRTF_ISSU_AT END)
+              ,IRDNT_01           = (CASE WHEN RR.IRDNT_01 IS NULL OR RR.IRDNT_01 = '' THEN CB.IRDNT_01 ELSE RR.IRDNT_01 END)
+              ,IRDNT_02           = (CASE WHEN RR.IRDNT_02 IS NULL OR RR.IRDNT_02 = '' THEN CB.IRDNT_02 ELSE RR.IRDNT_02 END)
+              ,IRDNT_03           = (CASE WHEN RR.IRDNT_03 IS NULL OR RR.IRDNT_03 = '' THEN CB.IRDNT_03 ELSE RR.IRDNT_03 END)
+              ,QY                 = (CASE WHEN RR.QY IS NULL THEN CB.QY ELSE RR.QY END)
+              ,QY_UNIT            = (CASE WHEN RR.QY_UNIT IS NULL OR RR.QY_UNIT = '' THEN CB.QY_UNIT ELSE RR.QY_UNIT END)
+              ,UNTPC              = (CASE WHEN RR.UNTPC IS NULL THEN CB.UNTPC ELSE RR.UNTPC END)
+              ,AMT                = (CASE WHEN RR.AMT IS NULL THEN CB.AMT ELSE RR.AMT END)
+              ,AMT_UNIT           = (CASE WHEN RR.AMT_UNIT IS NULL OR RR.AMT_UNIT = '' THEN CB.AMT_UNIT ELSE RR.AMT_UNIT END)
+              ,PKNG_CO            = (CASE WHEN RR.PKNG_CO IS NULL THEN CB.PKNG_CO ELSE RR.PKNG_CO END)
+              ,NETWGHT            = (CASE WHEN RR.NETWGHT IS NULL THEN CB.NETWGHT ELSE RR.NETWGHT END)
+              ,TOT_WT             = (CASE WHEN RR.TOT_WT IS NULL THEN CB.TOT_WT ELSE RR.TOT_WT END)
+              ,WT_UNIT            = (CASE WHEN RR.WT_UNIT IS NULL OR RR.WT_UNIT = '' THEN CB.WT_UNIT ELSE RR.WT_UNIT END)
+              ,ORPL               = (CASE WHEN RR.ORPL IS NULL OR RR.ORPL = '' THEN CB.ORPL ELSE RR.ORPL END)
+              ,BRAND_CD           = (CASE WHEN RR.BRAND_CD IS NULL OR RR.BRAND_CD = '' THEN CB.BRAND_CD ELSE RR.BRAND_CD END)
+              ,BRAND_NM           = (CASE WHEN RR.BRAND_NM IS NULL OR RR.BRAND_NM = '' THEN CB.BRAND_NM ELSE RR.BRAND_NM END)
+              ,RM                 = (CASE WHEN RR.RM IS NULL OR RR.RM = '' THEN CB.RM ELSE RR.RM END)
+              ,ORPL_ISSU_NO       = (CASE WHEN RR.ORPL_ISSU_NO IS NULL OR RR.ORPL_ISSU_NO = '' THEN CB.ORPL_ISSU_NO ELSE RR.ORPL_ISSU_NO END)
+              ,ORPL_ISSU_DE       = (CASE WHEN RR.ORPL_ISSU_DE IS NULL OR RR.ORPL_ISSU_DE = '' THEN CB.ORPL_ISSU_DE ELSE RR.ORPL_ISSU_DE END)
+              ,KOREA_CHINA_ROW_NO = (CASE WHEN RR.KOREA_CHINA_ROW_NO IS NULL OR RR.KOREA_CHINA_ROW_NO = '' THEN CB.KOREA_CHINA_ROW_NO ELSE RR.KOREA_CHINA_ROW_NO END)
+              ,USE_PRPOS          = (CASE WHEN RR.USE_PRPOS IS NULL OR RR.USE_PRPOS = '' THEN CB.USE_PRPOS ELSE RR.USE_PRPOS END)
+              ,SP                 = (CASE WHEN RR.SP IS NULL OR RR.SP = '' THEN CB.SP ELSE RR.SP END)
+              ,ADAMT              = (CASE WHEN RR.ADAMT IS NULL THEN CB.ADAMT ELSE RR.ADAMT END)
+              ,DDC_AMT            = (CASE WHEN RR.DDC_AMT IS NULL THEN CB.DDC_AMT ELSE RR.DDC_AMT END)
+              ,INTE               = (CASE WHEN RR.INTE IS NULL OR RR.INTE = '' THEN CB.INTE ELSE RR.INTE END)
+			  ,CNR_NO             = (CASE WHEN RR.CNR_NO IS NULL OR RR.CNR_NO = '' THEN CB.CNR_NO ELSE RR.CNR_NO END)
+			  ,INNER_BIB          = (CASE WHEN RR.INNER_BIB IS NULL OR RR.INNER_BIB = '' THEN CB.INNER_BIB ELSE RR.INNER_BIB END)
+			  ,CUST_PURC          = (CASE WHEN RR.CUST_PURC IS NULL OR RR.CUST_PURC = '' THEN CB.CUST_PURC ELSE RR.CUST_PURC END)
+			  ,LINE_NO            = (CASE WHEN RR.LINE_NO IS NULL OR RR.LINE_NO = '' THEN CB.LINE_NO ELSE RR.LINE_NO END)
+			  ,REF_ORR_NO         = (CASE WHEN RR.REF_ORR_NO IS NULL OR RR.REF_ORR_NO = '' THEN CB.REF_ORR_NO ELSE RR.REF_ORR_NO END)
+			  ,PKNG_UNIT          = (CASE WHEN RR.PKNG_UNIT IS NULL OR RR.PKNG_UNIT = '' THEN CB.PKNG_UNIT ELSE RR.PKNG_UNIT END)
+			  ,REU_PRDUCT_CD      = (CASE WHEN RR.REU_PRDUCT_CD IS NULL OR RR.REU_PRDUCT_CD = '' THEN CB.REU_PRDUCT_CD ELSE RR.REU_PRDUCT_CD END)
+			  ,DUEX               = (CASE WHEN RR.DUEX IS NULL OR RR.DUEX = '' THEN CB.DUEX ELSE RR.DUEX END)
+              ,SCTAX              = (CASE WHEN RR.SCTAX IS NULL OR RR.SCTAX = '' THEN CB.SCTAX ELSE RR.SCTAX END)              
+              ,SETLE_MTH          = (CASE WHEN RR.SETLE_MTH IS NULL OR RR.SETLE_MTH = '' THEN CB.SETLE_MTH ELSE RR.SETLE_MTH END)
+              ,DEAL_SE            = (CASE WHEN RR.DEAL_SE IS NULL OR RR.DEAL_SE = '' THEN CB.DEAL_SE ELSE RR.DEAL_SE END)
+              ,RQI_NO             = (CASE WHEN RR.RQI_NO IS NULL OR RR.RQI_NO = '' THEN CB.RQI_NO ELSE RR.RQI_NO END)
+              ,ISSU_DE            = (CASE WHEN RR.ISSU_DE IS NULL OR RR.ISSU_DE = '' THEN CB.ISSU_DE ELSE RR.ISSU_DE END)
+              ,ITEM_IDNT_SL       = (CASE WHEN RR.ITEM_IDNT_SL IS NULL OR RR.ITEM_IDNT_SL = '' THEN CB.ITEM_IDNT_SL ELSE RR.ITEM_IDNT_SL END)
+              ,LNE_CL_SEN         = (CASE WHEN RR.LNE_CL_SEN IS NULL OR RR.LNE_CL_SEN = '' THEN CB.LNE_CL_SEN ELSE RR.LNE_CL_SEN END)
+              ,CC_NATION_AGM_CD   = (CASE WHEN RR.CC_NATION_AGM_CD IS NULL OR RR.CC_NATION_AGM_CD = '' THEN CB.CC_NATION_AGM_CD ELSE RR.CC_NATION_AGM_CD END)
+              ,STT_ITEM_CD        = (CASE WHEN RR.STT_ITEM_CD IS NULL OR RR.STT_ITEM_CD = '' THEN CB.STT_ITEM_CD ELSE RR.STT_ITEM_CD END)
+              ,COTDOO             = (CASE WHEN RR.COTDOO IS NULL OR RR.COTDOO = '' THEN CB.COTDOO ELSE RR.COTDOO END)
+              ,UPDATE_DATE        = NOW()::TIMESTAMP
+              ,UPDATE_BY          = RR.UPDATE_BY
+          FROM UPSERT RR
+         WHERE #TAB_NM# = '2'
+           AND CB.COMPANY_CD = RR.COMPANY_CD
+           AND CB.IMP_BCNC_SETUP_SN = RR.IMP_BCNC_SETUP_SN
+           AND CB.DOC_STLE_SE = RR.DOC_STLE_SE
+           AND CB.INVE_NO = RR.INVE_NO
+           AND CB.ITEM_CD = RR.ITEM_CD
+           AND CB.QY = (CASE WHEN RR.QY IS NULL THEN CB.QY ELSE RR.QY END)
+           AND CB.UNTPC = (CASE WHEN RR.UNTPC IS NULL THEN CB.UNTPC ELSE RR.UNTPC END)
+        )
+        INSERT INTO CC_PL_UPLO
+            (COMPANY_CD
+            ,IMP_BCNC_SETUP_SN
+            ,DOC_STLE_SE
+            ,INVE_NO
+            ,PL_UPLO_SN
+            ,INVE_DE
+            ,HS_CD
+            ,ITEM_CD
+            ,STARD_01
+            ,STARD_02
+            ,STARD_03
+            ,STARD_04
+	        ,STARD_05
+	        ,STARD_06
+	        ,STARD_07
+	        ,STARD_08
+	        ,FTA_CRTF_ISSU_AT
+            ,IRDNT_01
+            ,IRDNT_02
+            ,IRDNT_03
+            ,QY
+            ,QY_UNIT
+            ,UNTPC
+            ,AMT
+            ,AMT_UNIT
+            ,PKNG_CO
+            ,NETWGHT
+            ,TOT_WT
+            ,WT_UNIT
+            ,ORPL
+            ,BRAND_CD
+            ,BRAND_NM
+            ,RM
+            ,ORPL_ISSU_NO
+            ,ORPL_ISSU_DE
+            ,KOREA_CHINA_ROW_NO
+            ,USE_PRPOS
+            ,SP
+            ,ADAMT
+            ,DDC_AMT
+            ,INTE
+			,CNR_NO
+			,INNER_BIB
+			,CUST_PURC
+			,LINE_NO
+			,REF_ORR_NO
+			,PKNG_UNIT
+			,REU_PRDUCT_CD
+			,DUEX
+			,SCTAX
+			,SETLE_MTH
+			,DEAL_SE
+			,RQI_NO
+			,ISSU_DE
+			,ITEM_IDNT_SL
+			,LNE_CL_SEN
+			,FTA_AFTFAT_AT
+		    ,FTA_BEFF_AT
+		    ,LAST_HS_CD
+		    ,PL_NO
+		    ,STT_ODR
+		    ,STT_TAXTY
+		    ,VL
+		    ,ORGIL_PL_UPLO_SN
+		    ,CC_NATION_AGM_CD
+		    ,STT_ITEM_CD
+		    ,COTDOO
+            ,CREATE_DATE
+            ,CREATE_BY
+            ,UPDATE_DATE
+            ,UPDATE_BY)
+            SELECT RR.COMPANY_CD
+                  ,RR.IMP_BCNC_SETUP_SN
+                  ,RR.DOC_STLE_SE
+                  ,RR.INVE_NO
+                  ,RR.PL_UPLO_SN
+                  ,RR.INVE_DE
+                  ,RR.HS_CD
+                  ,RR.ITEM_CD
+                  ,RR.STARD_01
+                  ,RR.STARD_02
+                  ,RR.STARD_03
+                  ,RR.STARD_04
+	              ,RR.STARD_05
+	              ,RR.STARD_06
+	              ,RR.STARD_07
+	              ,RR.STARD_08
+	              ,RR.FTA_CRTF_ISSU_AT
+                  ,RR.IRDNT_01
+                  ,RR.IRDNT_02
+                  ,RR.IRDNT_03
+                  ,RR.QY
+                  ,RR.QY_UNIT
+                  ,RR.UNTPC
+                  ,RR.AMT
+                  ,RR.AMT_UNIT
+                  ,RR.PKNG_CO
+                  ,RR.NETWGHT
+                  ,RR.TOT_WT
+                  ,RR.WT_UNIT
+                  ,RR.ORPL
+                  ,RR.BRAND_CD
+                  ,RR.BRAND_NM
+                  ,RR.RM
+                  ,RR.ORPL_ISSU_NO
+                  ,RR.ORPL_ISSU_DE
+                  ,RR.KOREA_CHINA_ROW_NO
+                  ,RR.USE_PRPOS
+                  ,RR.SP
+                  ,RR.ADAMT
+                  ,RR.DDC_AMT
+                  ,RR.INTE
+				  ,RR.CNR_NO
+				  ,RR.INNER_BIB
+				  ,RR.CUST_PURC
+				  ,RR.LINE_NO
+				  ,RR.REF_ORR_NO
+				  ,RR.PKNG_UNIT
+				  ,RR.REU_PRDUCT_CD
+				  ,RR.DUEX
+                  ,RR.SCTAX
+                  ,RR.SETLE_MTH
+	              ,RR.DEAL_SE
+	              ,RR.RQI_NO
+	              ,RR.ISSU_DE
+	              ,RR.ITEM_IDNT_SL
+	              ,RR.LNE_CL_SEN
+			      ,RR.FTA_AFTFAT_AT
+			      ,RR.FTA_BEFF_AT
+			      ,RR.LAST_HS_CD
+			      ,RR.PL_NO
+			      ,RR.STT_ODR
+			      ,RR.STT_TAXTY
+			      ,RR.VL
+			      ,RR.ORGIL_PL_UPLO_SN
+			      ,RR.CC_NATION_AGM_CD
+			      ,RR.STT_ITEM_CD
+			      ,RR.COTDOO
+                  ,NOW()::TIMESTAMP
+                  ,RR.CREATE_BY
+                  ,NOW()::TIMESTAMP
+                  ,RR.UPDATE_BY
+              FROM UPSERT RR
+             WHERE #TAB_NM# != '2'
+               AND NOT EXISTS(SELECT 1
+                                FROM CC_PL_UPLO CB
+                               WHERE CB.COMPANY_CD = RR.COMPANY_CD
+                                 AND CB.PL_UPLO_SN = RR.PL_UPLO_SN)
+    </update>
+    
+    <update id="MMCCPOP.updatePlUploadHist" parameterClass="java.util.Map">
+        UPDATE CC_PL_UPLO
+           SET INVE_NO = #INVE_NO#
+              ,INVE_DE = REGEXP_REPLACE(#INVE_DE#, '[^0-9]+', '', 'g')
+              ,HS_CD = #HS_CD#
+              ,ITEM_CD = #ITEM_CD#
+              ,STARD_01 = UPPER(#STARD_01#)
+              ,STARD_02 = UPPER(#STARD_02#)
+              ,STARD_03 = UPPER(#STARD_03#)
+              ,STARD_04 = UPPER(#STARD_04#)
+		      ,STARD_05 = UPPER(#STARD_05#)
+		      ,STARD_06 = UPPER(#STARD_06#)
+		      ,STARD_07 = UPPER(#STARD_07#)
+		      ,STARD_08 = UPPER(#STARD_08#)
+		      ,FTA_CRTF_ISSU_AT = #FTA_CRTF_ISSU_AT#
+              ,IRDNT_01 = #IRDNT_01#
+              ,IRDNT_02 = #IRDNT_02#
+              ,IRDNT_03 = #IRDNT_03#
+              <isNotNull property="QY">,QY = fn_pg_get_cast_num(#QY#)</isNotNull>
+              ,QY_UNIT = #QY_UNIT#
+              <isNotNull property="UNTPC">,UNTPC = fn_pg_get_cast_num(#UNTPC#)</isNotNull>
+              <isNotNull property="AMT">,AMT = fn_pg_get_cast_num(#AMT#)</isNotNull>
+              ,AMT_UNIT = #AMT_UNIT#
+              <isNotNull property="PKNG_CO">,PKNG_CO = fn_pg_get_cast_num(#PKNG_CO#)</isNotNull>
+              <isNotNull property="NETWGHT">,NETWGHT = fn_pg_get_cast_num(#NETWGHT#)</isNotNull>
+              <isNotNull property="TOT_WT">,TOT_WT = fn_pg_get_cast_num(#TOT_WT#)</isNotNull>
+              ,WT_UNIT = #WT_UNIT#
+              ,ORPL = UPPER(#ORPL#)
+              ,BRAND_CD = #BRAND_CD#
+              ,BRAND_NM = #BRAND_NM#
+              ,RM = #RM#
+              ,ORPL_ISSU_NO = #ORPL_ISSU_NO#
+              ,ORPL_ISSU_DE = REGEXP_REPLACE(#ORPL_ISSU_DE#, '[^0-9]+', '', 'g')
+              ,KOREA_CHINA_ROW_NO = #KOREA_CHINA_ROW_NO#
+              ,USE_PRPOS = #USE_PRPOS#
+              ,SP = #SP#
+              <isNotNull property="ADAMT">,ADAMT = fn_pg_get_cast_num(#ADAMT#)</isNotNull>
+              <isNotNull property="DDC_AMT">,DDC_AMT = fn_pg_get_cast_num(#DDC_AMT#)</isNotNull>
+              ,INTE = #INTE#
+			  ,CNR_NO = #CNR_NO#
+			  ,INNER_BIB = #INNER_BIB#
+			  ,CUST_PURC = #CUST_PURC#
+			  ,LINE_NO = #LINE_NO#
+			  ,REF_ORR_NO = #REF_ORR_NO#
+			  ,PKNG_UNIT = #PKNG_UNIT#
+			  ,REU_PRDUCT_CD = #REU_PRDUCT_CD#
+			  ,DUEX = #DUEX#
+              ,SCTAX = #SCTAX#
+              ,SETLE_MTH = #SETLE_MTH#
+              ,DEAL_SE = #DEAL_SE#
+              ,RQI_NO = #RQI_NO#
+              ,ISSU_DE = #ISSU_DE#
+              ,ITEM_IDNT_SL = #ITEM_IDNT_SL#
+              ,LNE_CL_SEN = #LNE_CL_SEN#
+              ,CC_NATION_AGM_CD = #CC_NATION_AGM_CD#
+              ,STT_ITEM_CD = #STT_ITEM_CD#
+              ,COTDOO = #COTDOO#
+              ,UPDATE_DATE = NOW()::TIMESTAMP
+              ,UPDATE_BY = #UPDATE_BY#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND PL_UPLO_SN = fn_pg_get_cast_num(#PL_UPLO_SN#)
+    </update>
+    
+    <delete id="MMCCPOP.deletePlUploadHist" parameterClass="java.util.Map">
+        DELETE FROM CC_PL_UPLO
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND DOC_STLE_SE = #DOC_STLE_SE#
+           AND INVE_NO = #INVE_NO#
+    </delete>
+    
+    <delete id="MMCCPOP.deleteBatchPlUploadHist" parameterClass="java.util.Map">
+        DELETE FROM CC_PL_UPLO
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND DOC_STLE_SE = #DOC_STLE_SE#
+           AND INVE_NO = #INVE_NO#
+           AND PL_UPLO_SN = fn_pg_get_cast_num(#PL_UPLO_SN#)
+    </delete>
+    
+    <delete id="MMCCPOP.deleteBatchInvUploadHist" parameterClass="java.util.Map">
+        DELETE FROM CC_INVE_UPLO
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND DOC_STLE_SE = #DOC_STLE_SE#
+           AND NOT EXISTS(SELECT 1
+                            FROM CC_PL_UPLO CPU
+                           WHERE CPU.COMPANY_CD = CC_INVE_UPLO.COMPANY_CD
+					         AND CPU.IMP_BCNC_SETUP_SN = CC_INVE_UPLO.IMP_BCNC_SETUP_SN
+					         AND CPU.DOC_STLE_SE = CC_INVE_UPLO.DOC_STLE_SE
+					         AND CPU.INVE_NO = CC_INVE_UPLO.INVE_NO)
+    </delete>
+    
+    <select id="MMCCPOP.selectStandardEntrUploList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CSEU.COMPANY_CD
+		      ,CSEU.IMP_BCNC_SETUP_SN
+		      ,CSEU.ISSU_NO
+		      ,CSEU.SN
+		      ,CSEU.ISSU_DE
+		      ,CSEU.PRDLST_IDNT_SL
+		      ,CSEU.HS_SL
+		      ,CSEU.ITEM_CD
+		      ,CSEU.MTRIL_CD
+		      ,CSEU.STARD_01
+		      ,CSEU.STARD_02
+		      ,CSEU.IRDNT_01
+		      ,CSEU.QY
+		      ,CSEU.QY_UNIT
+		      ,CSEU.INP_UNTPC
+		      ,CSEU.AMT
+		      ,CSEU.AMT_UNIT
+		      ,CSEU.MNFACR_NO
+		      ,CSEU.MNFACR_DE
+		      ,CSEU.OUT_MNFACR_ENPS
+		      ,CSEU.OUT_MNFACR_NATION_CD
+		      ,CSEU.OUT_MNFACR_ADRES
+		      ,CSEU.IN_MNFACR_ENPS
+		      ,CSEU.IN_MNFACR_NATION_CD
+		      ,CSEU.IN_MNFACR_ADRES
+		      ,CSEU.BSE_01
+		      ,CSEU.BSE_02
+		      ,CSEU.BSE_03
+		      ,CSEU.BSE_04
+		      ,CSEU.DUP_CO
+		      ,CSEU.PL_UPLO_SN
+		      ,(CASE WHEN CSEU.PL_UPLO_SN IS NOT NULL THEN 'Yes' ELSE 'No' END) AS UPLO_MATCH_YN
+		      ,TO_CHAR(CSEU.CREATE_DATE, 'YYYY-MM-DD') AS CREATE_DAY
+		      ,TO_CHAR(CSEU.CREATE_DATE, 'HH24:MI:SS') AS CREATE_TIME
+		      ,CSEU.CREATE_BY
+		      ,MT.MESSAGE AS REG_STA
+		  FROM CC_STD_ENTR_UPLO CSEU
+		       LEFT OUTER JOIN MESSAGE_TABLE MT
+		         ON MESSAGE_CODE = 'REGSR'
+		        AND NATION_CODE = #SESSION_DEFAULT_LANGUAGE#
+		 WHERE CSEU.COMPANY_CD = #COMPANY_CD#
+		   AND CSEU.IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+		 ORDER BY CSEU.ISSU_NO, CSEU.ITEM_CD, CSEU.SN
+    </select>
+    
+    <update id="MMCCPOP.updateStandardEntrUplo" parameterClass="java.util.Map">
+        UPDATE CC_STD_ENTR_UPLO
+           SET <isNotNull property="ISSU_DE">ISSU_DE = #ISSU_DE#</isNotNull>
+              <isNotNull property="PRDLST_IDNT_SL">,PRDLST_IDNT_SL = #PRDLST_IDNT_SL#</isNotNull>
+              <isNotNull property="HS_SL">,HS_SL = #HS_SL#</isNotNull>
+              <isNotNull property="ITEM_CD">,ITEM_CD = #ITEM_CD#</isNotNull>
+              <isNotNull property="MTRIL_CD">,MTRIL_CD = #MTRIL_CD#</isNotNull>
+              <isNotNull property="STARD_01">,STARD_01 = #STARD_01#</isNotNull>
+              <isNotNull property="STARD_02">,STARD_02 = #STARD_02#</isNotNull>
+              <isNotNull property="QY">,QY = fn_pg_get_cast_num(#QY#)</isNotNull>
+              <isNotNull property="QY_UNIT">,QY_UNIT = #QY_UNIT#</isNotNull>
+              <isNotNull property="INP_UNTPC">,INP_UNTPC = fn_pg_get_cast_num(#INP_UNTPC#)</isNotNull>
+              <isNotNull property="AMT">,AMT = fn_pg_get_cast_num(#AMT#)</isNotNull>
+              <isNotNull property="AMT_UNIT">,AMT_UNIT = #AMT_UNIT#</isNotNull>
+              <isNotNull property="MNFACR_NO">,MNFACR_NO = #MNFACR_NO#</isNotNull>
+              <isNotNull property="MNFACR_DE">,MNFACR_DE = #MNFACR_DE#</isNotNull>
+              <isNotNull property="OUT_MNFACR_ENPS">,OUT_MNFACR_ENPS = #OUT_MNFACR_ENPS#</isNotNull>
+              <isNotNull property="OUT_MNFACR_NATION_CD">,OUT_MNFACR_NATION_CD = #OUT_MNFACR_NATION_CD#</isNotNull>
+              <isNotNull property="OUT_MNFACR_ADRES">,OUT_MNFACR_ADRES = #OUT_MNFACR_ADRES#</isNotNull>
+              <isNotNull property="IN_MNFACR_ENPS">,IN_MNFACR_ENPS = #IN_MNFACR_ENPS#</isNotNull>
+              <isNotNull property="IN_MNFACR_NATION_CD">,IN_MNFACR_NATION_CD = #IN_MNFACR_NATION_CD#</isNotNull>
+              <isNotNull property="IN_MNFACR_ADRES">,IN_MNFACR_ADRES = #IN_MNFACR_ADRES#</isNotNull>
+              <isNotNull property="BSE_01">,BSE_01 = #BSE_01#</isNotNull>
+              <isNotNull property="BSE_02">,BSE_02 = #BSE_02#</isNotNull>
+              <isNotNull property="BSE_03">,BSE_03 = #BSE_03#</isNotNull>
+              <isNotNull property="BSE_04">,BSE_04 = #BSE_04#</isNotNull>
+              ,CREATE_DATE = NOW()::TIMESTAMP
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND ISSU_NO = #ISSU_NO#
+           AND SN = fn_pg_get_cast_num(#SN#)
+    </update>
+    
+    <update id="MMCCPOP.insertNewStandardEntrUplo" parameterClass="java.util.Map">
+        INSERT INTO CC_STD_ENTR_UPLO(
+             COMPANY_CD
+            ,IMP_BCNC_SETUP_SN
+            ,ISSU_NO
+            ,SN
+            ,ISSU_DE
+            ,PRDLST_IDNT_SL
+            ,HS_SL
+            ,ITEM_CD
+            ,MTRIL_CD
+            ,STARD_01
+            ,STARD_02
+            ,IRDNT_01
+            ,QY
+            ,QY_UNIT
+            ,INP_UNTPC
+            ,AMT
+            ,AMT_UNIT
+            ,MNFACR_NO
+            ,MNFACR_DE
+            ,OUT_MNFACR_ENPS
+            ,OUT_MNFACR_NATION_CD
+            ,OUT_MNFACR_ADRES
+            ,IN_MNFACR_ENPS
+            ,IN_MNFACR_NATION_CD
+            ,IN_MNFACR_ADRES
+            ,BSE_01
+            ,BSE_02
+            ,BSE_03
+            ,BSE_04
+            ,CREATE_DATE
+            ,CREATE_BY)
+        VALUES(
+             #COMPANY_CD#
+            ,fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+            ,#ISSU_NO#
+            ,(SELECT MAX(SN)+1 
+                FROM CC_STD_ENTR_UPLO 
+               WHERE COMPANY_CD = #COMPANY_CD# 
+                 AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+                 AND ISSU_NO = #ISSU_NO#
+              )
+            ,#ISSU_DE#
+            ,#PRDLST_IDNT_SL#
+            ,#HS_SL#
+            ,#ITEM_CD#
+            ,#MTRIL_CD#
+            ,#STARD_01#
+            ,#STARD_02#
+            ,NULL<!-- #IRDNT_01# 김상욱관세사 요청으로 삭제처리함(2022.04.12)-->
+            ,fn_pg_get_cast_num(#QY#)
+            ,#QY_UNIT#
+            ,fn_pg_get_cast_num(#INP_UNTPC#)
+            ,fn_pg_get_cast_num(#AMT#)
+            ,#AMT_UNIT#
+            ,#MNFACR_NO#
+            ,#MNFACR_DE#
+            ,#OUT_MNFACR_ENPS#
+            ,#OUT_MNFACR_NATION_CD#
+            ,#OUT_MNFACR_ADRES#
+            ,#IN_MNFACR_ENPS#
+            ,#IN_MNFACR_NATION_CD#
+            ,#IN_MNFACR_ADRES#
+            ,#BSE_01#
+            ,#BSE_02#
+            ,#BSE_03#
+            ,#BSE_04#
+            ,NOW()::TIMESTAMP
+            ,#USER_ID#)
+    </update>
+    
+    <delete id="MMCCPOP.deleteStandardEntrUplo" parameterClass="java.util.Map">
+		DELETE FROM CC_STD_ENTR_UPLO
+		 WHERE COMPANY_CD = #COMPANY_CD#
+		   AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+		   AND ISSU_NO = #ISSU_NO#
+		 <isNotEmpty property="SN">
+		   AND SN = fn_pg_get_cast_num(#SN#)
+		 </isNotEmpty>
+    </delete>
+    
+    <update id="MMCCPOP.insertStandardEntrUplo" parameterClass="java.util.Map">
+		INSERT INTO CC_STD_ENTR_UPLO(
+		     COMPANY_CD
+		    ,IMP_BCNC_SETUP_SN
+		    ,ISSU_NO
+		    ,SN
+		    ,ISSU_DE
+		    ,PRDLST_IDNT_SL
+		    ,HS_SL
+		    ,ITEM_CD
+		    ,MTRIL_CD
+		    ,STARD_01
+		    ,STARD_02
+		    ,IRDNT_01
+		    ,QY
+		    ,QY_UNIT
+		    ,INP_UNTPC
+		    ,AMT
+		    ,AMT_UNIT
+		    ,MNFACR_NO
+		    ,MNFACR_DE
+		    ,OUT_MNFACR_ENPS
+		    ,OUT_MNFACR_NATION_CD
+		    ,OUT_MNFACR_ADRES
+		    ,IN_MNFACR_ENPS
+		    ,IN_MNFACR_NATION_CD
+		    ,IN_MNFACR_ADRES
+		    ,BSE_01
+		    ,BSE_02
+		    ,BSE_03
+		    ,BSE_04
+		    ,CREATE_DATE
+		    ,CREATE_BY)
+		VALUES(
+		     #COMPANY_CD#
+		    ,fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+		    ,#ISSU_NO#
+		    ,fn_pg_get_cast_num(#SN#)
+		    ,#ISSU_DE#
+		    ,#PRDLST_IDNT_SL#
+		    ,#HS_SL#
+		    ,#ITEM_CD#
+		    ,#MTRIL_CD#
+		    ,#STARD_01#
+		    ,fn_get_str_replace('S1', #STARD_02#, null, null)
+		    ,NULL<!-- #IRDNT_01# 김상욱관세사 요청으로 삭제처리함(2022.04.12)-->
+		    ,fn_pg_get_cast_num(#QY#)
+		    ,(CASE WHEN #STARD_02# LIKE '%SET' THEN 'SET' ELSE #QY_UNIT# END)
+		    ,fn_pg_get_cast_num(#INP_UNTPC#)
+		    ,fn_pg_get_cast_num(#AMT#)
+		    ,#AMT_UNIT#
+		    ,#MNFACR_NO#
+		    ,#MNFACR_DE#
+		    ,#OUT_MNFACR_ENPS#
+		    ,#OUT_MNFACR_NATION_CD#
+		    ,#OUT_MNFACR_ADRES#
+		    ,#IN_MNFACR_ENPS#
+		    ,#IN_MNFACR_NATION_CD#
+		    ,#IN_MNFACR_ADRES#
+		    ,#BSE_01#
+		    ,#BSE_02#
+		    ,#BSE_03#
+		    ,#BSE_04#
+		    ,NOW()::TIMESTAMP
+		    ,#USER_ID#)
+    </update>
+    
+    <update id="MMCCPOP.updateStandardEntrDupCnt" parameterClass="java.util.Map">
+        UPDATE CC_STD_ENTR_UPLO CSEU
+           SET DUP_CO = CS.RANK_CNT
+          FROM (
+                SELECT CSEU.COMPANY_CD
+                      ,CSEU.IMP_BCNC_SETUP_SN
+                      ,CSEU.ISSU_NO
+                      ,CSEU.SN
+                      ,RANK() OVER(PARTITION BY CSEU.COMPANY_CD, CSEU.IMP_BCNC_SETUP_SN, CSEU.MTRIL_CD 
+                                   ORDER BY CSEU.SN, CSEU.QY) AS RANK_CNT
+                  FROM CC_STD_ENTR_UPLO CSEU
+                 WHERE CSEU.COMPANY_CD = #COMPANY_CD#
+                   AND CSEU.IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+                 ORDER BY CSEU.COMPANY_CD, CSEU.IMP_BCNC_SETUP_SN, CSEU.MTRIL_CD
+                ) CS
+         WHERE CSEU.COMPANY_CD = CS.COMPANY_CD
+           AND CSEU.IMP_BCNC_SETUP_SN = CS.IMP_BCNC_SETUP_SN
+           AND CSEU.ISSU_NO = CS.ISSU_NO
+           AND CSEU.SN = CS.SN
+    </update>
+    
+    <select id="MMCCPOP.selectStandardEntrDupCnt" parameterClass="java.util.Map" resultClass="java.lang.String">
+        SELECT MAX(CSEU.DUP_CO) AS DUP_CO
+          FROM CC_STD_ENTR_UPLO CSEU
+         WHERE CSEU.COMPANY_CD = #COMPANY_CD#
+           AND CSEU.IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+    </select>
+    
+    <update id="MMCCPOP.updateInitStandardEntrUploadNo" parameterClass="java.util.Map">
+        UPDATE CC_STD_ENTR_UPLO
+           SET PL_UPLO_SN = NULL
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+           AND NOT EXISTS(SELECT 1
+                            FROM CC_IMP_DCLRT_MEL_CL CIDMC
+                           WHERE CIDMC.COMPANY_CD = CC_STD_ENTR_UPLO.COMPANY_CD
+                             AND CIDMC.IMP_BCNC_SETUP_SN = CC_STD_ENTR_UPLO.IMP_BCNC_SETUP_SN
+                             AND CIDMC.PL_UPLO_SN = CC_STD_ENTR_UPLO.PL_UPLO_SN
+                             AND CIDMC.LNE_NO IS NOT NULL
+                             AND CIDMC.LNE_NO != '')
+    </update>
+    
+    <update id="MMCCPOP.updateStandardEntrUploadNo" parameterClass="java.util.Map">
+        UPDATE CC_STD_ENTR_UPLO CSEU
+           SET PL_UPLO_SN = CS.PL_UPLO_SN
+          FROM (
+                SELECT CSEU.COMPANY_CD
+                      ,CSEU.IMP_BCNC_SETUP_SN
+                      ,CSEU.ISSU_NO
+                      ,CSEU.SN
+                      ,CSEU.ITEM_CD
+                      ,CSEU.QY
+                      ,CSEU.PRDLST_IDNT_SL
+                      ,MIN(CPU.PL_UPLO_SN) AS PL_UPLO_SN
+                  FROM CC_STD_ENTR_UPLO CSEU
+                       INNER JOIN CC_PL_UPLO CPU
+                          ON CPU.COMPANY_CD = CSEU.COMPANY_CD
+                         AND CPU.IMP_BCNC_SETUP_SN = CSEU.IMP_BCNC_SETUP_SN
+                         AND CPU.ITEM_CD = CSEU.ITEM_CD
+                       <isEqual property="STEP_NO" compareValue="2">
+                         <![CDATA[ AND CPU.QY <= CSEU.QY ]]>
+                       </isEqual>
+                       <isNotEqual property="STEP_NO" compareValue="2">
+                         AND CPU.QY = CSEU.QY
+                       </isNotEqual>
+                         AND NOT EXISTS(SELECT 1
+                                          FROM CC_STD_ENTR_UPLO CSEU2
+                                         WHERE CSEU2.COMPANY_CD = CPU.COMPANY_CD
+                                           AND CSEU2.IMP_BCNC_SETUP_SN = CPU.IMP_BCNC_SETUP_SN
+                                           AND CSEU2.PL_UPLO_SN = CPU.PL_UPLO_SN)
+                 WHERE CSEU.COMPANY_CD = #COMPANY_CD#
+                   AND CSEU.IMP_BCNC_SETUP_SN = fn_pg_get_cast_num(#IMP_BCNC_SETUP_SN#)
+                   AND CSEU.DUP_CO =  fn_pg_get_cast_num(#DUP_CO#)
+                   AND CSEU.PL_UPLO_SN IS NULL
+                 GROUP BY CSEU.COMPANY_CD
+                         ,CSEU.IMP_BCNC_SETUP_SN
+                         ,CSEU.ISSU_NO
+                         ,CSEU.SN
+                         ,CSEU.ITEM_CD
+                         ,CSEU.QY
+                         ,CSEU.PRDLST_IDNT_SL
+                ) CS
+         WHERE CSEU.COMPANY_CD = CS.COMPANY_CD
+           AND CSEU.IMP_BCNC_SETUP_SN = CS.IMP_BCNC_SETUP_SN
+           AND CSEU.ISSU_NO = CS.ISSU_NO
+           AND CSEU.SN = CS.SN
+    </update>
+    
+    <select id="MMCCPOP.selectCommonBrandList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT COMPANY_CD
+		      ,BRA_NO
+		      ,BRA_CD
+		      ,BRA_NM
+		      ,TO_CHAR(CREATE_DATE, 'YYYYMMDD') AS CREATE_DATE
+		      ,CREATE_BY
+		      ,TO_CHAR(UPDATE_DATE, 'YYYYMMDD') AS UPDATE_DATE
+		      ,UPDATE_BY
+		  FROM CC_BRA
+		 WHERE COMPANY_CD = #COMPANY_CD#
+		 <isNotEmpty property="schKeyWord">
+	       AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+	     </isNotEmpty>
+	     ORDER BY TO_CHAR(UPDATE_DATE, 'YYYYMMDDHH24MISS'), BRA_NO
+    </select>
+    
+    <delete id="MMCCPOP.deleteCommonBrandInfo" parameterClass="java.util.Map">
+        DELETE FROM CC_BRA
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND BRA_NO = #BRA_NO#
+    </delete>
+    
+    <update id="MMCCPOP.updateCommonBrandInfo" parameterClass="java.util.Map">
+        WITH UPSERT AS (
+            SELECT #COMPANY_CD# AS COMPANY_CD
+                  ,#BRA_NO# AS BRA_NO
+                  ,#BRA_CD# AS BRA_CD
+                  ,#BRA_NM# AS BRA_NM
+                  ,#USER_ID# AS USER_ID
+        ),
+        UPDATE_OPTOIN AS
+        ( 
+        UPDATE CC_BRA CB
+           SET BRA_CD = RR.BRA_CD
+              ,BRA_NM = RR.BRA_NM
+              ,UPDATE_DATE = NOW()::TIMESTAMP
+              ,UPDATE_BY = RR.USER_ID 
+          FROM UPSERT RR
+         WHERE CB.COMPANY_CD = RR.COMPANY_CD
+           AND CB.BRA_NO = RR.BRA_NO
+        ) 
+        INSERT INTO CC_BRA
+            (COMPANY_CD
+            ,BRA_NO
+            ,BRA_CD
+            ,BRA_NM
+            ,CREATE_DATE
+            ,CREATE_BY
+            ,UPDATE_DATE
+            ,UPDATE_BY)
+            SELECT RR.COMPANY_CD
+                  ,RR.BRA_NO
+                  ,RR.BRA_CD
+                  ,RR.BRA_NM
+                  ,NOW()::TIMESTAMP
+                  ,RR.USER_ID
+                  ,NOW()::TIMESTAMP
+                  ,RR.USER_ID
+              FROM UPSERT RR
+             WHERE NOT EXISTS(SELECT 1
+                                FROM CC_BRA CB
+                               WHERE CB.COMPANY_CD = RR.COMPANY_CD
+                                 AND CB.BRA_NO = RR.BRA_NO)
+    </update>
+    
+    <select id="MMB002.selectStardHscodeList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CSP.HS_CD
+              ,CSP.PRDNM_NO
+              ,MAX(UPPER(CSP.STD_PRDNM_KOR)) AS STD_PRDNM_KOR
+              ,MAX(UPPER(CSP.STD_PRDNM_ENG)) AS STD_PRDNM_ENG
+              ,CSP.YYYY
+          FROM CC_STD_PRDNM CSP
+         WHERE CSP.HS_CD LIKE #HS_CD#||'%'
+         <isNotEmpty property="YYYY">
+           AND CSP.YYYY = #YYYY#
+         </isNotEmpty>
+         <isNotEmpty property="STT_DE">
+           AND #STT_DE# BETWEEN CSP.BEGIN_DE AND CSP.END_DE
+         </isNotEmpty>
+         GROUP BY CSP.HS_CD, CSP.PRDNM_NO, CSP.YYYY
+         ORDER BY CSP.HS_CD, CSP.PRDNM_NO, CSP.YYYY
+    </select>
+    
+    <select id="MMB002.selectStardProductcodeList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CSP.STD_PRDNM_SN
+		      ,CSP.YYYY
+		      ,CSP.SNU
+		      ,CSP.PRDNM
+		      ,CSP.HS_CD
+		      ,CSP.BEGIN_DE
+		      ,CSP.END_DE
+		      ,CSP.PRPOS_SE
+		      ,CSP.PRDNM_NO
+		      ,CSP.STD_PRDNM_KOR
+		      ,UPPER(CSP.STD_PRDNM_ENG) AS STD_PRDNM_ENG
+		      ,CSP.STARD_NO
+		      ,CSP.STARD_ORDR
+		      ,CSP.ESSN_STARD_KOR
+		      ,CSP.ESSN_STARD_ENG
+		      ,CSP.STARD_VAL
+		      ,CSP.DETAIL_CL_CN
+		      ,CSP.RM
+		  FROM CC_STD_PRDNM CSP
+		 WHERE CSP.HS_CD = #HS_CD#
+		   AND CSP.PRDNM_NO = #PRDNM_NO#
+		   AND CSP.YYYY = #YYYY#
+		 <isNotEmpty property="STT_DE">
+		   AND #STT_DE# BETWEEN CSP.BEGIN_DE AND CSP.END_DE
+		 </isNotEmpty>
+		 ORDER BY STARD_NO, STARD_ORDR
+    </select>
+    
+    <select id="MMB002.selectOverseaIssueOrganList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+	      SELECT OVSEA_ORPL_ISU_INSTT_SN
+	            ,INSTT_CD
+	            ,NATION_CD
+	            ,NATION_KOR
+	            ,NATION_ENG
+	            ,FTA_AGM
+	            ,CRTF_SLFC_ISSU_AT
+	            ,PNA_AGM_BASS
+	            ,ISU_INSTT_NM
+	            ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+	            ,CREATE_BY
+	            ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+	            ,UPDATE_BY
+	        FROM CC_OVSEA_ORPL_ISU_INSTT
+	       WHERE 1 = 1
+            <isNotEmpty property="schKeyWord">
+             AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+            </isNotEmpty>
+        <include refid="select-paging-end" />
+    </select>
+    
+    <!-- 가격신고서 기본 설정값 조회 -->
+    <select id="MMB003.selectEmptyImpPrnoInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CID.COMPANY_CD
+            ,CID.IMP_DCLRT_SN
+            ,CID.PLFTP_CD
+            ,CID.PLFTP_MTLTY AS PLFTP_MTLTY
+            ,CID.PLFTP_IDNU AS PLFTP_IDNU
+            ,CID.PLFTP_IDNU_SE_SL AS PLFTP_IDNU_SE_SL
+            ,CID.IMPR_CD
+            ,(CASE WHEN CID.PLFTP_CD != CID.IMPR_CD THEN CID.IMPR_MTLTY_NM ELSE NULL END) AS PURSR_COMPANY_NM
+            ,CID.HOUSBL_NO AS INVC_NO
+            ,CID.STT_DE AS INVC_ISU_DE
+            ,CB.APLC_CBOA_APPN
+            ,SUBSTR(CID.STT_DE, 3, 2) AS YYYY
+            ,SUBSTR(CID.STT_DE, 3, 2) AS STT_YYYY
+          FROM CC_IMP_DCLRT CID
+               INNER JOIN CC_BCNC CB
+                  ON CB.COMPANY_CD = CID.COMPANY_CD
+                 AND CB.BCNC_CD = CID.PLFTP_CD
+         WHERE CID.COMPANY_CD = #COMPANY_CD#
+           AND CID.IMP_DCLRT_SN = FN_PG_GET_CAST_NUM(#IMP_DCLRT_SN#)
+    </select>
+    
+    <select id="MMB003.selectRegistImpPrnoInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CIP.COMPANY_CD
+		      ,CIP.IMP_PRNO_SN
+		      ,CIP.IMP_BCNC_SETUP_SN
+		      ,CIP.STT_ODR
+		      ,CIP.IMP_DCLRT_SN
+		      ,CIP.DOC_STLE_SE
+		      ,CIP.TRNS_SE
+		      ,CIP.RCE_DE
+		      ,CIP.TRNS_RELT
+		      ,CIP.REC_RELT
+		      ,CIP.YYYY
+		      ,SUBSTRING(CIP.STT_NO, 1, 5) AS APLC_CBOA_APPN
+		      ,SUBSTRING(CIP.STT_NO, 6, 2) AS SN_YY
+		      ,SUBSTRING(CIP.STT_NO, 8, 6) AS IMPDEC_SN
+		      ,SUBSTRING(CIP.STT_NO, 14, 1) AS IMPDEC_TYPE
+		      ,CIP.STT_NO
+		      ,CIP.WRI_DE
+		      ,CIP.PRNO_FOT_SE
+		      ,CIP.PRNO_FOT_MTH_CD
+		      ,CIP.STT_CSMH
+		      ,CIP.STT_KWA
+		      ,CIP.CSMH_STA_LNE
+		      ,CIP.PLFTP_MTLTY
+		      ,CIP.PLFTP_IDNU_SE_SL
+		      ,CIP.PLFTP_IDNU
+		      ,CIP.SELER_COMPANY_NM
+		      ,CIP.SELER_ADRES
+		      ,CIP.SELER_RPRS
+		      ,CIP.PURSR_COMPANY_NM
+		      ,CIP.PURSR_ADRES
+		      ,CIP.PURSR_RPRS
+		      ,CIP.PURC_ORR_NO
+		      ,CIP.PURC_ORR_DE
+		      ,CIP.M1_AFO_07_A_NO
+		      ,CIP.M1_AFO_07_B_NO
+		      ,CIP.M1_AFO_07_C_AT
+		      ,CIP.M1_AFO_07_D_AT
+		      ,CIP.M1_AFO_07_E_NO
+		      ,CIP.M1_AFO_07_E_ETC
+		      ,CIP.M1_AFO_08_A_AT
+		      ,CIP.M1_AFO_08_B_AT
+		      ,CIP.M1_AFO_09_A_AT
+		      ,CIP.M1_AFO_09_B_AT
+		      ,CIP.INVC_NO
+		      ,CIP.INVC_ISU_DE
+		      ,CIP.CNR_NO
+		      ,CIP.CNR_DE
+		      ,(CASE WHEN COALESCE(CIP.PC_DCSN_PREA_ERA_PARN_ERA, '') = '' THEN NULL ELSE CIP.STT_CSMH END) AS PRVS_PC_STT_CSMH
+              ,(CASE WHEN COALESCE(CIP.PC_DCSN_PREA_ERA_PARN_ERA, '') = '' THEN NULL ELSE CIP.STT_KWA END) AS PRVS_PC_STT_KWA
+		      ,(CASE WHEN COALESCE(CIP.RELA_IMP_DEAL_CNR_END_DE, '') = '' THEN NULL
+		             WHEN COALESCE(CIP.PRVS_PC_STT_NO, '') = '' THEN SUBSTRING(CIP.YYYY, 3, 2)
+                     ELSE SUBSTRING(CIP.PRVS_PC_STT_NO, LENGTH(CIP.PRVS_PC_STT_NO)-1, 2)
+                END) AS STT_YYYY
+		      ,CIP.PRVS_PC_STT_NO
+		      ,CIP.WRI_HAOW_DEPT_OFPO
+		      ,CIP.WRI_HAOW_NM
+		      ,CIP.WRI_HAOW_TELNO
+		      ,CIP.WRI_RSPN_DEPT_OFPO
+		      ,CIP.WRI_RSPN_NM
+		      ,CIP.WRI_RSPN_TELNO
+		      ,CIP.M26_BFO_TATA_MTH
+		      ,CIP.M26_BFO_TAXT_PC_ESTI
+		      ,CIP.M26_BFO_PROOF_DTA_01
+		      ,CIP.M26_BFO_PROOF_DTA_02
+		      ,CIP.M26_BFO_PRPOS
+		      ,CIP.M26_BFO_PRPOS_ETC_RESN
+		      ,CIP.M26_BFO_PC_CALC_BASIS
+		      ,CIP.M26_BFO_PC_CALC_ETC_RESN
+		      ,CIP.M1_AFO_CALC_BASIS_PC
+		      ,CIP.M1_AFO_CALC_BASIS_CURR_CD
+		      ,CIP.M1_AFO_CALC_BASIS_EHGT
+		      ,CIP.M1_AFO_CALC_BASIS_INDRT_AMT
+		      ,CIP.M1_AFO_CVER_TAMT
+		      ,CIP.M1_AFO_ADDI_PURSR_CT
+		      ,CIP.M1_AFO_ADDI_BRKC
+		      ,CIP.M1_AFO_ADDI_PKNG_CT
+		      ,CIP.M1_AFO_ADDI_AMT_CT
+		      ,CIP.M1_AFO_ADDI_IMRTS_PRC_UNT
+		      ,CIP.M1_AFO_ADDI_CNSMP_THNG
+		      ,CIP.M1_AFO_ADDI_DEV_FAOR
+		      ,CIP.M1_AFO_ADDI_ROYA
+		      ,CIP.M1_AFO_ADDI_ERNS
+		      ,CIP.M1_AFO_ADDI_CTRN_SSUM
+		      ,CIP.M1_AFO_ADDI_CYCHG
+		      ,CIP.M1_AFO_ADDI_SHCO_CT
+		      ,CIP.M1_AFO_ADDI_IRNCF
+		      ,CIP.M1_AFO_ADDI_TAMT
+		      ,CIP.M1_AFO_DDC_TRN_CT
+		      ,CIP.M1_AFO_DDC_TCHN_SPORT
+		      ,CIP.M1_AFO_DDC_ETC_CT
+		      ,CIP.M1_AFO_DDC_DSNT_AMT
+		      ,CIP.M1_AFO_DDC_CT_TAMT
+		      ,CIP.M23_BFO_SIMI_PC
+		      ,CIP.M23_BFO_SIMI_PC_CURR_CD
+		      ,CIP.M23_BFO_ALRN_PC_EHGT
+		      ,CIP.M23_BFO_ALRN_WON_CVER_PC
+		      ,CIP.M23_BFO_DDC_MDAT_QY_DSNT
+		      ,CIP.M23_BFO_DDC_MDAT_AMT
+		      ,CIP.M23_BFO_DDC_MDAT_TRN_CT
+		      ,CIP.M23_BFO_DDC_MDAT_SHNG_PRT_CT
+		      ,CIP.M23_BFO_DDC_MDAT_IRNCF
+		      ,CIP.M23_BFO_DDC_MDAT_SSUM
+		      ,CIP.M23_BFO_ADDI_MDAT_QY_DSNT
+		      ,CIP.M23_BFO_ADDI_MDAT_AMT_AMT
+		      ,CIP.M23_BFO_ADDI_MDAT_TRN_CT
+		      ,CIP.M23_BFO_ADDI_MDAT_SHNG_CT
+		      ,CIP.M23_BFO_ADDI_MDAT_IRNCF
+		      ,CIP.M23_BFO_ADDI_MDAT_SSUM
+		      ,CIP.M4_BFO_UNIT_PC
+		      ,CIP.M4_BFO_CURR_UNIT
+		      ,CIP.M4_BFO_EHGT
+		      ,CIP.M4_BFO_WON_CVER_PC
+		      ,CIP.M4_BFO_DDC_CSMH_REF_NO
+		      ,CIP.M4_BFO_DDC_TRU_SLE_FEE
+		      ,CIP.M4_BFO_DDC_GNRL_EXPE
+		      ,CIP.M4_BFO_IMP_DDC_CT_RATE
+		      ,CIP.M4_BFO_IMP_DDC_CT_RATE_IND
+		      ,CIP.M4_BFO_DDC_TRN_CT
+		      ,CIP.M4_BFO_DDC_IRNCF
+		      ,CIP.M4_BFO_DDC_SHCO_CT
+		      ,CIP.M4_BFO_DDC_ETC_TRN_CT
+		      ,CIP.M4_BFO_DDC_ADIT_CT
+		      ,CIP.M4_BFO_DDC_CT_TAX
+		      ,CIP.M4_BFO_DDC_CT_TAMT
+		      ,CIP.M56_BFO_CALC_BSIS
+		      ,CIP.M56_BFO_ADDI_AMT_CYCHG
+		      ,CIP.M56_BFO_ADDI_AMT_SHCO_CT
+		      ,CIP.M56_BFO_ADDI_AMT_IRNCF
+		      ,CIP.M56_BFO_ADDI_AMT_SSUM
+		      ,CIP.PRVS_ADDI_RT
+		      ,CIP.PC_DCSN_PREA_ERA_PARN_ERA
+		      ,CIP.RELA_IMP_DEAL_CNR_END_DE
+		      ,CIP.PRVS_PC_STT_RESN_SL
+		      ,CIP.PRVS_PC_STT_RESN_ETC_CN
+		      ,CIP.PRVS_ADDI_AMT
+		      ,CIP.STT_PAY_TAXT_PC
+		  FROM CC_IMP_PRNO CIP
+		       INNER JOIN CC_IMP_BCNC_SETUP CIBS
+                  ON CIBS.COMPANY_CD = CIP.COMPANY_CD
+                 AND CIBS.IMP_BCNC_SETUP_SN = CIP.IMP_BCNC_SETUP_SN
+		 WHERE CIP.COMPANY_CD = #COMPANY_CD#
+		   AND CIP.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+		   AND CIP.STT_ODR = #STT_ODR#
+    </select>
+    
+    <insert id="MMB003.insertImpPrnoInfo" parameterClass="java.util.Map">
+        <selectKey resultClass="java.lang.String" keyProperty="IMP_PRNO_SN">
+            SELECT NEXTVAL('cc_imp_prno_s') AS IMP_PRNO_SN
+        </selectKey>
+        
+        INSERT INTO CC_IMP_PRNO(
+		       COMPANY_CD
+		      ,IMP_PRNO_SN
+		      ,IMP_BCNC_SETUP_SN
+		      ,STT_ODR
+		      ,IMP_DCLRT_SN
+		      ,DOC_STLE_SE
+		      ,TRNS_SE
+		      ,RCE_DE
+		      ,TRNS_RELT
+		      ,REC_RELT
+		      ,YYYY
+		      ,STT_NO
+		      ,WRI_DE
+		      ,PRNO_FOT_SE
+		      ,PRNO_FOT_MTH_CD
+		      ,STT_CSMH
+		      ,STT_KWA
+		      ,CSMH_STA_LNE
+		      ,PLFTP_MTLTY
+		      ,PLFTP_IDNU_SE_SL
+		      ,PLFTP_IDNU
+		      ,SELER_COMPANY_NM
+		      ,SELER_ADRES
+		      ,SELER_RPRS
+		      ,PURSR_COMPANY_NM
+		      ,PURSR_ADRES
+		      ,PURSR_RPRS
+		      ,PURC_ORR_NO
+		      ,PURC_ORR_DE
+		      ,M1_AFO_07_A_NO
+		      ,M1_AFO_07_B_NO
+		      ,M1_AFO_07_C_AT
+		      ,M1_AFO_07_D_AT
+		      ,M1_AFO_07_E_NO
+		      ,M1_AFO_07_E_ETC
+		      ,M1_AFO_08_A_AT
+		      ,M1_AFO_08_B_AT
+		      ,M1_AFO_09_A_AT
+		      ,M1_AFO_09_B_AT
+		      ,INVC_NO
+		      ,INVC_ISU_DE
+		      ,CNR_NO
+		      ,CNR_DE
+		      ,PRVS_PC_STT_NO
+		      ,WRI_HAOW_DEPT_OFPO
+		      ,WRI_HAOW_NM
+		      ,WRI_HAOW_TELNO
+		      ,WRI_RSPN_DEPT_OFPO
+		      ,WRI_RSPN_NM
+		      ,WRI_RSPN_TELNO
+		      ,M26_BFO_TATA_MTH
+		      ,M26_BFO_TAXT_PC_ESTI
+		      ,M26_BFO_PROOF_DTA_01
+		      ,M26_BFO_PROOF_DTA_02
+		      ,M26_BFO_PRPOS
+		      ,M26_BFO_PRPOS_ETC_RESN
+		      ,M26_BFO_PC_CALC_BASIS
+		      ,M26_BFO_PC_CALC_ETC_RESN
+		      ,M1_AFO_CALC_BASIS_PC
+		      ,M1_AFO_CALC_BASIS_CURR_CD
+		      ,M1_AFO_CALC_BASIS_EHGT
+		      ,M1_AFO_CALC_BASIS_INDRT_AMT
+		      ,M1_AFO_CVER_TAMT
+		      ,M1_AFO_ADDI_PURSR_CT
+		      ,M1_AFO_ADDI_BRKC
+		      ,M1_AFO_ADDI_PKNG_CT
+		      ,M1_AFO_ADDI_AMT_CT
+		      ,M1_AFO_ADDI_IMRTS_PRC_UNT
+		      ,M1_AFO_ADDI_CNSMP_THNG
+		      ,M1_AFO_ADDI_DEV_FAOR
+		      ,M1_AFO_ADDI_ROYA
+		      ,M1_AFO_ADDI_ERNS
+		      ,M1_AFO_ADDI_CTRN_SSUM
+		      ,M1_AFO_ADDI_CYCHG
+		      ,M1_AFO_ADDI_SHCO_CT
+		      ,M1_AFO_ADDI_IRNCF
+		      ,M1_AFO_ADDI_TAMT
+		      ,M1_AFO_DDC_TRN_CT
+		      ,M1_AFO_DDC_TCHN_SPORT
+		      ,M1_AFO_DDC_ETC_CT
+		      ,M1_AFO_DDC_DSNT_AMT
+		      ,M1_AFO_DDC_CT_TAMT
+		      ,M23_BFO_SIMI_PC
+		      ,M23_BFO_SIMI_PC_CURR_CD
+		      ,M23_BFO_ALRN_PC_EHGT
+		      ,M23_BFO_ALRN_WON_CVER_PC
+		      ,M23_BFO_DDC_MDAT_QY_DSNT
+		      ,M23_BFO_DDC_MDAT_AMT
+		      ,M23_BFO_DDC_MDAT_TRN_CT
+		      ,M23_BFO_DDC_MDAT_SHNG_PRT_CT
+		      ,M23_BFO_DDC_MDAT_IRNCF
+		      ,M23_BFO_DDC_MDAT_SSUM
+		      ,M23_BFO_ADDI_MDAT_QY_DSNT
+		      ,M23_BFO_ADDI_MDAT_AMT_AMT
+		      ,M23_BFO_ADDI_MDAT_TRN_CT
+		      ,M23_BFO_ADDI_MDAT_SHNG_CT
+		      ,M23_BFO_ADDI_MDAT_IRNCF
+		      ,M23_BFO_ADDI_MDAT_SSUM
+		      ,M4_BFO_UNIT_PC
+		      ,M4_BFO_CURR_UNIT
+		      ,M4_BFO_EHGT
+		      ,M4_BFO_WON_CVER_PC
+		      ,M4_BFO_DDC_CSMH_REF_NO
+		      ,M4_BFO_DDC_TRU_SLE_FEE
+		      ,M4_BFO_DDC_GNRL_EXPE
+		      ,M4_BFO_IMP_DDC_CT_RATE
+		      ,M4_BFO_IMP_DDC_CT_RATE_IND
+		      ,M4_BFO_DDC_TRN_CT
+		      ,M4_BFO_DDC_IRNCF
+		      ,M4_BFO_DDC_SHCO_CT
+		      ,M4_BFO_DDC_ETC_TRN_CT
+		      ,M4_BFO_DDC_ADIT_CT
+		      ,M4_BFO_DDC_CT_TAX
+		      ,M4_BFO_DDC_CT_TAMT
+		      ,M56_BFO_CALC_BSIS
+		      ,M56_BFO_ADDI_AMT_CYCHG
+		      ,M56_BFO_ADDI_AMT_SHCO_CT
+		      ,M56_BFO_ADDI_AMT_IRNCF
+		      ,M56_BFO_ADDI_AMT_SSUM
+		      ,PRVS_ADDI_RT
+		      ,PC_DCSN_PREA_ERA_PARN_ERA
+		      ,RELA_IMP_DEAL_CNR_END_DE
+		      ,PRVS_PC_STT_RESN_SL
+		      ,PRVS_PC_STT_RESN_ETC_CN
+		      ,PRVS_ADDI_AMT
+		      ,STT_PAY_TAXT_PC
+		      ,CREATE_DATE
+		      ,CREATE_BY
+		      ,UPDATE_DATE
+		      ,UPDATE_BY)
+		VALUES(#COMPANY_CD#
+		      ,FN_PG_GET_CAST_NUM(#IMP_PRNO_SN#)
+		      ,FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+		      ,#STT_ODR#
+		      ,FN_PG_GET_CAST_NUM(#IMP_DCLRT_SN#)
+		      ,#DOC_STLE_SE#
+		      ,#TRNS_SE#
+		      ,#RCE_DE#
+		      ,#TRNS_RELT#
+		      ,#REC_RELT#
+		      ,#YYYY#
+		      ,#STT_NO#
+		      ,#WRI_DE#
+		      ,#PRNO_FOT_SE#
+		      ,#PRNO_FOT_MTH_CD#
+		      ,#STT_CSMH#
+		      ,#STT_KWA#
+		      ,#CSMH_STA_LNE#
+		      ,#PLFTP_MTLTY#
+		      ,#PLFTP_IDNU_SE_SL#
+		      ,#PLFTP_IDNU#
+		      ,#SELER_COMPANY_NM#
+		      ,#SELER_ADRES#
+		      ,#SELER_RPRS#
+		      ,#PURSR_COMPANY_NM#
+		      ,#PURSR_ADRES#
+		      ,#PURSR_RPRS#
+		      ,#PURC_ORR_NO#
+		      ,#PURC_ORR_DE#
+		      ,#M1_AFO_07_A_NO#
+		      ,#M1_AFO_07_B_NO#
+		      ,#M1_AFO_07_C_AT#
+		      ,#M1_AFO_07_D_AT#
+		      ,#M1_AFO_07_E_NO#
+		      ,#M1_AFO_07_E_ETC#
+		      ,#M1_AFO_08_A_AT#
+		      ,#M1_AFO_08_B_AT#
+		      ,#M1_AFO_09_A_AT#
+		      ,#M1_AFO_09_B_AT#
+		      ,#INVC_NO#
+		      ,#INVC_ISU_DE#
+		      ,#CNR_NO#
+		      ,#CNR_DE#
+		      ,#PRVS_PC_STT_NO#
+		      ,#WRI_HAOW_DEPT_OFPO#
+		      ,#WRI_HAOW_NM#
+		      ,#WRI_HAOW_TELNO#
+		      ,#WRI_RSPN_DEPT_OFPO#
+		      ,#WRI_RSPN_NM#
+		      ,#WRI_RSPN_TELNO#
+              ,CASE WHEN #M26_BFO_TATA_MTH# = '2' THEN 'a'
+				    WHEN #M26_BFO_TATA_MTH# = '3' THEN 'b'
+				    WHEN #M26_BFO_TATA_MTH# = '4A' THEN 'c'
+				    WHEN #M26_BFO_TATA_MTH# = '4B' THEN 'd'
+				    WHEN #M26_BFO_TATA_MTH# = '5' THEN 'e'
+				    WHEN #M26_BFO_TATA_MTH# = '6' THEN 'f'
+				    ELSE NULL
+		       END	
+		      ,FN_PG_GET_CAST_NUM(#M26_BFO_TAXT_PC_ESTI#)
+		      ,#M26_BFO_PROOF_DTA_01#
+		      ,#M26_BFO_PROOF_DTA_02#
+		      ,#M26_BFO_PRPOS#
+		      ,#M26_BFO_PRPOS_ETC_RESN#
+		      ,#M26_BFO_PC_CALC_BASIS#
+		      ,#M26_BFO_PC_CALC_ETC_RESN#
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_CALC_BASIS_PC#)
+		      ,#M1_AFO_CALC_BASIS_CURR_CD#
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_CALC_BASIS_EHGT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_CALC_BASIS_INDRT_AMT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_CVER_TAMT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_PURSR_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_BRKC#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_PKNG_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_AMT_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_IMRTS_PRC_UNT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_CNSMP_THNG#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_DEV_FAOR#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_ROYA#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_ERNS#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_CTRN_SSUM#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_CYCHG#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_SHCO_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_IRNCF#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_TAMT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_DDC_TRN_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_DDC_TCHN_SPORT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_DDC_ETC_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_DDC_DSNT_AMT#)
+		      ,FN_PG_GET_CAST_NUM(#M1_AFO_DDC_CT_TAMT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_SIMI_PC#)
+		      ,#M23_BFO_SIMI_PC_CURR_CD#
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ALRN_PC_EHGT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ALRN_WON_CVER_PC#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_QY_DSNT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_AMT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_TRN_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_SHNG_PRT_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_IRNCF#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_SSUM#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_QY_DSNT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_AMT_AMT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_TRN_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_SHNG_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_IRNCF#)
+		      ,FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_SSUM#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_UNIT_PC#)
+		      ,#M4_BFO_CURR_UNIT#
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_EHGT#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_WON_CVER_PC#)
+		      ,#M4_BFO_DDC_CSMH_REF_NO#
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_TRU_SLE_FEE#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_GNRL_EXPE#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_IMP_DDC_CT_RATE#)
+		      ,#M4_BFO_IMP_DDC_CT_RATE_IND#
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_TRN_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_IRNCF#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_SHCO_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_ETC_TRN_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_ADIT_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_CT_TAX#)
+		      ,FN_PG_GET_CAST_NUM(#M4_BFO_DDC_CT_TAMT#)
+		      ,FN_PG_GET_CAST_NUM(#M56_BFO_CALC_BSIS#)
+		      ,FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_CYCHG#)
+		      ,FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_SHCO_CT#)
+		      ,FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_IRNCF#)
+		      ,FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_SSUM#)
+		      ,FN_PG_GET_CAST_NUM(#PRVS_ADDI_RT#)
+		      ,#PC_DCSN_PREA_ERA_PARN_ERA#
+		      ,#RELA_IMP_DEAL_CNR_END_DE#
+		      ,#PRVS_PC_STT_RESN_SL#
+		      ,#PRVS_PC_STT_RESN_ETC_CN#
+		      ,FN_PG_GET_CAST_NUM(#PRVS_ADDI_AMT#)
+		      ,FN_PG_GET_CAST_NUM(#STT_PAY_TAXT_PC#)
+		      ,NOW()::TIMESTAMP
+		      ,#SESSION_USER_ID#
+		      ,NOW()::TIMESTAMP
+		      ,#SESSION_USER_ID#)
+    </insert>
+    
+    <update id="MMB003.updateImpPrnoInfo" parameterClass="java.util.Map">
+		UPDATE CC_IMP_PRNO
+		SET    IMP_DCLRT_SN                 = FN_PG_GET_CAST_NUM(#IMP_DCLRT_SN#)
+		      ,ENCOM_STT_NO                =
+		       (SELECT ENCOM_STT_NO
+		        FROM   CC_IMP_DCLRT CID
+		        WHERE  CID.COMPANY_CD = CC_IMP_PRNO.COMPANY_CD
+		        AND    CID.IMP_DCLRT_SN = FN_PG_GET_CAST_NUM(#IMP_DCLRT_SN#))
+		      ,DOC_STLE_SE                  = #DOC_STLE_SE#
+		      ,TRNS_SE                      = #TRNS_SE#
+		      ,RCE_DE                       = #RCE_DE#
+		      ,TRNS_RELT                    = #TRNS_RELT#
+		      ,REC_RELT                     = #REC_RELT#
+		      ,YYYY                         = #YYYY#
+		      ,STT_NO                       = #STT_NO#
+		      ,WRI_DE                       = #WRI_DE#
+		      ,PRNO_FOT_SE                  = #PRNO_FOT_SE#
+		      ,PRNO_FOT_MTH_CD              = #PRNO_FOT_MTH_CD#
+		      ,STT_CSMH                     = #STT_CSMH#
+		      ,STT_KWA                      = #STT_KWA#
+		      ,CSMH_STA_LNE                 = #CSMH_STA_LNE#
+		      ,PLFTP_MTLTY                  = #PLFTP_MTLTY#
+		      ,PLFTP_IDNU_SE_SL             = #PLFTP_IDNU_SE_SL#
+		      ,PLFTP_IDNU                   = #PLFTP_IDNU#
+		      ,SELER_COMPANY_NM             = #SELER_COMPANY_NM#
+		      ,SELER_ADRES                  = #SELER_ADRES#
+		      ,SELER_RPRS                   = #SELER_RPRS#
+		      ,PURSR_COMPANY_NM             = #PURSR_COMPANY_NM#
+		      ,PURSR_ADRES                  = #PURSR_ADRES#
+		      ,PURSR_RPRS                   = #PURSR_RPRS#
+		      ,PURC_ORR_NO                  = #PURC_ORR_NO#
+		      ,PURC_ORR_DE                  = #PURC_ORR_DE#
+		      ,M1_AFO_07_A_NO               = #M1_AFO_07_A_NO#
+		      ,M1_AFO_07_B_NO               = #M1_AFO_07_B_NO#
+		      ,M1_AFO_07_C_AT               = #M1_AFO_07_C_AT#
+		      ,M1_AFO_07_D_AT               = #M1_AFO_07_D_AT#
+		      ,M1_AFO_07_E_NO               = #M1_AFO_07_E_NO#
+		      ,M1_AFO_07_E_ETC              = #M1_AFO_07_E_ETC#
+		      ,M1_AFO_08_A_AT               = #M1_AFO_08_A_AT#
+		      ,M1_AFO_08_B_AT               = #M1_AFO_08_B_AT#
+		      ,M1_AFO_09_A_AT               = #M1_AFO_09_A_AT#
+		      ,M1_AFO_09_B_AT               = #M1_AFO_09_B_AT#
+		      ,INVC_NO                      = #INVC_NO#
+		      ,INVC_ISU_DE                  = #INVC_ISU_DE#
+		      ,CNR_NO                       = #CNR_NO#
+		      ,CNR_DE                       = #CNR_DE#
+		      ,PRVS_PC_STT_NO               = #PRVS_PC_STT_NO#
+		      ,WRI_HAOW_DEPT_OFPO           = #WRI_HAOW_DEPT_OFPO#
+		      ,WRI_HAOW_NM                  = #WRI_HAOW_NM#
+		      ,WRI_HAOW_TELNO               = #WRI_HAOW_TELNO#
+		      ,WRI_RSPN_DEPT_OFPO           = #WRI_RSPN_DEPT_OFPO#
+		      ,WRI_RSPN_NM                  = #WRI_RSPN_NM#
+		      ,WRI_RSPN_TELNO               = #WRI_RSPN_TELNO#
+		      ,M26_BFO_TATA_MTH             = CASE WHEN #M26_BFO_TATA_MTH# = '2' THEN 'a'
+												   WHEN #M26_BFO_TATA_MTH# = '3' THEN 'b'
+												   WHEN #M26_BFO_TATA_MTH# = '4A' THEN 'c'
+												   WHEN #M26_BFO_TATA_MTH# = '4B' THEN 'd'
+												   WHEN #M26_BFO_TATA_MTH# = '5' THEN 'e'
+												   WHEN #M26_BFO_TATA_MTH# = '6' THEN 'f'
+												   ELSE NULL
+										      END
+		      ,M26_BFO_TAXT_PC_ESTI         = FN_PG_GET_CAST_NUM(#M26_BFO_TAXT_PC_ESTI#)
+		      ,M26_BFO_PROOF_DTA_01         = #M26_BFO_PROOF_DTA_01#
+		      ,M26_BFO_PROOF_DTA_02         = #M26_BFO_PROOF_DTA_02#
+		      ,M26_BFO_PRPOS                = #M26_BFO_PRPOS#
+		      ,M26_BFO_PRPOS_ETC_RESN       = #M26_BFO_PRPOS_ETC_RESN#
+		      ,M26_BFO_PC_CALC_BASIS        = #M26_BFO_PC_CALC_BASIS#
+		      ,M26_BFO_PC_CALC_ETC_RESN     = #M26_BFO_PC_CALC_ETC_RESN#
+		      ,M1_AFO_CALC_BASIS_PC         = FN_PG_GET_CAST_NUM(#M1_AFO_CALC_BASIS_PC#)
+		      ,M1_AFO_CALC_BASIS_CURR_CD    = #M1_AFO_CALC_BASIS_CURR_CD#
+		      ,M1_AFO_CALC_BASIS_EHGT       = FN_PG_GET_CAST_NUM(#M1_AFO_CALC_BASIS_EHGT#)
+		      ,M1_AFO_CALC_BASIS_INDRT_AMT  = FN_PG_GET_CAST_NUM(#M1_AFO_CALC_BASIS_INDRT_AMT#)
+		      ,M1_AFO_CVER_TAMT             = FN_PG_GET_CAST_NUM(#M1_AFO_CVER_TAMT#)
+		      ,M1_AFO_ADDI_PURSR_CT         = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_PURSR_CT#)
+		      ,M1_AFO_ADDI_BRKC             = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_BRKC#)
+		      ,M1_AFO_ADDI_PKNG_CT          = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_PKNG_CT#)
+		      ,M1_AFO_ADDI_AMT_CT           = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_AMT_CT#)
+		      ,M1_AFO_ADDI_IMRTS_PRC_UNT    = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_IMRTS_PRC_UNT#)
+		      ,M1_AFO_ADDI_CNSMP_THNG       = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_CNSMP_THNG#)
+		      ,M1_AFO_ADDI_DEV_FAOR         = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_DEV_FAOR#)
+		      ,M1_AFO_ADDI_ROYA             = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_ROYA#)
+		      ,M1_AFO_ADDI_ERNS             = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_ERNS#)
+		      ,M1_AFO_ADDI_CTRN_SSUM        = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_CTRN_SSUM#)
+		      ,M1_AFO_ADDI_CYCHG            = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_CYCHG#)
+		      ,M1_AFO_ADDI_SHCO_CT          = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_SHCO_CT#)
+		      ,M1_AFO_ADDI_IRNCF            = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_IRNCF#)
+		      ,M1_AFO_ADDI_TAMT             = FN_PG_GET_CAST_NUM(#M1_AFO_ADDI_TAMT#)
+		      ,M1_AFO_DDC_TRN_CT            = FN_PG_GET_CAST_NUM(#M1_AFO_DDC_TRN_CT#)
+		      ,M1_AFO_DDC_TCHN_SPORT        = FN_PG_GET_CAST_NUM(#M1_AFO_DDC_TCHN_SPORT#)
+		      ,M1_AFO_DDC_ETC_CT            = FN_PG_GET_CAST_NUM(#M1_AFO_DDC_ETC_CT#)
+		      ,M1_AFO_DDC_DSNT_AMT          = FN_PG_GET_CAST_NUM(#M1_AFO_DDC_DSNT_AMT#)
+		      ,M1_AFO_DDC_CT_TAMT           = FN_PG_GET_CAST_NUM(#M1_AFO_DDC_CT_TAMT#)
+		      ,M23_BFO_SIMI_PC              = FN_PG_GET_CAST_NUM(#M23_BFO_SIMI_PC#)
+		      ,M23_BFO_SIMI_PC_CURR_CD      = #M23_BFO_SIMI_PC_CURR_CD#
+		      ,M23_BFO_ALRN_PC_EHGT         = FN_PG_GET_CAST_NUM(#M23_BFO_ALRN_PC_EHGT#)
+		      ,M23_BFO_ALRN_WON_CVER_PC     = FN_PG_GET_CAST_NUM(#M23_BFO_ALRN_WON_CVER_PC#)
+		      ,M23_BFO_DDC_MDAT_QY_DSNT     = FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_QY_DSNT#)
+		      ,M23_BFO_DDC_MDAT_AMT         = FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_AMT#)
+		      ,M23_BFO_DDC_MDAT_TRN_CT      = FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_TRN_CT#)
+		      ,M23_BFO_DDC_MDAT_SHNG_PRT_CT = FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_SHNG_PRT_CT#)
+		      ,M23_BFO_DDC_MDAT_IRNCF       = FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_IRNCF#)
+		      ,M23_BFO_DDC_MDAT_SSUM        = FN_PG_GET_CAST_NUM(#M23_BFO_DDC_MDAT_SSUM#)
+		      ,M23_BFO_ADDI_MDAT_QY_DSNT    = FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_QY_DSNT#)
+		      ,M23_BFO_ADDI_MDAT_AMT_AMT    = FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_AMT_AMT#)
+		      ,M23_BFO_ADDI_MDAT_TRN_CT     = FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_TRN_CT#)
+		      ,M23_BFO_ADDI_MDAT_SHNG_CT    = FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_SHNG_CT#)
+		      ,M23_BFO_ADDI_MDAT_IRNCF      = FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_IRNCF#)
+		      ,M23_BFO_ADDI_MDAT_SSUM       = FN_PG_GET_CAST_NUM(#M23_BFO_ADDI_MDAT_SSUM#)
+		      ,M4_BFO_UNIT_PC               = FN_PG_GET_CAST_NUM(#M4_BFO_UNIT_PC#)
+		      ,M4_BFO_CURR_UNIT             = #M4_BFO_CURR_UNIT#
+		      ,M4_BFO_EHGT                  = FN_PG_GET_CAST_NUM(#M4_BFO_EHGT#)
+		      ,M4_BFO_WON_CVER_PC           = FN_PG_GET_CAST_NUM(#M4_BFO_WON_CVER_PC#)
+		      ,M4_BFO_DDC_CSMH_REF_NO       = #M4_BFO_DDC_CSMH_REF_NO#
+		      ,M4_BFO_DDC_TRU_SLE_FEE       = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_TRU_SLE_FEE#)
+		      ,M4_BFO_DDC_GNRL_EXPE         = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_GNRL_EXPE#)
+		      ,M4_BFO_IMP_DDC_CT_RATE       = FN_PG_GET_CAST_NUM(#M4_BFO_IMP_DDC_CT_RATE#)
+		      ,M4_BFO_IMP_DDC_CT_RATE_IND   = #M4_BFO_IMP_DDC_CT_RATE_IND#
+		      ,M4_BFO_DDC_TRN_CT            = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_TRN_CT#)
+		      ,M4_BFO_DDC_IRNCF             = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_IRNCF#)
+		      ,M4_BFO_DDC_SHCO_CT           = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_SHCO_CT#)
+		      ,M4_BFO_DDC_ETC_TRN_CT        = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_ETC_TRN_CT#)
+		      ,M4_BFO_DDC_ADIT_CT           = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_ADIT_CT#)
+		      ,M4_BFO_DDC_CT_TAX            = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_CT_TAX#)
+		      ,M4_BFO_DDC_CT_TAMT           = FN_PG_GET_CAST_NUM(#M4_BFO_DDC_CT_TAMT#)
+		      ,M56_BFO_CALC_BSIS            = FN_PG_GET_CAST_NUM(#M56_BFO_CALC_BSIS#)
+		      ,M56_BFO_ADDI_AMT_CYCHG       = FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_CYCHG#)
+		      ,M56_BFO_ADDI_AMT_SHCO_CT     = FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_SHCO_CT#)
+		      ,M56_BFO_ADDI_AMT_IRNCF       = FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_IRNCF#)
+		      ,M56_BFO_ADDI_AMT_SSUM        = FN_PG_GET_CAST_NUM(#M56_BFO_ADDI_AMT_SSUM#)
+		      ,PRVS_ADDI_RT                 = FN_PG_GET_CAST_NUM(#PRVS_ADDI_RT#)
+		      ,PC_DCSN_PREA_ERA_PARN_ERA    = #PC_DCSN_PREA_ERA_PARN_ERA#
+		      ,RELA_IMP_DEAL_CNR_END_DE     = #RELA_IMP_DEAL_CNR_END_DE#
+		      ,PRVS_PC_STT_RESN_SL          = #PRVS_PC_STT_RESN_SL#
+		      ,PRVS_PC_STT_RESN_ETC_CN      = #PRVS_PC_STT_RESN_ETC_CN#
+		      ,PRVS_ADDI_AMT                = FN_PG_GET_CAST_NUM(#PRVS_ADDI_AMT#)
+		      ,STT_PAY_TAXT_PC              = FN_PG_GET_CAST_NUM(#STT_PAY_TAXT_PC#)
+		      ,UPDATE_DATE                  = NOW()::TIMESTAMP
+		      ,UPDATE_BY                    = #SESSION_USER_ID#
+		WHERE  COMPANY_CD = #COMPANY_CD#
+		AND    IMP_PRNO_SN = FN_PG_GET_CAST_NUM(#IMP_PRNO_SN#)
+    </update>
+    
+    <delete id="MMB003.deleteImpPrnoInfo" parameterClass="java.util.Map">
+        DELETE FROM CC_IMP_PRNO
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_PRNO_SN = FN_PG_GET_CAST_NUM(#IMP_PRNO_SN#)
+    </delete>
+    
+    <select id="MMB007.selectImportLneInputList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CILI.COMPANY_CD
+              ,CILI.IMP_LNE_INP_SN
+              ,CILI.IMP_BCNC_SETUP_SN
+              ,CILI.STT_ODR
+              ,CILI.LNE_NO
+              ,CILI.HS_CD
+              ,CILI.TAXRT_SE
+              ,CILI.PRDNM
+              ,CILI.DEAL_PRDNM
+              ,CILI.STD_PRDNM_CD
+              ,CILI.SANC_AMT
+              ,CILI.LNE_ADIT_AMT
+              ,CILI.NETWGHT
+              ,CILI.ADAMT_SE
+              ,CD5.CODE_NAME AS ADAMT_SE_NM
+              ,CILI.ADAMT_CURR
+              ,CILI.ADAMT_CT
+              ,CILI.DDC_CT_SE
+              ,CD6.CODE_NAME AS DDC_CT_SE_NM
+              ,CILI.DDC_CT_CURR
+              ,CILI.DDC_CT
+              ,CILI.CMMN_ADAMT_WON/CILI.CMMN_ADAMT_EHGT AS CMMN_ADAMT
+              ,CILI.CMMN_DDAMT_WON/CILI.CMMN_DDAMT_EHGT AS CMMN_DDAMT
+              ,CILI.ORPL
+              ,CILI.COTDOO
+              ,CILI.COTDOO||'.'||CD1.CODE_NAME AS COTDOO_NAME
+              ,CILI.ORPL_AT
+              ,CILI.ORPL_AT||'.'||CD2.CODE_NAME AS ORPL_AT_NAME
+              ,CILI.ORPL_MTH
+              ,CILI.ORPL_MTH||'.'||CD3.CODE_NAME AS ORPL_MTH_NAME
+              ,CILI.ORPL_EXEPT
+              ,CILI.ORPL_EXEPT||'.'||CD4.CODE_NAME AS ORPL_EXEPT_NAME
+              ,CILI.BRAND_NM
+              ,CILI.TOT_QY
+              ,CILI.PRPDVS_STDR
+              ,CILI.DEAL_PRDNM_STDR
+              ,CIBS.BCNC_CD
+              ,CILI.SANC_AMT_WON
+              ,CILI.ADAMT_WON
+              ,CILI.DDAMT_WON
+              ,CILI.CYCHG_WON
+              ,CILI.IRNCF_WON
+              ,CILI.CMMN_ADAMT_WON
+              ,CILI.CMMN_DDAMT_WON
+              ,CILI.SETLE_AMT_EHGT
+              ,CILI.CMMN_ADAMT_EHGT
+              ,CILI.CMMN_DDAMT_EHGT
+              ,CILI.CYCHG_EHGT
+              ,CILI.IRNCF_EHGT
+              ,CILI.DDAMT_EHGT
+              ,CILI.ADAMT_EHGT
+              ,CIBS.STT_DE
+              ,(CASE WHEN (SELECT COUNT(1) FROM CC_STD_PRDNM CSP WHERE CSP.YYYY = SUBSTR(CIBS.STT_DE,1, 4) AND CSP.HS_CD LIKE CILI.HS_CD||'%')  > 0 THEN 'Y'
+                     ELSE 'N'
+                END) AS STD_PRDNM_YN
+          FROM CC_IMP_LNE_INP CILI
+               INNER JOIN CC_IMP_BCNC_SETUP CIBS
+                  ON CIBS.COMPANY_CD = CILI.COMPANY_CD
+                 AND CIBS.IMP_BCNC_SETUP_SN = CILI.IMP_BCNC_SETUP_SN
+               LEFT OUTER JOIN CODE_DTL CD1
+                 ON CD1.COMPANY_CD = CILI.COMPANY_CD
+                AND CD1.CATEGORY_CD = 'C_ORCY_DTRM_BASE_CD'
+                AND CD1.CODE = CILI.COTDOO
+               LEFT OUTER JOIN CODE_DTL CD2
+                 ON CD2.COMPANY_CD = CILI.COMPANY_CD
+                AND CD2.CATEGORY_CD = 'C_ORCY_INDC_EON_TPCD'
+                AND CD2.CODE = CILI.ORPL_AT
+               LEFT OUTER JOIN CODE_DTL CD3
+                 ON CD3.COMPANY_CD = CILI.COMPANY_CD
+                AND CD3.CATEGORY_CD = 'C_ORCY_INDC_MCD'
+                AND CD3.CODE = CILI.ORPL_MTH
+               LEFT OUTER JOIN CODE_DTL CD4
+                 ON CD4.COMPANY_CD = CILI.COMPANY_CD
+                AND CD4.CATEGORY_CD = 'C_ORCY_INDC_EXMP_RCD'
+                AND CD4.CODE = CILI.ORPL_EXEPT
+               LEFT OUTER JOIN CODE_DTL CD5
+                 ON CD5.COMPANY_CD = CILI.COMPANY_CD
+                AND CD5.CATEGORY_CD = 'CC_ADDI_DDC_SE'
+                AND CD5.CODE = CILI.ADAMT_SE
+               LEFT OUTER JOIN CODE_DTL CD6
+                 ON CD6.COMPANY_CD = CILI.COMPANY_CD
+                AND CD6.CATEGORY_CD = 'CC_ADDI_DDC_SE'
+                AND CD6.CODE = CILI.DDC_CT_SE
+         WHERE CILI.COMPANY_CD = #COMPANY_CD#
+           AND CILI.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND CILI.STT_ODR = #STT_ODR#
+         ORDER BY CILI.LNE_NO, CILI.IMP_LNE_INP_SN
+    </select>
+    
+    <select id="MMB007.selectImportPrdnmHistList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CIDL.HS_CD
+              ,CID.STT_DE
+            <isNotEqual property="SEARCH_TYPE" compareValue="D">
+              ,UPPER(CIDL.PRDNM) AS PRDNM
+            </isNotEqual>
+            <isEqual property="SEARCH_TYPE" compareValue="D">
+              ,UPPER(CIDL.DEAL_PRDNM) AS PRDNM
+            </isEqual>
+              ,MAX(CID.STT_NO) AS STT_NO
+		  FROM CC_IMP_DCLRT CID
+		       INNER JOIN CC_IMP_DCLRT_LNE CIDL
+		          ON CIDL.COMPANY_CD = CID.COMPANY_CD
+		         AND CIDL.IMP_DCLRT_SN = CID.IMP_DCLRT_SN
+		 WHERE CID.COMPANY_CD = #COMPANY_CD#
+		   AND CID.IMPR_CD = #BCNC_CD#
+		   AND CIDL.HS_CD = #HS_CD#
+		   AND CID.STT_DE BETWEEN TO_CHAR(TO_DATE(CID.STT_DE, 'YYYYMMDD') + INTERVAL '-24 MONTHS', 'YYYYMMDD') AND CID.STT_DE
+		 GROUP BY CIDL.HS_CD
+		         ,CID.STT_DE
+		       <isNotEqual property="SEARCH_TYPE" compareValue="D">
+		         ,CIDL.PRDNM
+		       </isNotEqual>
+		       <isEqual property="SEARCH_TYPE" compareValue="D">
+		         ,CIDL.DEAL_PRDNM
+		       </isEqual>
+		 ORDER BY CID.STT_DE DESC
+    </select>
+    
+    <update id="MMB007.updateImportLneInputInfo" parameterClass="java.util.Map">
+        UPDATE CC_IMP_LNE_INP
+           SET LNE_NO            = #LNE_NO#
+              ,HS_CD             = #HS_CD#
+              ,TAXRT_SE          = #TAXRT_SE#
+              ,PRDNM             = #PRDNM#
+              ,DEAL_PRDNM        = #DEAL_PRDNM#
+              ,STD_PRDNM_CD      = #STD_PRDNM_CD#
+              ,SANC_AMT          = FN_PG_GET_CAST_NUM(#SANC_AMT#)
+              ,TOT_QY            = FN_PG_GET_CAST_NUM(#TOT_QY#)
+              ,NETWGHT           = FN_PG_GET_CAST_NUM(#NETWGHT#)
+              ,ADAMT_SE          = #ADAMT_SE#
+              ,ADAMT_CURR        = #ADAMT_CURR#
+              ,ADAMT_CT          = FN_PG_GET_CAST_NUM(#ADAMT_CT#)
+              ,DDC_CT_SE         = #DDC_CT_SE#
+              ,DDC_CT_CURR       = #DDC_CT_CURR#
+              ,DDC_CT            = FN_PG_GET_CAST_NUM(#DDC_CT#)
+              ,ORPL              = UPPER(#ORPL#)
+              ,COTDOO            = #COTDOO#
+              ,ORPL_AT           = #ORPL_AT#
+              ,ORPL_MTH          = #ORPL_MTH#
+              ,ORPL_EXEPT        = #ORPL_EXEPT#
+              ,BRAND_NM          = #BRAND_NM#
+              ,ADAMT_WON         = FN_PG_GET_CAST_NUM(#ADAMT_CT#)*ADAMT_EHGT
+              ,DDAMT_WON         = FN_PG_GET_CAST_NUM(#DDC_CT#)*DDAMT_EHGT
+              ,UPDATE_DATE       = NOW()::TIMESTAMP
+              ,UPDATE_BY         = #UPDATE_BY#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_LNE_INP_SN = FN_PG_GET_CAST_NUM(#IMP_LNE_INP_SN#)
+           AND IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND STT_ODR = #STT_ODR#
+    </update>
+    
+    <update id="MMB007.updateImportLneDealName" parameterClass="java.util.Map">
+        UPDATE CC_IMP_LNE_INP
+           SET DEAL_PRDNM_STDR = UPPER(#DEAL_PRDNM_STDR#)
+              ,DEAL_PRDNM = (SELECT 
+                              <isNotEmpty property="DEAL_PRDNM_STDR">
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="1">MAX(UPPER(CIDMC.STARD_01))</isEqual>
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="2">MAX(UPPER(CIDMC.STARD_02))</isEqual>
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="3">MAX(UPPER(CIDMC.STARD_03))</isEqual>
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="U">UPPER(#DEAL_PRDNM#)</isEqual>
+                              </isNotEmpty>
+                              <isEmpty property="DEAL_PRDNM_STDR">
+                                    MAX(UPPER(CIDMC.STARD_01))
+                              </isEmpty>
+                               FROM CC_IMP_DCLRT_MEL_CL CIDMC
+                              WHERE CIDMC.COMPANY_CD = CC_IMP_LNE_INP.COMPANY_CD
+                                AND CIDMC.IMP_BCNC_SETUP_SN = CC_IMP_LNE_INP.IMP_BCNC_SETUP_SN
+                                AND CIDMC.STT_ODR = CC_IMP_LNE_INP.STT_ODR
+                                AND CIDMC.LNE_NO = CC_IMP_LNE_INP.LNE_NO)
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND STT_ODR = #STT_ODR#
+    </update>
+    
+    <update id="MMB007.updateImportLneDealNetwght" parameterClass="java.util.Map">
+        UPDATE CC_IMP_LNE_INP
+           SET PRPDVS_STDR = #PRPDVS_STDR#
+              ,NETWGHT = <isNotEmpty property="PRPDVS_STDR">
+                           <isEqual property="PRPDVS_STDR" compareValue="L">FN_PG_GET_CAST_NUM(#AVG_NETWGHT#)</isEqual>
+                           <isEqual property="PRPDVS_STDR" compareValue="Q">FN_PG_GET_CAST_NUM(#TOT_NETWGHT#)*(TOT_QY/FN_PG_GET_CAST_NUM(#DCLRT_QY#))</isEqual>
+                           <isEqual property="PRPDVS_STDR" compareValue="A">FN_PG_GET_CAST_NUM(#TOT_NETWGHT#)*(SANC_AMT/FN_PG_GET_CAST_NUM(#DCLRT_AMT#))</isEqual>
+                         </isNotEmpty>
+                         <isEmpty property="PRPDVS_STDR">
+                           NULL
+                         </isEmpty>
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND STT_ODR = #STT_ODR#
+    </update>
+    
+    <select id="MMB007.selectExportLneInputList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CELI.COMPANY_CD
+			  ,CELI.EXP_LNE_INP_SN
+			  ,CELI.EXP_BCNC_SETUP_SN
+			  ,CELI.STT_ODR
+			  ,CELI.LNE_NO
+			  ,CELI.HS_CD
+			  ,CELI.PRDNM
+			  ,CELI.DEAL_PRDNM
+			  ,CELI.SANC_AMT
+			  ,CELI.PKNG_CO
+			  ,CELI.PKNG_UNIT
+			  ,CELI.NETWGHT
+			  ,CELI.ORPL
+			  ,CELI.IMP_STT_NO
+			  ,CELI.IMP_STT_LNE_NO
+			  ,CELI.IMP_STT_QY
+			  ,CELI.BRAND_NM
+			  ,CELI.TOT_QY
+			  ,CELI.TOT_WT
+			  ,CELI.ORPL_DECSN_STDR
+			  ,CELI.ORPL_DECSN_STDR||'.'||CD1.CODE_NAME AS ORPL_DECSN_STDR_NAME
+              ,CELI.DECON_AT
+			  ,CELI.DECON_AT||'.'||CD2.CODE_NAME AS DECON_AT_NAME
+			  ,CELI.PRPDVS_STDR
+			  ,CELI.DEAL_PRDNM_STDR
+			  ,CEBS.BCNC_CD
+			  ,CELI.CC_NATION_AGM_CD
+          FROM CC_EXP_LNE_INP CELI
+               INNER JOIN CC_EXP_BCNC_SETUP CEBS
+                  ON CEBS.COMPANY_CD = CELI.COMPANY_CD
+                 AND CEBS.EXP_BCNC_SETUP_SN = CELI.EXP_BCNC_SETUP_SN
+                LEFT OUTER JOIN CODE_DTL CD1
+                  ON CD1.COMPANY_CD = CELI.COMPANY_CD
+                 AND CD1.CATEGORY_CD = 'C_ORCY_DTRM_BASE_CD'
+                 AND CD1.CODE = CELI.ORPL_DECSN_STDR
+                LEFT OUTER JOIN CODE_DTL CD2
+                  ON CD2.COMPANY_CD = CELI.COMPANY_CD
+                 AND CD2.CATEGORY_CD = 'C_ORCY_INDC_EON_TPCD'
+                 AND CD2.CODE = CELI.DECON_AT
+         WHERE CELI.COMPANY_CD = #COMPANY_CD#
+           AND CELI.EXP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#EXP_BCNC_SETUP_SN#)
+           AND CELI.STT_ODR = #STT_ODR#
+         ORDER BY CELI.EXP_LNE_INP_SN
+    </select>
+    
+    <select id="MMB007.selectExportPrdnmHistList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+         SELECT CEDL.HS_CD
+               ,CED.STT_DE
+            <isNotEqual property="SEARCH_TYPE" compareValue="D">
+              ,UPPER(CEDL.PRDNM) AS PRDNM
+            </isNotEqual>
+            <isEqual property="SEARCH_TYPE" compareValue="D">
+              ,UPPER(CEDL.DEAL_PRDNM) AS PRDNM
+            </isEqual>
+              ,MAX(CED.STT_NO) AS STT_NO
+          FROM CC_EXP_DCLRT CED
+               INNER JOIN CC_EXP_DCLRT_LNE CEDL
+                  ON CEDL.COMPANY_CD = CED.COMPANY_CD
+                 AND CEDL.EXP_DCLRT_SN = CED.EXP_DCLRT_SN
+         WHERE CED.COMPANY_CD = #COMPANY_CD#
+           AND CED.EXP_OWR_CD = #BCNC_CD#
+           AND CEDL.HS_CD = #HS_CD#
+           AND CED.STT_DE BETWEEN TO_CHAR(TO_DATE(CED.STT_DE, 'YYYYMMDD') + INTERVAL '-24 MONTHS', 'YYYYMMDD') AND CED.STT_DE
+         GROUP BY CEDL.HS_CD
+                 ,CED.STT_DE
+               <isNotEqual property="SEARCH_TYPE" compareValue="D">
+                 ,CEDL.PRDNM
+               </isNotEqual>
+               <isEqual property="SEARCH_TYPE" compareValue="D">
+                 ,CEDL.DEAL_PRDNM
+               </isEqual>
+         ORDER BY CED.STT_DE DESC
+    </select>
+    
+    <update id="MMB007.updateExportLneInputInfo" parameterClass="java.util.Map">
+        UPDATE CC_EXP_LNE_INP
+           SET LNE_NO            = #LNE_NO#
+			  ,HS_CD             = #HS_CD#
+			  ,PRDNM             = #PRDNM#
+			  ,DEAL_PRDNM        = #DEAL_PRDNM#
+			  ,SANC_AMT          = FN_PG_GET_CAST_NUM(#SANC_AMT#)
+			  ,PKNG_CO           = FN_PG_GET_CAST_NUM(#PKNG_CO#)
+			  ,PKNG_UNIT         = #PKNG_UNIT#
+			  ,NETWGHT           = FN_PG_GET_CAST_NUM(#NETWGHT#)
+			  ,ORPL              = UPPER(#ORPL#)
+			  ,IMP_STT_NO        = #IMP_STT_NO#
+			  ,IMP_STT_LNE_NO    = #IMP_STT_LNE_NO#
+			  ,IMP_STT_QY        = FN_PG_GET_CAST_NUM(#IMP_STT_QY#)
+			  ,BRAND_NM          = #BRAND_NM#
+			  ,ORPL_DECSN_STDR   = #ORPL_DECSN_STDR#
+			  ,DECON_AT          = #DECON_AT#
+			  ,CC_NATION_AGM_CD  = #CC_NATION_AGM_CD#
+              ,UPDATE_DATE       = NOW()::TIMESTAMP
+              ,UPDATE_BY         = #UPDATE_BY#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND EXP_LNE_INP_SN = FN_PG_GET_CAST_NUM(#EXP_LNE_INP_SN#)
+           AND EXP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#EXP_BCNC_SETUP_SN#)
+           AND STT_ODR = #STT_ODR#
+    </update>
+    
+    <update id="MMB007.updateExportLneDealName" parameterClass="java.util.Map">
+        UPDATE CC_EXP_LNE_INP
+           SET DEAL_PRDNM_STDR = #DEAL_PRDNM_STDR#
+              ,DEAL_PRDNM = (SELECT 
+                              <isNotEmpty property="DEAL_PRDNM_STDR">
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="1">MAX(CPU.STARD_01)</isEqual>
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="2">MAX(CPU.STARD_02)</isEqual>
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="3">MAX(CPU.STARD_03)</isEqual>
+                                <isEqual property="DEAL_PRDNM_STDR" compareValue="U">#DEAL_PRDNM#</isEqual>
+                              </isNotEmpty>
+                              <isEmpty property="DEAL_PRDNM_STDR">
+                                    MAX(CPU.STARD_01)
+                              </isEmpty>
+                               FROM CC_EXP_DCLRT_MEL_CL CEDMC
+                                    INNER JOIN CC_PL_UPLO CPU
+                                       ON CPU.COMPANY_CD = CEDMC.COMPANY_CD
+						              AND CPU.IMP_BCNC_SETUP_SN = CEDMC.EXP_BCNC_SETUP_SN
+						              AND CPU.PL_UPLO_SN = CEDMC.PL_UPLO_SN
+                              WHERE CEDMC.COMPANY_CD = CC_EXP_LNE_INP.COMPANY_CD
+                                AND CEDMC.EXP_BCNC_SETUP_SN = CC_EXP_LNE_INP.EXP_BCNC_SETUP_SN
+                                AND CEDMC.STT_ODR = CC_EXP_LNE_INP.STT_ODR
+                                AND CEDMC.LNE_NO = CC_EXP_LNE_INP.LNE_NO)
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND EXP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#EXP_BCNC_SETUP_SN#)
+           AND STT_ODR = #STT_ODR#
+    </update>
+    
+    <update id="MMB007.updateExportLneDealNetwght" parameterClass="java.util.Map">
+        UPDATE CC_EXP_LNE_INP
+           SET PRPDVS_STDR = #PRPDVS_STDR#
+              ,NETWGHT = <isNotEmpty property="PRPDVS_STDR">
+                           <isEqual property="PRPDVS_STDR" compareValue="Q">FN_PG_GET_CAST_NUM(#TOT_NETWGHT#)*(TOT_QY/FN_PG_GET_CAST_NUM(#DCLRT_QY#))</isEqual>
+                           <isEqual property="PRPDVS_STDR" compareValue="P">FN_PG_GET_CAST_NUM(#TOT_NETWGHT#)*(PKNG_CO/FN_PG_GET_CAST_NUM(#DCLRT_PKNG_CO#))</isEqual>
+                           <isEqual property="PRPDVS_STDR" compareValue="A">FN_PG_GET_CAST_NUM(#TOT_NETWGHT#)*(SANC_AMT/FN_PG_GET_CAST_NUM(#DCLRT_AMT#))</isEqual>
+                         </isNotEmpty>
+                         <isEmpty property="PRPDVS_STDR">
+                           NULL
+                         </isEmpty>
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND EXP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#EXP_BCNC_SETUP_SN#)
+           AND STT_ODR = #STT_ODR#
+    </update>
+    
+    <select id="MMB004.selectImportCvtaApcPdoList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CICAR.COMPANY_CD
+              ,CICAR.IMP_CVTA_APC_RDO_SN
+              ,CICAR.IMP_DCLRT_SN
+              ,CICAR.IMP_BCNC_SETUP_SN
+              ,CICAR.STT_ODR
+              ,CICAR.DOC_STLE_SE
+              ,CICAR.TRNS_SE
+              ,CICAR.TRNS_RELT
+              ,CICAR.REC_RELT
+              ,CICAR.STT_NO
+              ,SUBSTRING(CICAR.STT_NO, 1, 5) AS APLC_CBOA_APPN
+              ,SUBSTRING(CICAR.STT_NO, 6, 2) AS SN_YY
+              ,SUBSTRING(CICAR.STT_NO, 8, 7) AS IMPDEC_SN
+              ,SUBSTRING(CICAR.STT_NO, 15, 1) AS IMPDEC_TYPE
+              ,CIBS.CSMH_CD AS STT_CSMH
+              ,KCM.CODE_NAME as CSMH_NM
+              ,CIBS.KWA_CD AS STT_KWA
+              ,CD.CODE_NAME AS KWA_NM
+              ,CICAR.REQST_DE
+              ,CICAR.CVTA_APC_LAOR_CD
+              ,CICAR.NTIC_NO
+              ,CICAR.IMPR_CD
+              ,CICAR.IMPR_MTLTY
+              ,CICAR.IMPR_NM
+              ,CICAR.IMPR_IDNU_SE_SL
+              ,CICAR.IMPR_IDNU
+              ,CICAR.IMPR_ECTMRK
+              ,CICAR.IMPR_BIZRNO
+              ,CICAR.IMPR_ZIP
+              ,CICAR.IMPR_RN_CD
+              ,CICAR.IMPR_NABN
+              ,CICAR.IMPR_BASS_ADRES
+              ,CICAR.IMPR_DETAIL_ADRES
+              ,CICAR.IMPR_TELNO
+              ,CICAR.IMPR_EMAIL
+              ,CICAR.IMPR_FAX
+              ,CICAR.EXPTER_CD
+              ,CICAR.EXPTER_ADRES
+              ,CICAR.EXPTER_MTLTY
+              ,CICAR.EXPTER_NM
+              ,CICAR.EXPTER_NATION_CD
+              ,CD2.CODE_NAME AS EXPTER_NATION_NM
+              ,CICAR.EXPTER_TELNO
+              ,CICAR.EXPTER_FAX
+              ,CICAR.MKER_CD
+              ,CICAR.MKER_ADRES
+              ,CICAR.MKER_MTLTY
+              ,CICAR.MKER_NM
+              ,CICAR.MKER_TELNO
+              ,CICAR.MKER_FAX
+          FROM CC_IMP_CVTA_APC_RDO CICAR
+               INNER JOIN CC_IMP_BCNC_SETUP CIBS
+                  ON CIBS.COMPANY_CD = CICAR.COMPANY_CD
+                 AND CIBS.IMP_BCNC_SETUP_SN = CICAR.IMP_BCNC_SETUP_SN
+                LEFT OUTER JOIN KCS_CODE_MST KCM
+                  ON KCM.CATEGORY_CD = 'CT'
+                 AND KCM.CODE = CIBS.CSMH_CD
+                LEFT OUTER JOIN CC_CSMH_KWA_CNTC CCKC
+                  ON CCKC.CSMH_CD = KCM.CODE
+                 AND CCKC.KWA_CD = CIBS.KWA_CD
+                 AND CCKC.IMP_EXP_SE_CD = '2'
+                LEFT OUTER JOIN CODE_DTL CD
+                  ON CD.COMPANY_CD = CICAR.COMPANY_CD
+                 AND CD.CATEGORY_CD = 'C_DVSN_CD'
+                 AND CD.CODE = CCKC.KWA_CD
+                LEFT OUTER JOIN CODE_DTL CD2
+                  ON CD2.COMPANY_CD = CICAR.COMPANY_CD
+                 AND CD2.CATEGORY_CD = 'C_CNTY_CD'
+                 AND CD2.CODE = CICAR.EXPTER_NATION_CD
+         WHERE CICAR.COMPANY_CD = #COMPANY_CD#
+           AND CICAR.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND CICAR.STT_ODR = #STT_ODR#
+    </select>
+    
+    <update id="MMB004.updateImportCvtaApcPdoInfo" parameterClass="java.util.Map">
+        UPDATE CC_IMP_CVTA_APC_RDO
+           SET ENCOM_STT_NO                =
+		       (SELECT ENCOM_STT_NO
+		        FROM   CC_IMP_DCLRT CID
+		        WHERE  CID.COMPANY_CD = CC_IMP_CVTA_APC_RDO.COMPANY_CD
+		        AND    CID.IMP_DCLRT_SN = FN_PG_GET_CAST_NUM(#IMP_DCLRT_SN#))
+              ,TRNS_SE           = #TRNS_SE# 
+              ,TRNS_RELT         = #TRNS_RELT#
+              ,REC_RELT          = #REC_RELT#
+              ,STT_NO            = #STT_NO#
+              ,REQST_DE          = #REQST_DE#
+              ,CVTA_APC_LAOR_CD  = #CVTA_APC_LAOR_CD#
+              ,NTIC_NO           = #NTIC_NO#
+              ,IMPR_CD           = #IMPR_CD#
+              ,IMPR_MTLTY        = #IMPR_MTLTY#
+              ,IMPR_NM           = #IMPR_NM#
+              ,IMPR_IDNU_SE_SL   = #IMPR_IDNU_SE_SL#
+              ,IMPR_IDNU         = #IMPR_IDNU#
+              ,IMPR_ECTMRK       = #IMPR_ECTMRK#
+              ,IMPR_BIZRNO       = #IMPR_BIZRNO#
+              ,IMPR_ZIP          = #IMPR_ZIP#
+              ,IMPR_RN_CD        = #IMPR_RN_CD#
+              ,IMPR_NABN         = #IMPR_NABN#
+              ,IMPR_BASS_ADRES   = #IMPR_BASS_ADRES#
+              ,IMPR_DETAIL_ADRES = #IMPR_DETAIL_ADRES#
+              ,IMPR_TELNO        = #IMPR_TELNO#
+              ,IMPR_EMAIL        = #IMPR_EMAIL#
+              ,IMPR_FAX          = #IMPR_FAX#
+              ,EXPTER_CD         = #EXPTER_CD#
+              ,EXPTER_ADRES      = #EXPTER_ADRES#
+              ,EXPTER_MTLTY      = #EXPTER_MTLTY#
+              ,EXPTER_NM         = #EXPTER_NM#
+              ,EXPTER_NATION_CD  = #EXPTER_NATION_CD#
+              ,EXPTER_TELNO      = #EXPTER_TELNO#
+              ,EXPTER_FAX        = #EXPTER_FAX#
+              ,MKER_CD           = #MKER_CD#
+              ,MKER_ADRES        = #MKER_ADRES#
+              ,MKER_MTLTY        = #MKER_MTLTY#
+              ,MKER_NM           = #MKER_NM#
+              ,MKER_TELNO        = #MKER_TELNO#
+              ,MKER_FAX          = #MKER_FAX#
+              ,UPDATE_DATE       = NOW()::TIMESTAMP
+              ,UPDATE_BY         = #USER_ID#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_CVTA_APC_RDO_SN = FN_PG_GET_CAST_NUM(#IMP_CVTA_APC_RDO_SN#)
+    </update>
+    
+    <update id="MMB004.updateImportCvtaApcBcnc" parameterClass="java.util.Map">
+        UPDATE CC_BCNC
+		   SET BCNC_MTLTY = #IMPR_MTLTY#
+		      ,NM = #IMPR_NM#
+		      ,BIZRNO = #IMPR_IDNU#
+		      ,ECTMRK = #IMPR_ECTMRK#
+		      ,ZIP = #IMPR_ZIP#
+		      ,RN_CD = #IMPR_RN_CD#
+		      ,NABN = #IMPR_NABN#
+		      ,ADRES = #IMPR_BASS_ADRES#
+		      ,DETAIL_ADRES = #IMPR_DETAIL_ADRES#
+		      ,TELNO = #IMPR_TELNO#
+		      ,EMAIL = #IMPR_EMAIL#
+		      ,FXNUM = #IMPR_FAX#
+		 WHERE COMPANY_CD = #COMPANY_CD#
+		   AND BCNC_CD = #IMPR_CD#
+    </update>
+    
+    <update id="MMB004.updateImportCvtaApcOvseaBcnc" parameterClass="java.util.Map">
+        UPDATE CC_OVSEA_BCNC
+		   SET ADRES = #EXPTER_ADRES#
+		      ,OVSEA_BCNC_MTLTY = #EXPTER_MTLTY#
+		      ,RPRS = #EXPTER_NM#
+		      ,TELNO = #EXPTER_TELNO#
+		      ,FXNUM = #EXPTER_FAX#
+		 WHERE OVSEA_BCNC_CD = #EXPTER_CD#
+    </update>
+    
+    <select id="MMB004.selectImportCvtaDclrtLneList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CICAPR.COMPANY_CD
+              ,CICAPR.IMP_CVTA_APC_RDO_LNE_SN
+              ,CICAPR.STT_ODR
+              ,CICAPR.IMP_DCLRT_LNE_NO
+              ,CICAPR.HS_CD
+              ,CICAPR.CVTA_SE_CD
+              ,CD1.TXT_VALUE3 AS DOC_STLE_SE
+              ,CD2.CODE_NAME AS DOC_STLE_SE_NM
+          FROM CC_IMP_CVTA_APC_RDO_LNE CICAPR
+               INNER JOIN CODE_DTL CD1
+                  ON CD1.COMPANY_CD = CICAPR.COMPANY_CD
+                 AND CD1.CATEGORY_CD = 'C_TRRT_TPCD'
+                 AND CD1.CODE = CICAPR.CVTA_SE_CD
+                 AND CD1.TXT_VALUE3 IN('F', 'I')
+               <isNotEmpty property="DOC_STLE_SE">
+                 AND CD1.TXT_VALUE3 = #DOC_STLE_SE#
+               </isNotEmpty>
+                LEFT OUTER JOIN CODE_DTL CD2
+                  ON CD2.COMPANY_CD = CICAPR.COMPANY_CD
+                 AND CD2.CATEGORY_CD = 'CC_M_DOC_STLE_SE'
+                 AND CD2.CODE = (CASE WHEN CD1.TXT_VALUE3 = 'F' THEN 'GOVCBR5SC'
+                                      WHEN CD1.TXT_VALUE3 = 'I' THEN 'GOVCBR929'
+                                 END)
+         WHERE CICAPR.COMPANY_CD = #COMPANY_CD#
+           AND CICAPR.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND CICAPR.STT_ODR = #STT_ODR#
+         ORDER BY CICAPR.IMP_DCLRT_LNE_NO
+    </select>
+    
+    <update id="MMB004.updateBatchImportCvtaDclrtLne" parameterClass="java.util.Map">
+        UPDATE CC_IMP_CVTA_APC_RDO_LNE
+           SET 
+           	<isEqual property="MOD_BATCH_ITEM" compareValue="PARN_ODR">
+				$MOD_BATCH_ITEM$ = #MOD_BATCH_VALUE#::NUMERIC
+			</isEqual>
+			<isNotEqual property="MOD_BATCH_ITEM" compareValue="PARN_ODR">
+				$MOD_BATCH_ITEM$ = #MOD_BATCH_VALUE#
+			</isNotEqual>		           
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_CVTA_APC_RDO_LNE_SN = FN_PG_GET_CAST_NUM(#IMP_CVTA_APC_RDO_LNE_SN#)
+    </update>
+    
+    <select id="MMB004.selectImportCvtaApcPdoLneList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CICAPR.COMPANY_CD
+		      ,CICAPR.IMP_CVTA_APC_RDO_LNE_SN
+		      ,CICAPR.IMP_CVTA_APC_RDO_SN
+		      ,CICAPR.IMP_BCNC_SETUP_SN
+		      ,CICAPR.STT_ODR
+		      ,CICAPR.IMP_DCLRT_LNE_NO
+		      ,CICAPR.CVTA_REQST_SN
+		      ,CICAPR.HS_CD
+		      ,CICAPR.COTDOO
+		      ,CICAPR.THCO_INVC_ISSU_AT
+		      ,CICAPR.THCO_INVC_ISSU_NATION_CD
+		      ,CICAPR.CARE_NO
+		      ,CICAPR.EXTRAC_NATION_CD
+		      ,CICAPR.EXTRAC_PRT_NM
+		      ,CICAPR.TRSH_AT
+		      ,CICAPR.TRSH_NATION_CD
+		      ,CICAPR.TRSH_PRT_NM
+		      ,CICAPR.CNNC_CEOR_ISSU_NATION_CD
+		      ,CICAPR.ORPL_NATION_CD
+		      ,CICAPR.ISSU_DE
+		      ,CICAPR.TKOFF_DE
+		      ,CICAPR.TRSH_DE
+		      ,CICAPR.TOT_NETWGHT
+		      ,CICAPR.PARN_ODR
+		      ,CICAPR.AGM_APC_NETWGHT
+		      ,CICAPR.ISSU_NO
+		      ,CICAPR.INSTT_SE_SL
+		      ,CICAPR.INSTT_NM
+		      ,CICAPR.CEOR_ISSU_AREA_NM
+		      ,CICAPR.ORPL_PRUF_PAPE_SE
+		      ,CICAPR.ORPL_ISSUER_SE
+		      ,CICAPR.CVTA_SE_CD
+		      ,CICAPR.CVTA_RT
+		      ,CICAPR.PRDNM
+		      ,CICAPR.MEL_STARD
+		      ,CICAPR.PARN_IMP
+			  ,CICAPR.CEOR_ISU_NATION_SL
+			  ,CD3.CODE_NAME_ENG AS CEOR_ISU_NATION_SL_NM
+			  ,CICAPR.CEOR_ISU_INSTT_NM
+			  ,CICAPR.CEOR_ISSU_PINC_NM
+			  ,CICAPR.CEOR_ISSU_AREA_NM
+			  ,CICAPR.CEOR_ALL_QY
+			  ,CICAPR.CEOR_USE_QY
+			  ,CICAPR.CEOR_ALL_WT
+			  ,CICAPR.CEOR_USE_WT
+			  ,CICAPR.PRDUCT_MTRAL_SE
+			  ,CICAPR.PRDUCT_LNE_NO
+			  ,CICAPR.FTA_AFTFAT_AT
+			  ,CILI.ORPL
+			  ,CD1.CODE_NAME_ENG AS ORPL_NM
+              ,CILI.COTDOO AS ORPL_COTDOO
+              ,CILI.ORPL_AT AS ORPL_AT
+              ,CILI.ORPL_MTH AS ORPL_MTH
+              ,CILI.ORPL_EXEPT AS ORPL_EXEPT
+              ,CD2.TXT_VALUE3 AS DOC_STLE_SE
+		      ,TO_CHAR(CICAPR.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+		      ,CICAPR.CREATE_BY
+		      ,TO_CHAR(CICAPR.UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+		      ,CICAPR.UPDATE_BY
+		  FROM CC_IMP_CVTA_APC_RDO_LNE CICAPR
+		       INNER JOIN CC_IMP_LNE_INP CILI
+                  ON CILI.COMPANY_CD = CICAPR.COMPANY_CD
+                 AND CILI.IMP_BCNC_SETUP_SN = CICAPR.IMP_BCNC_SETUP_SN
+                 AND CILI.STT_ODR = CICAPR.STT_ODR
+                 AND CILI.LNE_NO = CICAPR.IMP_DCLRT_LNE_NO
+                LEFT OUTER JOIN CODE_DTL CD1
+                  ON CD1.COMPANY_CD = CICAPR.COMPANY_CD
+                 AND CD1.CATEGORY_CD = 'C_CNTY_CD'
+                 AND CD1.CODE = CILI.ORPL
+                LEFT OUTER JOIN CODE_DTL CD2
+                  ON CD2.COMPANY_CD = CICAPR.COMPANY_CD
+                 AND CD2.CATEGORY_CD = 'C_TRRT_TPCD'
+                 AND CD2.CODE = CICAPR.CVTA_SE_CD
+                LEFT OUTER JOIN CODE_DTL CD3
+                  ON CD3.COMPANY_CD = CICAPR.COMPANY_CD
+                 AND CD3.CATEGORY_CD = 'C_CNTY_CD'
+                 AND CD3.CODE = CICAPR.CEOR_ISU_NATION_SL
+		 WHERE CICAPR.COMPANY_CD = #COMPANY_CD#
+		   AND CICAPR.IMP_CVTA_APC_RDO_LNE_SN = FN_PG_GET_CAST_NUM(#IMP_CVTA_APC_RDO_LNE_SN#)
+    </select>
+    
+    <update id="MMB004.updateImportCvtaApcPdoLneInfo" parameterClass="java.util.Map">
+        UPDATE CC_IMP_CVTA_APC_RDO_LNE
+           SET ISSU_NO = #ISSU_NO#
+              ,COTDOO = #COTDOO#
+              ,ISSU_DE = #ISSU_DE#
+              ,INSTT_NM = #INSTT_NM#
+              ,PARN_IMP = #PARN_IMP#
+              <isNotNull prepend="," property="HS_CD">HS_CD = #HS_CD#</isNotNull>
+              <isNotNull prepend="," property="THCO_INVC_ISSU_AT">THCO_INVC_ISSU_AT = #THCO_INVC_ISSU_AT#</isNotNull>
+              <isNotNull prepend="," property="THCO_INVC_ISSU_NATION_CD">THCO_INVC_ISSU_NATION_CD = #THCO_INVC_ISSU_NATION_CD#</isNotNull>
+              <isNotNull prepend="," property="CARE_NO">CARE_NO = #CARE_NO#</isNotNull>
+              <isNotNull prepend="," property="EXTRAC_NATION_CD">EXTRAC_NATION_CD = #EXTRAC_NATION_CD#</isNotNull>
+              <isNotNull prepend="," property="EXTRAC_PRT_NM">EXTRAC_PRT_NM = #EXTRAC_PRT_NM#</isNotNull>
+              <isNotNull prepend="," property="TRSH_AT">TRSH_AT = #TRSH_AT#</isNotNull>
+              <isNotNull prepend="," property="TRSH_NATION_CD">TRSH_NATION_CD = #TRSH_NATION_CD#</isNotNull>
+              <isNotNull prepend="," property="TRSH_PRT_NM">TRSH_PRT_NM = #TRSH_PRT_NM#</isNotNull>
+              <isNotNull prepend="," property="CNNC_CEOR_ISSU_NATION_CD">CNNC_CEOR_ISSU_NATION_CD = #CNNC_CEOR_ISSU_NATION_CD#</isNotNull>
+              <isNotNull prepend="," property="ORPL_NATION_CD">ORPL_NATION_CD = #ORPL_NATION_CD#</isNotNull>
+              <isNotNull prepend="," property="TKOFF_DE">TKOFF_DE = #TKOFF_DE#</isNotNull>
+              <isNotNull prepend="," property="TRSH_DE">TRSH_DE = #TRSH_DE#</isNotNull>
+              <isNotNull prepend="," property="TOT_NETWGHT">TOT_NETWGHT = FN_PG_GET_CAST_NUM(#TOT_NETWGHT#)</isNotNull>
+              <isNotNull prepend="," property="PARN_ODR">PARN_ODR = FN_PG_GET_CAST_NUM(#PARN_ODR#)</isNotNull>
+              <isNotNull prepend="," property="AGM_APC_NETWGHT">AGM_APC_NETWGHT = FN_PG_GET_CAST_NUM(#AGM_APC_NETWGHT#)</isNotNull>
+              <isNotNull prepend="," property="INSTT_SE_SL">INSTT_SE_SL = #INSTT_SE_SL#</isNotNull>
+              <isNotNull prepend="," property="ORPL_PRUF_PAPE_SE">ORPL_PRUF_PAPE_SE = #ORPL_PRUF_PAPE_SE#</isNotNull>
+              <isNotNull prepend="," property="ORPL_ISSUER_SE">ORPL_ISSUER_SE = #ORPL_ISSUER_SE#</isNotNull>
+              <isNotNull prepend="," property="CVTA_SE_CD">CVTA_SE_CD = #CVTA_SE_CD#</isNotNull>
+              <isNotNull prepend="," property="CVTA_RT">CVTA_RT = FN_PG_GET_CAST_NUM(#CVTA_RT#)</isNotNull>
+              <isNotNull prepend="," property="PRDNM">PRDNM = #PRDNM#</isNotNull>
+              <isNotNull prepend="," property="MEL_STARD">MEL_STARD = #MEL_STARD#</isNotNull>
+              <isNotNull prepend="," property="CEOR_ISU_NATION_SL">CEOR_ISU_NATION_SL = #CEOR_ISU_NATION_SL#</isNotNull>
+              <isNotNull prepend="," property="CEOR_ISU_INSTT_NM">CEOR_ISU_INSTT_NM = #CEOR_ISU_INSTT_NM#</isNotNull>
+              <isNotNull prepend="," property="CEOR_ISSU_PINC_NM">CEOR_ISSU_PINC_NM = #CEOR_ISSU_PINC_NM#</isNotNull>
+              <isNotNull prepend="," property="CEOR_ISSU_AREA_NM">CEOR_ISSU_AREA_NM = #CEOR_ISSU_AREA_NM#</isNotNull>
+              <isNotNull prepend="," property="CEOR_ALL_QY">CEOR_ALL_QY = FN_PG_GET_CAST_NUM(#CEOR_ALL_QY#)</isNotNull>
+              <isNotNull prepend="," property="CEOR_USE_QY">CEOR_USE_QY = FN_PG_GET_CAST_NUM(#CEOR_USE_QY#)</isNotNull>
+              <isNotNull prepend="," property="CEOR_ALL_WT">CEOR_ALL_WT = FN_PG_GET_CAST_NUM(#CEOR_ALL_WT#)</isNotNull>
+              <isNotNull prepend="," property="CEOR_USE_WT">CEOR_USE_WT = FN_PG_GET_CAST_NUM(#CEOR_USE_WT#)</isNotNull>
+              <isNotNull prepend="," property="PRDUCT_MTRAL_SE">PRDUCT_MTRAL_SE = #PRDUCT_MTRAL_SE#</isNotNull>
+              <isNotNull prepend="," property="PRDUCT_LNE_NO">PRDUCT_LNE_NO = #PRDUCT_LNE_NO#</isNotNull>
+              <isNotNull prepend="," property="FTA_AFTFAT_AT">FTA_AFTFAT_AT = #FTA_AFTFAT_AT#</isNotNull>
+              ,UPDATE_DATE = NOW()::TIMESTAMP
+              ,UPDATE_BY = #USER_ID#
+        WHERE COMPANY_CD = #COMPANY_CD#
+          AND IMP_CVTA_APC_RDO_LNE_SN = FN_PG_GET_CAST_NUM(#IMP_CVTA_APC_RDO_LNE_SN#)
+    </update>
+    
+    <update id="MMB007.updateImportCvtaApcPdoLneInputInfo" parameterClass="java.util.Map">
+        UPDATE CC_IMP_LNE_INP
+           SET UPDATE_DATE = NOW()::TIMESTAMP
+              <isNotNull prepend="," property="ORPL">ORPL = UPPER(#ORPL#)</isNotNull>
+              <isNotNull prepend="," property="ORPL_COTDOO">COTDOO = #ORPL_COTDOO#</isNotNull>
+              <isNotNull prepend="," property="ORPL_AT">ORPL_AT = #ORPL_AT#</isNotNull>
+              <isNotNull prepend="," property="ORPL_MTH">ORPL_MTH = #ORPL_MTH#</isNotNull>
+              <isNotNull prepend="," property="ORPL_EXEPT">ORPL_EXEPT = #ORPL_EXEPT#</isNotNull>
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND STT_ODR = #STT_ODR#
+           AND LNE_NO = #IMP_DCLRT_LNE_NO#
+    </update>
+    
+    <delete id="MMB004.deleteImportCvtaApcPdoLneInfo" parameterClass="java.util.Map">
+        DELETE FROM CC_IMP_CVTA_APC_RDO_LNE
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_CVTA_APC_RDO_LNE_SN = FN_PG_GET_CAST_NUM(#IMP_CVTA_APC_RDO_LNE_SN#)
+    </delete>
+    
+    <select id="MMB004.selectImpCvtaApcPdoStardList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CICAPS.COMPANY_CD
+              ,CICAPS.IMP_CVTA_APC_RDO_STARD_SN
+              ,CICAPS.IMP_CVTA_APC_RDO_SN
+              ,CICAPS.IMP_BCNC_SETUP_SN
+              ,CICAPS.STT_ODR
+              ,CICAPS.REGIST_NO
+              ,CICAPS.IMP_LNE_NO
+              ,CICAPS.IMP_STARD_NO
+              ,CICAPS.CEOR_ISU_NO
+              ,CICAPS.CEOR_ROW_NO
+              ,CICAPS.USE_QY
+              ,CICAPS.USE_QY_UNIT
+              ,CICAPS.USE_QY_UNIT
+              ,SUM(CICAPS.USE_QY) OVER(PARTITION BY CICAPS.COMPANY_CD, CICAPS.IMP_BCNC_SETUP_SN, CICAPS.STT_ODR) AS CEOR_TOT_QY
+              ,CIDMC.IMPDEC_TOT_QY
+              ,TO_CHAR(CICAPS.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CICAPS.CREATE_BY
+              ,TO_CHAR(CICAPS.UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+              ,CICAPS.UPDATE_BY
+          FROM CC_IMP_CVTA_APC_RDO_STARD CICAPS
+               INNER JOIN (SELECT CIDMC.COMPANY_CD
+                                  ,CIDMC.IMP_BCNC_SETUP_SN
+                                  ,CIDMC.STT_ODR
+                                  ,SUM(CIDMC.QY) AS IMPDEC_TOT_QY
+                              FROM CC_IMP_DCLRT_MEL_CL CIDMC
+                                   INNER JOIN CC_PL_UPLO CPU
+                                      ON CPU.COMPANY_CD = CIDMC.COMPANY_CD
+                                     AND CPU.PL_UPLO_SN = CIDMC.PL_UPLO_SN
+                                     AND CPU.KOREA_CHINA_ROW_NO IS NOT NULL
+                                     AND CPU.KOREA_CHINA_ROW_NO != ''
+                             WHERE CIDMC.COMPANY_CD = #COMPANY_CD#
+                               AND CIDMC.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+                               AND CIDMC.STT_ODR = #STT_ODR#
+                             GROUP BY CIDMC.COMPANY_CD
+                                     ,CIDMC.IMP_BCNC_SETUP_SN
+                                     ,CIDMC.STT_ODR) CIDMC
+                  ON CIDMC.COMPANY_CD = CICAPS.COMPANY_CD
+                 AND CIDMC.IMP_BCNC_SETUP_SN = CICAPS.IMP_BCNC_SETUP_SN
+                 AND CIDMC.STT_ODR = CICAPS.STT_ODR
+         WHERE CICAPS.COMPANY_CD = #COMPANY_CD#
+           AND CICAPS.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND CICAPS.STT_ODR = #STT_ODR#
+         ORDER BY CICAPS.REGIST_NO
+    </select>
+    
+    <select id="MMB004.selectImpCvtaApcPdoStardTotInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CIDMC.COMPANY_CD
+              ,CIDMC.IMP_BCNC_SETUP_SN
+              ,CIDMC.STT_ODR
+              ,SUM(CIDMC.QY) AS IMPDEC_TOT_QY
+              ,(SELECT SUM(CICARS.USE_QY)
+                  FROM CC_IMP_CVTA_APC_RDO_STARD CICARS
+                 WHERE CICARS.COMPANY_CD = CIDMC.COMPANY_CD
+                   AND CICARS.IMP_BCNC_SETUP_SN = CIDMC.IMP_BCNC_SETUP_SN
+                   AND CICARS.STT_ODR = CIDMC.STT_ODR) AS CEOR_TOT_QY
+          FROM CC_IMP_DCLRT_MEL_CL CIDMC
+               INNER JOIN CC_PL_UPLO CPU
+                  ON CPU.COMPANY_CD = CIDMC.COMPANY_CD
+                 AND CPU.PL_UPLO_SN = CIDMC.PL_UPLO_SN
+                 AND CPU.KOREA_CHINA_ROW_NO IS NOT NULL
+                 AND CPU.KOREA_CHINA_ROW_NO != ''
+         WHERE CIDMC.COMPANY_CD = #COMPANY_CD#
+           AND CIDMC.IMP_BCNC_SETUP_SN = FN_PG_GET_CAST_NUM(#IMP_BCNC_SETUP_SN#)
+           AND CIDMC.STT_ODR = #STT_ODR#
+         GROUP BY CIDMC.COMPANY_CD
+                 ,CIDMC.IMP_BCNC_SETUP_SN
+                 ,CIDMC.STT_ODR
+    </select>
+    
+    <update id="MMB004.updateImpCvtaApcPdoStardInfo" parameterClass="java.util.Map">
+        UPDATE CC_IMP_CVTA_APC_RDO_STARD
+           SET REGIST_NO = #REGIST_NO#
+              ,IMP_LNE_NO = #IMP_LNE_NO#
+              ,IMP_STARD_NO = #IMP_STARD_NO#
+              ,CEOR_ISU_NO = #CEOR_ISU_NO#
+              ,CEOR_ROW_NO = #CEOR_ROW_NO#
+              ,USE_QY = FN_PG_GET_CAST_NUM(#USE_QY#)
+              ,USE_QY_UNIT = #USE_QY_UNIT#
+              ,UPDATE_DATE = NOW()::TIMESTAMP
+              ,UPDATE_BY = #USER_ID#
+        WHERE COMPANY_CD = #COMPANY_CD#
+          AND IMP_CVTA_APC_RDO_STARD_SN = FN_PG_GET_CAST_NUM(#IMP_CVTA_APC_RDO_STARD_SN#)
+    </update>
+    
+    <delete id="MMB004.deleteImpCvtaApcPdoStardInfo" parameterClass="java.util.Map">
+        DELETE FROM CC_IMP_CVTA_APC_RDO_STARD
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND IMP_CVTA_APC_RDO_STARD_SN = FN_PG_GET_CAST_NUM(#IMP_CVTA_APC_RDO_STARD_SN#)
+    </delete>
+    
+	<!-- 대행사 -->
+    <select id="MMB002.selectAgencyList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+			SELECT COMPANY_CD
+			      ,AGEN_CD
+			      ,BCNC_CD
+			      ,AGEN_MTLTY
+			      ,RPRS_NM
+			      ,BIZRNO
+			      ,ZIP
+			      ,ADRES
+			      ,FXNUM
+			      ,BIZCND
+			      ,IOB
+			      ,EMAIL
+			      ,EMAIL_TRNS_AT
+			      ,CHRCTR_TRNS_AT
+			      ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+			      ,CREATE_BY
+			      ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+			      ,UPDATE_BY	
+			FROM   CC_AGEN
+			WHERE  1 = 1
+			AND    COMPANY_CD = #COMPANY_CD#
+            <isNotEmpty property="schKeyWord">
+                AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN ($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+            </isNotEmpty>
+	   <include refid="select-paging-end" />
+    </select>
+    
+	<!-- 운수기관(CC_TRAT_INSTT) -->
+    <select id="MMB002.selectTratInsttList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+			SELECT CTI.TRAT_INSTT_SE
+			      ,FN_GET_COMMON_CD(#COMPANY_CD#, 'CC_TRAT_INSTT_SE', CTI.TRAT_INSTT_SE, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS TRAT_INSTT_NM
+			      ,CTI.TRAT_INSTT_CD
+			      ,CTI.TRAT_INSTT_KOR_NM
+			      ,CTI.TRAT_INSTT_ENG_NM
+			      ,CTI.RPRS_NM
+			      ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+			      ,CREATE_BY
+			      ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+			      ,UPDATE_BY
+			FROM   CC_TRAT_INSTT CTI
+			WHERE  1 = 1
+			<isNotEmpty property="TRAT_INSTT_SE">
+			AND    TRAT_INSTT_SE = #TRAT_INSTT_SE#
+			</isNotEmpty>
+			<isNotEmpty property="TRAT_INSTT_CD">
+			AND    UPPER(TRAT_INSTT_CD) LIKE '%'||#TRAT_INSTT_CD#||'%'
+			</isNotEmpty>				
+			<isNotEmpty property="TRAT_INSTT_KOR_NM">
+			AND    UPPER(TRAT_INSTT_KOR_NM) LIKE '%'||#TRAT_INSTT_KOR_NM#||'%'
+			</isNotEmpty>						
+			<isNotEmpty property="schKeyWord">
+           	AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN ($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+           	</isNotEmpty>
+	   <include refid="select-paging-end" />
+    </select>
+ 
+ 	<!-- 우편번호별관할세관(CC_ZIP_CMPC_CSMH) -->
+    <select id="MMB002.selectZipCmpcCsmhList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+			SELECT
+				*
+			FROM
+				(
+				SELECT
+					ZIP_CMPC_CSMH_SN ,
+					CSMH_SL ,
+					CSMH_NM ,
+					ZIP ,
+					LOCPLC_CITY || ' ' || LOCPLC_GU || ' ' || LOCPLC_DONG AS ADDRESS ,
+					LOCPLC_CITY ,
+					LOCPLC_GU ,
+					LOCPLC_DONG ,
+					KWA_SL ,
+					KWA_NM ,
+					OAPI_REC_SN ,
+					TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE ,
+					CREATE_BY ,
+					TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE ,
+					UPDATE_BY
+				from CC_ZIP_CMPC_CSMH ) CZCC
+			WHERE 1 = 1
+			<isNotEmpty property="schKeyField">					
+				<isNotEmpty property="schKeyWord">
+	           	AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN ($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+	           	</isNotEmpty>
+	        </isNotEmpty>
+           	ORDER BY CSMH_SL, ZIP
+	   <include refid="select-paging-end" />
+    </select>       
+    
+    <select id="MMB002.selectClientList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-paging-start" />
+        SELECT COMPANY_CD
+              ,CB.BCNC_CD
+              ,BCNC_MTLTY
+              ,NM
+              ,BIZRNO_SE_SL
+              ,BIZRNO
+              ,IHIDNUM
+              ,PSPRNBR
+              ,ECTMRK
+              ,ZIP
+              ,ADRES
+              ,DETAIL_ADRES
+              ,ENG_ADRES
+              ,RN_CD
+              ,NABN
+              ,TELNO
+              ,FXNUM
+              ,REU_INSTT
+              ,BIZCND
+              ,SHED_SL
+              ,SHED_NM
+              ,SHED_ENG_ADRES
+              ,RM_01
+              ,RM_02
+              ,RM_03
+              ,RM_IND_AT
+              ,AFTFAT_EXCCLC_TRG_AT
+              ,STT_BFE_TKOUT_MRTGG_AT
+              ,RESE_IDNTFR
+              ,THNG_LOCPLC
+              ,THNG_LOCPLC_ADRES
+              ,THNG_LOCPLC_DETAIL_ADRES
+              ,PINC
+              ,BSN_PINC
+              ,AGEN_CD
+              ,EMAIL
+              ,IOB
+              ,SIMP_REU_REQST
+              ,ATMC_SIMP_FXAMT_REU
+              ,WEB_TRNS_AT
+              ,EMAIL_TRNS_AT
+              ,CHRCTR_TRNS_AT
+              ,IRSTT_SL
+              ,PLE_TRG_AT
+              ,EXML_MRTGG_AT
+              ,BLCLST_AT
+              ,APLC_CBOA_APPN
+              ,TAXBIL_OUTPT_AT
+              ,LMT_AMT
+              ,PAY_POSTPNE_TRG_AT
+              ,PAY_POSTPNE_END_TMLMT
+              ,PLCSTRA_NO
+              ,DEAL_BEGIN_DE
+              ,CREATE_DATE
+              ,CREATE_BY
+              ,UPDATE_DATE
+              ,UPDATE_BY
+              ,(SELECT COUNT(1) CNT 
+                FROM   CC_IMP_BCNC_SETUP CIBS 
+                WHERE  CIBS.COMPANY_CD = CB.COMPANY_CD 
+                AND    CIBS.BCNC_CD = CB.BCNC_CD 
+                AND    CIBS.UPP_IMP_BCNC_SETUP_SN IS NULL) AS SETUP_IMP_CNT
+              ,(SELECT COUNT(1) CNT 
+                FROM   CC_EXP_BCNC_SETUP CEBS 
+                WHERE  CEBS.COMPANY_CD = CB.COMPANY_CD 
+                AND    CEBS.BCNC_CD = CB.BCNC_CD 
+                AND    CEBS.UPP_EXP_BCNC_SETUP_SN IS NULL) AS SETUP_EXP_CNT               
+          FROM CC_BCNC CB
+          <include refid="MMCCPOP.userEntrBcncJoin" />
+         WHERE 1 = 1
+         <isNotEmpty property="BCNC_CD">
+           AND CB.BCNC_CD = #BCNC_CD#
+         </isNotEmpty>
+         <isNotEmpty property="BCNC_MTLTY">
+           AND CB.BCNC_MTLTY LIKE '%'||#BCNC_MTLTY#||'%'
+         </isNotEmpty>
+         <isNotEmpty property="BIZRNO">
+           AND REPLACE(CB.BIZRNO, '-', '') = #BIZRNO#
+         </isNotEmpty>
+        <include refid="select-paging-end" />
+        <isNotEmpty property="ORDER_BY_TYPE">
+           <isEqual property="ORDER_BY_TYPE" compareValue="1">
+             ORDER BY BCNC_CD
+           </isEqual>
+           <isEqual property="ORDER_BY_TYPE" compareValue="2">
+             ORDER BY BCNC_MTLTY
+           </isEqual>
+           <isEqual property="ORDER_BY_TYPE" compareValue="3">
+             ORDER BY DEAL_BEGIN_DE DESC
+           </isEqual>
+        </isNotEmpty>
+    </select>
+    
+    <select id="MMB002.selectStardProductNameList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />    
+        SELECT STD_PRDNM_SN
+              ,SNU
+              ,PRDNM
+              ,HS_CD
+              ,BEGIN_DE
+              ,END_DE
+              ,PRPOS_SE
+              ,PRDNM_NO
+              ,STD_PRDNM_KOR
+              ,STD_PRDNM_ENG
+              ,STARD_NO
+              ,STARD_ORDR
+              ,ESSN_STARD_KOR
+              ,ESSN_STARD_ENG
+              ,STARD_VAL
+              ,DETAIL_CL_CN
+              ,RM
+              ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CREATE_BY
+              ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+              ,UPDATE_BY
+        FROM   CC_STD_PRDNM CSP
+        WHERE  1 = 1
+        <isNotEmpty property="STD_PRDNM_SN">
+        AND    CSP.STD_PRDNM_SN = #STD_PRDNM_SN#::NUMERIC  
+        </isNotEmpty>       
+        AND    '20200101' BETWEEN CSP.BEGIN_DE AND CSP.END_DE
+        <isNotEmpty property="HS_CD">
+        AND    CSP.HS_CD = #HS_CD#
+        </isNotEmpty>
+        <isNotEmpty property="PRDNM">
+        AND    CSP.PRDNM = #PRDNM#
+        </isNotEmpty>
+        <isNotEmpty property="STD_PRDNM_KOR">
+        AND    CSP.STD_PRDNM_KOR = #STD_PRDNM_KOR#
+        </isNotEmpty>
+        <isNotEmpty property="STD_PRDNM_ENG">
+        AND    CSP.STD_PRDNM_ENG = #STD_PRDNM_ENG#
+        </isNotEmpty>
+        <include refid="select-paging-end" />
+        ORDER  BY FN_PG_GET_CAST_NUM(SNU), PRDNM, PRDNM_NO, STARD_NO, STARD_ORDR
+    </select>  
+    
+    <select id="MMB002.selectShedList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />    
+        SELECT SHED_SL
+              ,SHED_NM
+              ,CSMH_CD
+              ,IMP_KWA_CD
+              ,EXP_KWA_CD
+              ,APC_DE
+              ,ZIP
+              ,ADRES
+              ,TELNO
+              ,FXNUM
+              ,HMPG
+              ,FFNLG_LEVY_AT
+              ,ADTX_LEV_AT
+              ,PLCDSCH_BDDR_AT
+              ,ODCY_AT
+              ,SORT_ORDR
+              ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CREATE_BY
+              ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+              ,UPDATE_BY
+        FROM   CC_SHED
+        WHERE 1 = 1
+        <isNotEmpty property="SHED_SL">
+        AND    SHED_SL LIKE '%'||#SHED_SL#||'%'
+        </isNotEmpty>       
+        <isNotEmpty property="SHED_NM">
+        AND    SHED_NM LIKE '%'||#SHED_NM#||'%'
+        </isNotEmpty>
+        <include refid="select-paging-end" />
+        ORDER  BY SHED_SL
+                 ,SHED_NM
+    </select>     
+    
+    <!-- 세관, 항구, 공항... -->
+    <select id="MMB002.selectKcsCodeList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        <include refid="select-paging-start" />
+        <!-- 세관 -->
+        <isEqual property="CATEGORY_CD" compareValue="CT">
+            SELECT KCM.CATEGORY_CD
+                  ,KCM.CODE         AS CSMH_CD
+                  ,KCM.CODE_NAME    AS CSMH_NM
+                  ,KCM.TXT_VALUE1   AS NATION_CD
+                  ,FN_GET_COMMON_CD(#COMPANY_CD#, 'C_CNTY_CD', KCM.TXT_VALUE1, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS NATION_NM
+                  ,SORT_NO
+            FROM   KCS_CODE_MST KCM
+            WHERE  KCM.CATEGORY_CD = #CATEGORY_CD#
+            <isNotEmpty property="PORT_AIR_CD">
+            AND    KCM.CODE LIKE '%'||#PORT_AIR_CD#||'%'
+            </isNotEmpty>       
+            <isNotEmpty property="PORT_AIR_NM">
+            AND    KCM.CODE_NAME LIKE '%'||#PORT_AIR_NM#||'%'
+            </isNotEmpty>
+            <isNotEmpty property="schKeyField">         
+                <isNotEmpty property="schKeyWord">
+                   AND UPPER($schKeyField$) <isNotEmpty property="multiData"> IN($multiData$)</isNotEmpty><isEmpty property="multiData"> LIKE UPPER(#schKeyWord#)</isEmpty>
+                </isNotEmpty>
+            </isNotEmpty>               
+        </isEqual>
+        <!-- 항구, 공항 -->
+        <isEqual property="CATEGORY_CD" compareValue="OPOS">
+            SELECT KCM.CATEGORY_CD
+                  ,KCM.CODE         AS PORT_AIR_CD
+                  ,KCM.CODE_NAME    AS PORT_AIR_NM
+                  ,KCM.TXT_VALUE1   AS NATION_CD
+                  ,FN_GET_COMMON_CD(#COMPANY_CD#, 'C_CNTY_CD', KCM.TXT_VALUE1, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS NATION_NM
+                  ,KCM.TXT_VALUE2   AS PORT_AIR_TY
+                  ,FN_GET_COMMON_CD(#COMPANY_CD#, 'CC_M_LOADPO_TYPE', KCM.TXT_VALUE2, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS PORT_AIR_TY_NM               
+                  ,SORT_NO
+            FROM   KCS_CODE_MST KCM
+            WHERE  KCM.CATEGORY_CD = #CATEGORY_CD#
+            <isNotEmpty property="PORT_AIR_CD">
+            AND    KCM.CODE LIKE '%'||#PORT_AIR_CD#||'%'
+            </isNotEmpty>   
+            <isNotEmpty property="PORT_AIR_NM">
+            AND    KCM.CODE_NAME LIKE '%'||#PORT_AIR_NM#||'%'
+            </isNotEmpty>                   
+            <isNotEmpty property="NATION_CD">
+            AND    KCM.TXT_VALUE1 = #NATION_CD#
+            </isNotEmpty>   
+            <isNotEmpty property="PORT_AIR_TY">
+            AND    KCM.TXT_VALUE2 IN ($PORT_AIR_TY$)
+            </isNotEmpty>                   
+            <isNotEmpty property="schKeyField">         
+                <isNotEmpty property="schKeyWord">
+                   AND UPPER($schKeyField$) <isNotEmpty property="multiData"> IN($multiData$)</isNotEmpty><isEmpty property="multiData"> LIKE UPPER(#schKeyWord#)</isEmpty>
+                </isNotEmpty>
+            </isNotEmpty>           
+        </isEqual>    
+                
+        <include refid="select-paging-end" />
+        ORDER  BY SORT_NO
+    </select>
+    
+    <!-- 세관 과 리스트  -->
+    <select id="MMB002.selectKwaList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />    
+        SELECT KCM.CODE      AS CSMH_CD
+              ,KCM.CODE_NAME AS CSMH_NAME
+              ,CCKC.IMP_EXP_SE_CD
+              ,CD.CODE       AS KWA_CD
+              ,CD.CODE_NAME  AS KWA_NAME
+        FROM   KCS_CODE_MST KCM
+        JOIN   CC_CSMH_KWA_CNTC CCKC
+        ON     CCKC.CSMH_CD = KCM.CODE
+        JOIN   CODE_DTL CD
+        ON     CD.COMPANY_CD = #COMPANY_CD#
+        AND    CD.CATEGORY_CD = 'C_DVSN_CD'
+        AND    CD.CODE = CCKC.KWA_CD
+        WHERE  KCM.CATEGORY_CD = #CATEGORY_CD#
+        AND    KCM.CODE = #CSMH_CD#
+        AND    CCKC.IMP_EXP_SE_CD = #IMP_EXP_SE_CD#
+        <include refid="select-paging-end" />
+    </select>
+
+    <insert id="MMB002.insertCsmhKwaMapping" parameterClass="java.util.Map">
+        INSERT INTO CC_CSMH_KWA_CNTC
+            (IMP_EXP_SE_CD
+            ,CSMH_CD
+            ,KWA_CD
+            ,CREATE_DATE
+            ,CREATE_BY
+            ,UPDATE_DATE
+            ,UPDATE_BY)
+        VALUES
+            (#IMP_EXP_SE_CD#
+            ,#CSMH_CD#
+            ,#KWA_CD#
+            ,NOW()::TIMESTAMP
+            ,#CREATE_BY#
+            ,NOW()::TIMESTAMP
+            ,#CREATE_BY#)
+    </insert>
+
+    <delete id="MMB002.deleteCsmhKwaMapping" parameterClass="java.util.Map">
+        DELETE FROM CC_CSMH_KWA_CNTC
+        WHERE  IMP_EXP_SE_CD = #IMP_EXP_SE_CD#
+        AND    CSMH_CD = #CSMH_CD#
+        AND    KWA_CD = #KWA_CD#
+    </delete>
+    
+    <!-- 세관 과 제외 리스트  -->
+    <select id="MMB002.selectCsmhKwaExcludeList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">    
+        SELECT CD.COMPANY_CD
+              ,CD.CATEGORY_CD
+              ,CD.CODE          AS KWA_CD
+              ,CD.CODE_NAME     AS KWA_NM
+              ,CD.CODE_NAME_ENG AS KWA_ENG_NM
+        FROM   CODE_DTL CD
+        WHERE  CD.COMPANY_CD = #COMPANY_CD#
+        AND    CD.CATEGORY_CD = 'C_DVSN_CD'
+        AND    NOT EXISTS (SELECT CODE
+                             FROM   CC_CSMH_KWA_CNTC CCKC
+                             WHERE  CCKC.CSMH_CD = #CSMH_CD#
+                             AND    CCKC.IMP_EXP_SE_CD = #IMP_EXP_SE_CD#
+                             AND    CCKC.KWA_CD = CD.CODE)
+        ORDER  BY SORT_NO       
+    </select>
+    
+    <!-- 화물운송주선업자 리스트  -->
+    <select id="MMB002.selectFreightTransportAgencyList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />    
+        SELECT FRGHT_TRN_AGENC_BSMN_SL
+              ,MTLTY_KOR_NM
+              ,MTLTY_ENG_NM
+              ,RPRS_NM
+              ,BIZRNO
+              ,HEDOFC_ADRES
+              ,SPOT_ADRES
+              ,NATION_CD
+              ,TELNO
+              ,FXNUM
+              ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CREATE_BY
+              ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+              ,UPDATE_BY
+        FROM   CC_FRGHT_TRN_AGENC_BSMN
+        WHERE  1 = 1                            
+        <isNotEmpty property="FRGHT_TRN_AGENC_BSMN_SL">
+        AND    UPPER(FRGHT_TRN_AGENC_BSMN_SL) LIKE '%'||#FRGHT_TRN_AGENC_BSMN_SL#||'%'
+        </isNotEmpty>
+        <isNotEmpty property="MTLTY_KOR_NM">
+        AND    MTLTY_KOR_NM LIKE '%'||#MTLTY_KOR_NM#||'%'
+        </isNotEmpty>                   
+        <include refid="select-paging-end" />
+        ORDER  BY FRGHT_TRN_AGENC_BSMN_SL
+                 ,MTLTY_KOR_NM
+    </select>
+    
+    <!-- 관세사 -->
+    <select id="MMB002.selectCustomsBrokerAgentList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />    
+        SELECT CBOA_SL
+              ,CBOA_NM
+              ,APLC_SE
+              ,RPRS_NM
+              ,CSMH_SL
+              ,CSMH_NM
+              ,TELNO
+              ,ADRES
+              ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CREATE_BY
+              ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+              ,UPDATE_BY
+        FROM   CC_CBOA
+        WHERE  1 = 1                      
+        <isNotEmpty property="CBOA_SL">
+        AND    UPPER(CBOA_SL) LIKE '%'||#CBOA_SL#||'%'
+        </isNotEmpty>
+        <isNotEmpty property="CBOA_NM">
+        AND    CBOA_NM LIKE '%'||#CBOA_NM#||'%'
+        </isNotEmpty>                   
+        <include refid="select-paging-end" />
+        ORDER  BY CBOA_SL
+                 ,CBOA_NM
+    </select>
+
+    <select id="MMB002.selectOverBcncList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />    
+        SELECT OVSEA_BCNC_CD
+              ,OVSEA_BCNC_MTLTY
+              ,NATION_CD
+              ,ETC
+              ,RPRS
+              ,ADRES
+              ,TELNO
+              ,FXNUM
+              ,ALWNC_DE
+              ,AEO_NO
+              ,OVSEA_BCNC_ARNG_AF_MTLTY
+              ,REPRSNT_CD
+              ,USE_AT_CD
+              ,USE_STOP_RESN
+              ,OAPI_REC_SN
+              ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CREATE_BY
+              ,TO_CHAR(UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+              ,UPDATE_BY
+        FROM   CC_OVSEA_BCNC COB
+        WHERE  1 = 1    
+        <isNotEmpty property="schKeyWord">
+           AND UPPER($schKeyField$) <isNotEmpty property="multiData"> IN($multiData$)</isNotEmpty><isEmpty property="multiData"> LIKE UPPER(#schKeyWord#)</isEmpty>
+        </isNotEmpty>                   
+        <include refid="select-paging-end" />
+        ORDER  BY OVSEA_BCNC_CD
+                 ,OVSEA_BCNC_MTLTY
+    </select>
+    
+    <select id="MMB002.selectEntryFileList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT CD2.COMPANY_CD
+              ,CEAD.ENTR_ATCHF_DETAIL_SN
+              ,CEAD.ENTR_ATCHF_MASTR_SN
+              ,CD2.CODE_NAME FILE_TY_NM
+              ,CD2.CODE FILE_TY
+              ,CEAD.FILE_NM
+              ,CEAD.FILE_TYP
+              ,CEAD.FILE_SIZE
+              ,TO_CHAR(CEAD.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') CREATE_DATE
+              ,CEAD.CREATE_BY
+              ,TO_CHAR(CEAD.UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') UPDATE_DATE
+              ,CEAD.UPDATE_BY
+        FROM   CODE_DTL CD2
+        LEFT   OUTER JOIN (SELECT *
+                           FROM   CC_ENTR_ATCHF_DETAIL C
+                           WHERE  C.COMPANY_CD = #COMPANY_CD#
+                           AND    C.ENTR_ATCHF_MASTR_SN = FN_PG_GET_CAST_NUM(#ENTR_ATCHF_MASTR_SN#)) CEAD
+        ON     CD2.COMPANY_CD = CEAD.COMPANY_CD
+        AND    CD2.CODE = CEAD.FILE_TY
+        WHERE  CD2.COMPANY_CD = #COMPANY_CD#
+        AND    CD2.CATEGORY_CD = 'CC_M_CUSTOMS_UPLOAD'
+        AND    CD2.TXT_VALUE1 = #ENTR_TY#
+        ORDER  BY CD2.SORT_NO   
+    </select>       
+    
+    <select id="MMB002.selectEntryFileInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT COMPANY_CD
+              ,ENTR_ATCHF_DETAIL_SN
+              ,ENTR_ATCHF_MASTR_SN
+              ,FILE_TY
+              ,FILE_NM
+              ,FILE_TYP
+              ,FILE_SIZE
+              ,ATCHF
+              ,CREATE_DATE
+              ,CREATE_BY
+              ,UPDATE_DATE
+              ,UPDATE_BY
+        FROM   CC_ENTR_ATCHF_DETAIL CEAD
+        WHERE  CEAD.COMPANY_CD = #COMPANY_CD#
+        <isNotEmpty property="ENTR_ATCHF_DETAIL_SN">
+        AND    CEAD.ENTR_ATCHF_DETAIL_SN = #ENTR_ATCHF_DETAIL_SN#::NUMERIC
+        </isNotEmpty>
+        <isNotEmpty property="ENTR_ATCHF_MASTR_SN">
+        AND    CEAD.ENTR_ATCHF_MASTR_SN = #ENTR_ATCHF_MASTR_SN#::NUMERIC
+        </isNotEmpty>
+        <isNotEmpty property="ENTR_ATCHF_MASTR_SN_IN">
+        AND    CEAD.ENTR_ATCHF_MASTR_SN IN ($ENTR_ATCHF_MASTR_SN_IN$)       
+        </isNotEmpty>       
+    </select>   
+    
+    <update id="MMB002.updateImportDclrtEntryFile" parameterClass="java.util.Map">
+        UPDATE CC_IMP_DCLRT
+        SET    ENTR_ATCHF_MASTR_SN = #ENTR_ATCHF_MASTR_SN#::NUMERIC
+        WHERE  COMPANY_CD  = #COMPANY_CD#
+        AND    IMP_DCLRT_SN = #IMP_DCLRT_SN#::NUMERIC
+    </update>       
+    
+    <insert id="MMB002.insertEntryFileMaster" parameterClass="java.util.Map">
+        <selectKey resultClass="java.lang.String" keyProperty="ENTR_ATCHF_MASTR_SN">
+            SELECT NEXTVAL('CC_ENTR_ATCHF_MASTR_S')
+        </selectKey>
+        
+        INSERT INTO CC_ENTR_ATCHF_MASTR
+            (COMPANY_CD
+            ,ENTR_ATCHF_MASTR_SN
+            ,ENTR_TY
+            ,CREATE_BY
+            ,UPDATE_BY)
+        VALUES
+            (#COMPANY_CD#
+            ,#ENTR_ATCHF_MASTR_SN#::NUMERIC
+            ,#ENTR_TY#
+            ,#SESSION_USER_ID#
+            ,#SESSION_USER_ID#) 
+    </insert>        
+    
+    <insert id="MMB002.insertEntryFileDetail" parameterClass="java.util.Map">
+        <selectKey resultClass="int" keyProperty="ENTR_ATCHF_DETAIL_SN">
+            SELECT NEXTVAL('CC_ENTR_ATCHF_DETAIL_S')
+        </selectKey>
+        
+        INSERT INTO CC_ENTR_ATCHF_DETAIL
+            (COMPANY_CD
+            ,ENTR_ATCHF_DETAIL_SN
+            ,ENTR_ATCHF_MASTR_SN
+            ,FILE_TY
+            ,FILE_NM
+            ,FILE_TYP
+            ,FILE_SIZE
+            ,ATCHF
+            ,CREATE_BY
+            ,UPDATE_BY)
+        VALUES
+            (#COMPANY_CD#
+            ,#ENTR_ATCHF_DETAIL_SN#::NUMERIC
+            ,#ENTR_ATCHF_MASTR_SN#::NUMERIC
+            ,#FILE_TY#
+            ,#FILE_NM#
+            ,#FILE_TYP#
+            ,#FILE_SIZE#
+            ,#ATCHF#
+            ,#SESSION_USER_ID#
+            ,#SESSION_USER_ID#)
+    </insert>       
+    
+    <update id="MMB002.updateEntryFileDetail" parameterClass="java.util.Map">
+        UPDATE CC_ENTR_ATCHF_DETAIL
+        SET    FILE_TY             = #FILE_TY#
+              ,FILE_NM             = #FILE_NM#
+              ,FILE_TYP            = #FILE_TYP#
+              ,FILE_SIZE           = #FILE_SIZE#
+              ,ATCHF               = #ATCHF#
+              ,UPDATE_DATE         = NOW()::TIMESTAMP
+              ,UPDATE_BY           = #SESSION_USER_ID#
+        WHERE  COMPANY_CD = #COMPANY_CD#
+        AND    ENTR_ATCHF_DETAIL_SN = #ENTR_ATCHF_DETAIL_SN#::NUMERIC
+    </update>
+    
+    <delete id="MMB002.deleteEntryFileMaster" parameterClass="java.util.Map">
+        DELETE FROM CC_ENTR_ATCHF_MASTR
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND ENTR_ATCHF_MASTR_SN = #ENTR_ATCHF_MASTR_SN#::NUMERIC
+    </delete>
+        
+    <delete id="MMB002.deleteEntryFileDetail" parameterClass="java.util.Map">
+        DELETE FROM CC_ENTR_ATCHF_DETAIL
+         WHERE COMPANY_CD = #COMPANY_CD#
+         <isNotEmpty property="ENTR_ATCHF_MASTR_SN">
+         AND ENTR_ATCHF_MASTR_SN = #ENTR_ATCHF_MASTR_SN#::NUMERIC
+         </isNotEmpty>
+         <isNotEmpty property="ENTR_ATCHF_DETAIL_SN">
+         AND ENTR_ATCHF_DETAIL_SN = #ENTR_ATCHF_DETAIL_SN#::NUMERIC
+         </isNotEmpty>
+    </delete>       
+    
+    <select id="MMB002.selectLwodPapeKndList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+	    SELECT TXT_VALUE1, TXT_VALUE2, CODE_NAME
+		  FROM CODE_DTL 
+		 WHERE COMPANY_CD = #COMPANY_CD#
+		   AND CATEGORY_CD = 'C_LWOR_PAPE_KND'
+		   AND TXT_VALUE3 = #IMP_EXP_SE#
+		 <isNotEmpty property="LAOR_CD">
+		   AND TXT_VALUE1 = #LAOR_CD#
+		 </isNotEmpty>
+   </select>
+   
+</sqlMap>

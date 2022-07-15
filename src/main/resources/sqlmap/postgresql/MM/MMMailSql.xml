@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="CommonMailSql">
+ 
+    <insert id="mmMail.insertMailMst" parameterClass="java.util.Map">
+        <selectKey resultClass="java.lang.String" keyProperty="MAIL_SEND_MST_ID">
+            SELECT NEXTVAL('MAIL_SEND_MST_S')
+        </selectKey>
+        INSERT INTO MAIL_SEND_MST (
+                 MAIL_SEND_MST_ID
+                ,COMPANY_CD
+                ,DIVISION_CD
+                ,MAIL_TYPE
+                ,WRITER
+                ,WRITE_EMAIL
+                ,CONTENTS
+                ,SUBJECT
+                ,EMAIL
+                ,CC_EMAIL
+                ,BCC_EMAIL
+                ,FILE_ATTACH_YN
+                ,SMS_SEND_YN
+                ,CELL_PHONE_NO
+                ,SMS_MSG
+                ,SEND_TYPE
+                ,SEND_STATUS
+                ,SEND_DATE
+                ,CREATE_DATE
+                ,CREATE_BY
+                ,UPDATE_DATE
+                ,UPDATE_BY
+               ) 
+          VALUES(#MAIL_SEND_MST_ID#::numeric
+                ,#COMPANY_CD#
+                ,#DIVISION_CD#
+                ,#MAIL_TYPE#
+                ,#WRITER#
+                ,#WRITE_EMAIL#
+                ,#CONTENTS:CLOB#
+                ,#SUBJECT#
+                ,#EMAIL#
+                ,#CC_EMAIL#
+                ,#BCC_EMAIL#
+                ,#FILE_ATTACH_YN#
+                ,#SMS_SEND_YN#
+                ,#CELL_PHONE_NO#
+                ,#SMS_MSG#
+                ,'O'
+                ,(CASE WHEN #MAIL_TYPE# = 'V' THEN '6' ELSE '2' END)
+                ,NOW()
+                ,NOW()
+                ,#CREATE_BY#
+                ,NOW()
+                ,#UPDATE_BY#)
+    </insert>
+    
+    <insert id="mmMail.insertMailVendor" parameterClass="java.util.Map">
+        INSERT INTO MAIL_SEND_VENDOR(
+                 MAIL_SEND_VENDOR_ID
+	            ,MAIL_SEND_MST_ID
+	            ,COMPANY_CD
+	            ,DIVISION_CD
+	            ,VENDOR_CD
+	            ,WRITE_CONTECTS
+	            ,APPLY_DATE
+	            ,END_DATE
+	            ,REQUEST_TYPE
+	            ,CREATE_DATE
+	            ,CREATE_BY
+	            ,UPDATE_DATE
+	            ,UPDATE_BY)
+        VALUES( NEXTVAL('MAIL_SEND_VENDOR_S')
+                ,#MAIL_SEND_MST_ID#::numeric
+                ,#COMPANY_CD#
+                ,#DIVISION_CD#
+                ,#VENDOR_CD#
+                ,#WRITE_CONTECTS#
+                ,REPLACE(#APPLY_DATE#, '.', '')
+                ,REPLACE(#END_DATE#, '.', '')
+                ,#REQUEST_TYPE#
+                ,NOW()
+                ,#CREATE_BY#
+                ,NOW()
+                ,#UPDATE_BY#)
+    </insert>
+    
+    <insert id="mmMail.insertMailVendorItem" parameterClass="java.util.Map">
+        INSERT INTO MAIL_SEND_VENDOR_ITEM(
+	             MAIL_SEND_VENDOR_ITEM_ID
+	            ,MAIL_SEND_MST_ID
+	            ,COMPANY_CD
+	            ,DIVISION_CD
+	            ,VENDOR_CD
+	            ,ITEM_CD
+	            ,TXN_DATE
+	            ,FTA_GROUP_CD
+	            ,CREATE_DATE
+	            ,CREATE_BY
+	            ,UPDATE_DATE
+	            ,UPDATE_BY)
+          VALUES(NEXTVAL('MAIL_SEND_VENDOR_ITEM_S')
+                ,#MAIL_SEND_MST_ID#::numeric
+                ,#COMPANY_CD#
+                ,#DIVISION_CD#
+                ,#VENDOR_CD#
+                ,#ITEM_CD#
+                ,#TXN_DATE#
+                ,#FTA_GROUP_CD#
+                ,NOW()
+                ,#CREATE_BY#
+                ,NOW()
+                ,#UPDATE_BY#)
+    </insert>
+    
+    <update id="mmMail.updateMail" parameterClass="java.util.Map">
+        UPDATE MAIL_SEND_MST
+           SET SEND_STATUS      = #SEND_STATUS#
+              ,SEND_DATE        = NOW()
+              ,SEND_RESULT_MSG  = #SEND_RESULT_MSG#
+              ,UPDATE_DATE      = NOW()
+              ,UPDATE_BY        = #UPDATE_BY#
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+    </update>
+    
+    <update id="mmMail.updateMailSendMst" parameterClass="java.util.Map">
+        UPDATE MAIL_SEND_MST
+           SET WRITER = #WRITER#
+              ,WRITE_EMAIL = #WRITE_EMAIL#
+              ,CONTENTS = #CONTENTS#
+              ,SUBJECT = #SUBJECT#
+              ,EMAIL = #EMAIL#
+              ,CC_EMAIL = #CC_EMAIL#
+              ,FILE_ATTACH_YN = #FILE_ATTACH_YN#
+              ,UPDATE_DATE = NOW()
+              ,UPDATE_BY = #USER_ID#
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+    </update>
+    
+    <update id="mmMail.updateMailSendVendor" parameterClass="java.util.Map">
+        UPDATE MAIL_SEND_VENDOR
+           SET WRITE_CONTECTS = #WRITE_CONTECTS#
+              ,APPLY_DATE = #APPLY_DATE#
+              ,END_DATE  = #END_DATE#
+              ,REQUEST_TYPE = #REQUEST_TYPE#
+              ,UPDATE_DATE = NOW()
+              ,UPDATE_BY = #USER_ID#
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+           AND COMPANY_CD = #COMPANY_CD#
+           AND VENDOR_CD = #VENDOR_CD#
+         <isNotEmpty property="DIVISION_CD">
+           AND DIVISION_CD = #DIVISION_CD#
+         </isNotEmpty>
+    </update>
+    
+    <delete id="mmMail.deleteMailSendFile" parameterClass="java.util.Map">
+        DELETE FROM MAIL_SEND_FILE
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+    </delete>
+        
+    <update id="mmMail.insertMailFile" parameterClass="java.util.Map">
+        INSERT INTO MAIL_SEND_FILE(  
+	             MAIL_SEND_FILE_ID
+	            ,FILE_SEQ
+	            ,MAIL_SEND_MST_ID
+	            ,FILE_PATH
+	            ,FILE_NAME
+	            ,REALFILE
+	            ,ORIGIN_FILE_NAME
+	            ,CREATE_DATE
+	            ,CREATE_BY
+	            ,UPDATE_DATE
+	            ,UPDATE_BY)
+        VALUES (
+               NEXTVAL('MAIL_SEND_FILE_S')
+              ,(SELECT COALESCE(MAX(FILE_SEQ),0)+1
+                  FROM MAIL_SEND_FILE
+                 WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+                )
+              ,#MAIL_SEND_MST_ID#::numeric
+              ,'ORACLE'
+              ,#FILE_NAME#
+              ,#REALFILE:BLOB#
+              ,#ORIGIN_FILE_NAME#
+              ,NOW()
+              ,#CREATE_BY#
+              ,NOW()
+              ,#UPDATE_BY#
+          )
+    </update> 
+    
+    <select id="mmMail.selectMailFileList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT FILE_NAME
+              ,FILE_PATH
+              ,ORIGIN_FILE_NAME
+              ,MAIL_SEND_FILE_ID AS FILE_SEQ
+              ,MAIL_SEND_MST_ID
+          FROM MAIL_SEND_FILE
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+    </select>
+    
+    <select id="mmMail.selectMailFile" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT REALFILE
+              ,ORIGIN_FILE_NAME
+          FROM MAIL_SEND_FILE
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+           AND MAIL_SEND_FILE_ID = #MAIL_SEND_FILE_ID#::numeric
+    </select>
+    
+    <select id="mmMail.selectMailSendFileList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT REALFILE
+              ,ORIGIN_FILE_NAME
+          FROM MAIL_SEND_FILE
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#
+    </select>
+    
+    <select id="mmMail.selectMailDetail" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+       SELECT MSM.MAIL_SEND_MST_ID
+             ,MSM.DIVISION_CD
+             ,MSM.COMPANY_CD
+             ,C.COMPANY_NAME
+             ,MSM.WRITER
+             ,MSM.WRITE_EMAIL
+             ,MSV.APPLY_DATE
+             ,MSV.END_DATE
+             ,MSV.REQUEST_TYPE
+             ,MSM.SUBJECT
+             ,MSS.COMMENTS
+             ,C.OFFICER_PHONE_NO AS COMPANY_PHONE_NO
+             ,C.COM_FAX_NO AS COMPANY_FAX_NO
+             ,C.OFFICER_EMAIL AS COMPANY_EMAIL
+             ,MSS.DUAL_COMPANY_CD AS VENDOR_CD
+             ,V.VENDOR_NAME
+             ,REPLACE(SUBSTR(MSM.EMAIL, 1, POSITION(',CC=' IN MSM.EMAIL)-1), 'To=', '') AS EMAIL
+             ,REPLACE(SUBSTR(MSM.EMAIL, POSITION(',CC=' IN MSM.EMAIL), LENGTH(MSM.EMAIL)), ',CC=', '') AS REDER_EMAIL
+             ,MSS.SEARCH_CONDITION6 AS ITEM_ATTACH_YN
+             ,MSM.MAIL_TYPE
+             ,MSM.FILE_ATTACH_YN
+             ,MSM.SEND_TYPE
+             ,MSM.SEND_STATUS
+             ,MSM.SEND_DATE
+             ,MSM.SEND_MSG
+             ,MSM.SMS_SEND_YN
+             ,MSM.CELL_PHONE_NO
+             ,MSM.SMS_MSG
+             ,MSS.SEARCH_CONDITION1 AS YYYYMM
+             ,MSS.SEARCH_CONDITION2 AS CO_COVER_YEAR
+             ,MSS.SEARCH_CONDITION3 AS CO_TARGET_YN
+             ,MSS.SEARCH_CONDITION4 AS FTA_CD
+             ,MSS.SEARCH_CONDITION7 AS INPUT_TYPE
+             ,MSS.SEND_FROM_MON  
+             ,MSS.SEND_FROM_DAY   
+             ,MSS.SEND_TO_MON 
+             ,MSS.SEND_TO_DAY 
+             ,MSS.REPEAT_YN
+             ,MSS.YEAR
+             ,MSS.MON
+             ,MSS.DAY
+             ,MSS.WEEK
+             ,MSS.HOUR
+         FROM MAIL_SEND_MST MSM
+              INNER JOIN COMPANY C
+                 ON C.COMPANY_CD = MSM.COMPANY_CD
+              INNER JOIN MAIL_SEND_SCHEDULE MSS
+                 ON MSS.MAIL_SEND_MST_ID = MSS.MAIL_SEND_MST_ID
+                AND MSS.DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+                AND MSS.DUAL_COMPANY_TYPE = 'V'
+                AND MSS.MAIL_TYPE = 'O'
+               LEFT OUTER JOIN MAIL_SEND_VENDOR MSV
+                 ON MSV.COMPANY_CD = MSS.COMPANY_CD
+                AND MSV.VENDOR_CD = MSS.DUAL_COMPANY_CD
+                AND MSV.MAIL_SEND_MST_ID = MSS.MAIL_SEND_MST_ID
+               LEFT OUTER JOIN VENDOR V
+                 ON V.COMPANY_CD = MSS.COMPANY_CD
+                AND V.VENDOR_CD = MSS.DUAL_COMPANY_CD
+        WHERE MSM.MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::integer
+        LIMIT 1
+    </select>
+    
+    <select id="mmMail.selectCooMailList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+            SELECT MSM.MAIL_SEND_MST_ID
+                  ,MSM.MAIL_SEND_MST_ID AS MAIL_SEND_MST_NAME
+                  ,MSM.COMPANY_CD
+                  ,C.COMPANY_NAME
+                  ,MSM.DIVISION_CD
+                  ,FN_GET_DIVISION(MSM.COMPANY_CD, MSM.DIVISION_CD, 'DIVISION_NAME') AS DIVISION_NAME
+                  ,MSM.MAIL_TYPE
+                  ,FN_GET_COMMON_CD(MSM.COMPANY_CD, 'MILTY', MSM.MAIL_TYPE, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS MAIL_TYPE_NAME
+                  ,MSV.VENDOR_CD
+                  ,FN_GET_VENDOR(MSV.COMPANY_CD, MSV.VENDOR_CD, 'VENDOR_NAME') AS VENDOR_NAME
+                  ,MSM.WRITER
+                  ,MSM.WRITE_EMAIL
+                  ,MSM.SUBJECT
+                  ,MSM.EMAIL
+                  ,MSM.CC_EMAIL
+                  ,MSM.BCC_EMAIL
+                  ,MSM.FILE_ATTACH_YN
+                  ,MSM.SEND_TYPE
+                  ,FN_GET_COMMON_CD(MSM.COMPANY_CD, 'DCRET', MSM.SEND_TYPE, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS SEND_TYPE_NAME
+                  ,MSM.SEND_STATUS
+                  ,FN_GET_COMMON_CD(MSM.COMPANY_CD, 'RC', MSM.SEND_STATUS, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS SEND_STATUS_NAME
+                  ,MSM.SEND_MSG
+                  ,MSM.SEND_RESULT_MSG
+                  ,TO_CHAR(MSM.SEND_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SEND_DATE
+                  ,MSV.REQUEST_TYPE
+                  ,FN_GET_COMMON_CD(MSV.COMPANY_CD, 'REQT', MSV.REQUEST_TYPE, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS REQUEST_TYPE_NAME
+                  ,MSV.APPLY_DATE
+                  ,MSV.END_DATE
+                  ,MSM.SMS_SEND_YN
+                  ,(CASE WHEN MSM.SMS_SEND_YN = 'Y' THEN 'Yes' ELSE 'No' END) AS SMS_SEND_YN_NM
+                  ,MSM.CELL_PHONE_NO
+                  ,MSM.SMS_MSG
+              FROM MAIL_SEND_VENDOR MSV
+                   INNER JOIN COMPANY C
+                      ON C.COMPANY_CD = MSV.COMPANY_CD
+                   INNER JOIN MAIL_SEND_MST MSM
+                      ON MSV.MAIL_SEND_MST_ID = MSM.MAIL_SEND_MST_ID
+                   <isNotEmpty property="SEND_TYPE">
+                     AND MSM.SEND_TYPE = #SEND_TYPE#
+                   </isNotEmpty>
+                   <isNotEmpty property="SEND_STATUS">
+                     AND MSM.SEND_STATUS = #SEND_STATUS#
+                   </isNotEmpty>
+                   <isNotEmpty property="MAIL_TYPE">
+                     AND MSM.MAIL_TYPE = #MAIL_TYPE#
+                   </isNotEmpty>
+                   <isNotEmpty property="FROM_DATE">
+                     AND TO_CHAR(MSM.SEND_DATE, 'YYYYMMDD') BETWEEN #FROM_DATE# AND #TO_DATE#
+                   </isNotEmpty>
+                   INNER JOIN VENDOR V
+                      ON V.COMPANY_CD = MSV.COMPANY_CD
+                     AND V.VENDOR_CD = MSV.VENDOR_CD
+                   <isNotEmpty property="CO_TARGET_YN">
+                     AND V.CO_TARGET_YN = #CO_TARGET_YN#
+                   </isNotEmpty>
+             WHERE MSV.COMPANY_CD = #COMPANY_CD#
+            <isNotEmpty property="DIVISION_CD">
+               AND MSV.DIVISION_CD = #DIVISION_CD#
+            </isNotEmpty>
+            <isNotEmpty property="VENDOR_CD">
+               AND MSV.VENDOR_CD = #VENDOR_CD#
+            </isNotEmpty>
+            <isNotEmpty property="schKeyWord">
+              <isEqual property="schKeyField" compareValue="vendor_cd">
+               AND UPPER(MSV.VENDOR_CD) LIKE UPPER(#schKeyWord#)
+              </isEqual>
+              <isEqual property="schKeyField" compareValue="vendor_name">
+               AND UPPER(FN_GET_VENDOR(MSV.COMPANY_CD, MSV.VENDOR_CD, 'VENDOR_NAME')) LIKE UPPER(#schKeyWord#)
+              </isEqual>
+            </isNotEmpty>
+        <include refid="select-paging-end" />
+        ORDER BY SEND_DATE DESC
+    </select>
+    
+    <select id="mmMail.selectMailSendResult" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT MSM.MAIL_SEND_MST_ID
+              ,MSM.COMPANY_CD
+              ,MSM.DIVISION_CD
+              ,MSM.MAIL_TYPE
+              ,FN_GET_COMMON_CD(MSM.COMPANY_CD, 'MILTY', MSM.MAIL_TYPE, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS MAIL_TYPE_NAME
+              ,MSM.WRITER
+              ,MSM.WRITE_EMAIL
+              ,MSM.CONTENTS
+              ,MSM.SUBJECT
+              ,MSM.EMAIL
+              ,MSM.CC_EMAIL
+              ,MSM.BCC_EMAIL
+              ,MSM.FILE_ATTACH_YN
+              ,MSM.SEND_TYPE
+              ,FN_GET_COMMON_CD(MSM.COMPANY_CD, 'DCRET', MSM.MAIL_TYPE, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS SEND_TYPE_NAME
+              ,MSM.SEND_STATUS
+              ,MSM.SMS_SEND_YN
+              ,(CASE WHEN MSM.SMS_SEND_YN = 'Y' THEN 'Yes' ELSE 'No' END) AS SMS_SEND_YN_NM
+              ,MSM.CELL_PHONE_NO
+              ,MSM.SMS_MSG
+              ,FN_GET_COMMON_CD(MSM.COMPANY_CD, 'RC', MSM.SEND_STATUS, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS SEND_STATUS_NAME
+              ,TO_CHAR(MSM.SEND_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SEND_DATE
+              ,MSM.SEND_RESULT_MSG
+          FROM MAIL_SEND_MST MSM
+         WHERE MSM.MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::integer
+    </select>
+    
+    <delete id="mmMail.deleteMailFile" parameterClass="java.util.Map">
+        DELETE FROM MAIL_SEND_FILE
+         WHERE MAIL_SEND_MST_ID = #MAIL_SEND_MST_ID#::numeric
+           AND MAIL_SEND_FILE_ID = #MAIL_SEND_FILE_ID#::numeric
+    </delete>
+    
+    <update id="mmMail.insertSendSMS" parameterClass="java.util.Map">
+        INSERT INTO ZSYS_SMSSEND@OTO(                   
+              SEND_DATE
+             ,SEND_TIME
+             ,SEND_SEQ
+             ,SEND_DEPTNAME
+             ,SEND_USERID
+             ,SEND_USERNAME
+             ,SEND_PHONE
+             ,SEND_MSG
+             ,RECE_DEPTNAME
+             ,RECE_USERID
+             ,RECE_USERNAME
+             ,RECE_PHONE)
+          SELECT TO_CHAR(NOW(), 'YYYYMMDD') AS SEND_DATE
+	            ,TO_CHAR(NOW(), 'HH24MISS') AS SEND_TIME
+	            ,#SEND_SEQ#::NUMERIC AS SEND_SEQ
+	            ,UI.DEPT_NAME AS SEND_DEPTNAME
+	            ,UI.USER_ID AS SEND_USERID
+	            ,UI.NAME_KOR AS SEND_USERNAME
+	            ,REPLACE(UI.CELL_PHONE_NO, '-', '') AS SEND_PHONE
+	            ,#SEND_MSG# AS SEND_MSG
+	            ,#RECE_DEPTNAME#  AS RECE_DEPTNAME
+	            ,#RECE_USERID#  AS RECE_USERID
+	            ,#RECE_USERNAME#  AS RECE_USERNAME
+	            ,REPLACE(#RECE_PHONE#, '-', '')  AS RECE_PHONE
+	        FROM USER_INFO UI
+	       WHERE UI.COMPANY_CD = #COMPANY_CD#
+	         AND UI.USER_ID = #USER_ID#
+    </update>
+    
+    <select id="mmMail.selectSmsSendResult" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT SEND_DATE
+              ,SEND_TIME
+              ,SEND_SEQ
+              ,SEND_DEPTNAME
+              ,SEND_USERID
+              ,SEND_USERNAME
+              ,SEND_PHONE
+              ,SEND_MSG
+              ,RECE_DEPTNAME
+              ,RECE_USERID
+              ,RECE_USERNAME
+              ,RECE_PHONE
+          FROM ZSYS_SMSSEND@OTO
+         WHERE SEND_SEQ = #MAIL_SEND_MST_ID#::numeric
+           AND RECE_USERID = #VENDOR_CD#
+           LIMIT 1 
+    </select>
+    
+    <select id="mmMail.selectMailScheduleList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT MSS.COMPANY_CD
+              ,MSS.DUAL_COMPANY_CD
+              ,MSS.DUAL_COMPANY_TYPE
+              ,MSS.MAIL_TYPE
+              ,MSS.MAIL_SEND_MST_ID
+              ,MSS.AUTO_MAIL_YN
+              ,MSS.SEND_FROM_MON  
+              ,MSS.SEND_FROM_DAY   
+              ,MSS.SEND_TO_MON 
+              ,MSS.SEND_TO_DAY 
+              ,MSS.REPEAT_YN
+              ,MSS.YEAR
+              ,MSS.MON
+              ,MSS.DAY
+              ,MSS.WEEK
+              ,MSS.HOUR
+              ,MSS.COMMENTS
+              ,MSS.SEARCH_CONDITION1
+              ,MSS.SEARCH_CONDITION2
+              ,MSS.SEARCH_CONDITION3
+              ,MSS.SEARCH_CONDITION4
+              ,MSS.SEARCH_CONDITION5
+              ,MSS.SEARCH_CONDITION6
+              ,MSS.SEARCH_CONDITION7
+              ,MSS.SEARCH_CONDITION8
+              ,MSS.SEARCH_CONDITION9
+              ,MSS.SEARCH_CONDITION10
+              ,MSS.CREATE_BY
+              ,MSS.UPDATE_BY
+          FROM MAIL_SEND_SCHEDULE MSS
+         WHERE MSS.COMPANY_CD = #COMPANY_CD#
+           AND MSS.DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+           AND MSS.DUAL_COMPANY_TYPE = #DUAL_COMPANY_TYPE#
+           AND MSS.MAIL_TYPE = #MAIL_TYPE#
+    </select>
+    
+    <select id="mmMail.selectMailNextScheduleInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT MSS.COMPANY_CD
+              ,MSS.DUAL_COMPANY_CD
+              ,MSS.DUAL_COMPANY_TYPE
+              ,MSS.MAIL_TYPE
+              ,MSS.MAIL_SEND_MST_ID
+              ,MSS.AUTO_MAIL_YN
+              ,(CASE WHEN TO_CHAR(NOW()+'1 day', 'MMDD') >= (MSS.SEND_TO_MON||MSS.SEND_TO_DAY) THEN MSS.SEND_TO_MON 
+                     ELSE TO_CHAR(NOW()+'1 day', 'MM')
+                END) AS SEND_FROM_MON
+              ,(CASE WHEN TO_CHAR(NOW()+'1 day', 'MMDD') >= (MSS.SEND_TO_MON||MSS.SEND_TO_DAY) THEN MSS.SEND_TO_DAY 
+                     ELSE TO_CHAR(NOW()+'1 day', 'DD')
+                END) AS SEND_FROM_DAY
+              ,MSS.SEND_TO_MON 
+              ,MSS.SEND_TO_DAY 
+              ,MSS.REPEAT_YN
+              ,MSS.YEAR
+              ,MSS.MON
+              ,MSS.DAY
+              ,MSS.WEEK
+              ,MSS.HOUR
+              ,MSS.CREATE_BY
+              ,MSS.UPDATE_BY
+          FROM MAIL_SEND_SCHEDULE MSS
+         WHERE MSS.COMPANY_CD = #COMPANY_CD#
+           AND MSS.DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+           AND MSS.DUAL_COMPANY_TYPE = #DUAL_COMPANY_TYPE#
+           AND MSS.MAIL_TYPE = #MAIL_TYPE#
+           AND MSS.AUTO_MAIL_YN = '1'
+    </select>
+    
+    <update id="mmMail.insertMailScheduleInfo" parameterClass="java.util.Map">
+        INSERT INTO MAIL_SEND_SCHEDULE
+               (COMPANY_CD
+               ,DUAL_COMPANY_CD
+               ,DUAL_COMPANY_TYPE
+               ,MAIL_TYPE
+               ,MAIL_SEND_MST_ID
+               ,AUTO_MAIL_YN
+               ,SEND_FROM_MON  
+               ,SEND_FROM_DAY   
+               ,SEND_TO_MON 
+               ,SEND_TO_DAY 
+               ,REPEAT_YN
+               ,YEAR
+               ,MON
+               ,DAY
+               ,WEEK
+               ,HOUR
+               ,COMMENTS
+               ,SEARCH_CONDITION1
+               ,SEARCH_CONDITION2
+               ,SEARCH_CONDITION3
+               ,SEARCH_CONDITION4
+               ,SEARCH_CONDITION5
+               ,SEARCH_CONDITION6
+               ,SEARCH_CONDITION7
+               ,SEARCH_CONDITION8
+               ,SEARCH_CONDITION9
+               ,SEARCH_CONDITION10
+               ,CREATE_DATE
+               ,CREATE_BY
+               ,UPDATE_DATE
+               ,UPDATE_BY)
+        VALUES (#COMPANY_CD#
+               ,#DUAL_COMPANY_CD#
+               ,#DUAL_COMPANY_TYPE#
+               ,#MAIL_TYPE#
+               ,FN_PG_GET_CAST_NUM(#MAIL_SEND_MST_ID#)
+               ,#AUTO_MAIL_YN#
+               ,#SEND_FROM_MON#
+               ,#SEND_FROM_DAY#
+               ,#SEND_TO_MON#
+               ,#SEND_TO_DAY#
+               ,#REPEAT_YN#
+               ,#YEAR#
+               ,#MON#
+               ,#DAY#
+               ,#WEEK#
+               ,#HOUR#
+               ,#COMMENTS#
+               ,#SEARCH_CONDITION1#
+               ,#SEARCH_CONDITION2#
+               ,#SEARCH_CONDITION3#
+               ,#SEARCH_CONDITION4#
+               ,#SEARCH_CONDITION5#
+               ,#SEARCH_CONDITION6#
+               ,#SEARCH_CONDITION7#
+               ,#SEARCH_CONDITION8#
+               ,#SEARCH_CONDITION9#
+               ,#SEARCH_CONDITION10#
+               ,NOW()
+               ,#CREATE_BY#
+               ,NOW()
+               ,#UPDATE_BY#)
+    </update>
+    
+    <update id="mmMail.updateMailScheduleInfo" parameterClass="java.util.Map">
+        UPDATE MAIL_SEND_SCHEDULE
+           SET MAIL_SEND_MST_ID   = FN_PG_GET_CAST_NUM(#MAIL_SEND_MST_ID#)
+              ,AUTO_MAIL_YN       = #AUTO_MAIL_YN#
+              ,SEND_FROM_MON      = #SEND_FROM_MON#
+              ,SEND_FROM_DAY      = #SEND_FROM_DAY#   
+              ,SEND_TO_MON        = #SEND_TO_MON# 
+              ,SEND_TO_DAY        = #SEND_TO_DAY#  
+              ,REPEAT_YN          = #REPEAT_YN#
+              ,YEAR               = #YEAR#
+              ,MON                = #MON#
+              ,DAY                = #DAY#
+              ,WEEK               = #WEEK#
+              ,HOUR               = #HOUR#
+              ,COMMENTS           = #COMMENTS#
+              ,SEARCH_CONDITION1  = #SEARCH_CONDITION1#
+              ,SEARCH_CONDITION2  = #SEARCH_CONDITION2#
+              ,SEARCH_CONDITION3  = #SEARCH_CONDITION3#
+              ,SEARCH_CONDITION4  = #SEARCH_CONDITION4#
+              ,SEARCH_CONDITION5  = #SEARCH_CONDITION5#
+              ,SEARCH_CONDITION6  = #SEARCH_CONDITION6#
+              ,SEARCH_CONDITION7  = #SEARCH_CONDITION7#
+              ,SEARCH_CONDITION8  = #SEARCH_CONDITION8#
+              ,SEARCH_CONDITION9  = #SEARCH_CONDITION9#
+              ,SEARCH_CONDITION10 = #SEARCH_CONDITION10#
+              ,UPDATE_DATE        = NOW()
+              ,UPDATE_BY          = #UPDATE_BY#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+           AND DUAL_COMPANY_TYPE = #DUAL_COMPANY_TYPE#
+           AND MAIL_TYPE = #MAIL_TYPE#
+    </update>
+    
+    <select id="mmMail.selectMailSendHistoryList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT MSSH.COMPANY_CD
+              ,MSSH.DUAL_COMPANY_CD
+              ,MSSH.DUAL_COMPANY_TYPE
+              ,MSSH.MAIL_TYPE
+              ,MSSH.MAIL_SEND_SCHE_HIST_ID
+              ,MSSH.MAIL_SEND_MST_ID
+              ,MSSH.RESERVATION_DATE
+              ,MSSH.RESERVATION_TIME
+              ,MSSH.STATUS
+              ,MSSH.CREATE_BY
+              ,MSSH.UPDATE_BY
+          FROM MAIL_SEND_SCHEDULE_HIST MSSH
+         WHERE MSSH.COMPANY_CD = #COMPANY_CD#
+           AND MSSH.DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+           AND MSSH.DUAL_COMPANY_TYPE = #DUAL_COMPANY_TYPE#
+           AND MSSH.MAIL_TYPE = #MAIL_TYPE#
+           AND MSSH.MAIL_SEND_SCHE_HIST_ID = FN_PG_GET_CAST_NUM(#MAIL_SEND_SCHE_HIST_ID#)
+    </select>
+    
+    <update id="mmMail.insertMailSendHistoryInfo" parameterClass="java.util.Map">
+        INSERT INTO MAIL_SEND_SCHEDULE_HIST
+              (COMPANY_CD
+              ,DUAL_COMPANY_CD
+              ,DUAL_COMPANY_TYPE
+              ,MAIL_TYPE
+              ,MAIL_SEND_SCHE_HIST_ID
+              ,MAIL_SEND_MST_ID
+              ,RESERVATION_DATE
+              ,RESERVATION_TIME
+              ,STATUS
+              ,CREATE_DATE
+              ,CREATE_BY
+              ,UPDATE_DATE
+              ,UPDATE_BY)
+        VALUES(#COMPANY_CD#
+              ,#DUAL_COMPANY_CD#
+              ,#DUAL_COMPANY_TYPE#
+              ,#MAIL_TYPE#
+              ,NEXTVAL('MAIL_SEND_SCHE_HIST_S')
+              ,FN_PG_GET_CAST_NUM(#MAIL_SEND_MST_ID#)
+              ,#RESERVATION_DATE#
+              ,#RESERVATION_TIME#
+              ,#STATUS#
+              ,NOW()
+              ,#CREATE_BY#
+              ,NOW()
+              ,#UPDATE_BY#)
+    </update>
+    
+    <update id="mmMail.updateMailSendHistoryInfo" parameterClass="java.util.Map">
+        UPDATE MAIL_SEND_SCHEDULE_HIST
+           SET STATUS             = #STATUS#
+              <isNotEmpty prepend="," property="RESERVATION_DATE">RESERVATION_DATE   = #RESERVATION_DATE#</isNotEmpty>
+              <isNotEmpty prepend="," property="RESERVATION_TIME">RESERVATION_TIME   = #RESERVATION_TIME#</isNotEmpty>
+              <isNotEmpty prepend="," property="MAIL_SEND_MST_ID">MAIL_SEND_MST_ID   = FN_PG_GET_CAST_NUM(#MAIL_SEND_MST_ID#)</isNotEmpty>
+              ,UPDATE_DATE        = NOW()
+              ,UPDATE_BY          = #UPDATE_BY#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+           AND DUAL_COMPANY_TYPE = #DUAL_COMPANY_TYPE#
+           AND MAIL_TYPE = #MAIL_TYPE#
+         <isNotEmpty property="MAIL_SEND_SCHE_HIST_ID">
+           AND MAIL_SEND_SCHE_HIST_ID = #MAIL_SEND_SCHE_HIST_ID#
+         </isNotEmpty>
+    </update>
+    
+    <update id="mmMail.updateCancelMailReservat" parameterClass="java.util.Map">
+        UPDATE MAIL_SEND_SCHEDULE_HIST
+           SET STATUS             = '4'
+              ,UPDATE_DATE        = NOW()
+              ,UPDATE_BY          = #UPDATE_BY#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+           AND DUAL_COMPANY_TYPE = #DUAL_COMPANY_TYPE#
+           AND MAIL_TYPE = #MAIL_TYPE#
+           AND STATUS = '1'
+    </update>
+    
+    <update id="mmMail.deleteReservateInfo" parameterClass="java.util.Map">
+        UPDATE MAIL_SEND_SCHEDULE
+           SET AUTO_MAIL_YN       = '0'
+              ,UPDATE_DATE        = NOW()
+              ,UPDATE_BY          = #UPDATE_BY#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND DUAL_COMPANY_CD = #DUAL_COMPANY_CD#
+           AND DUAL_COMPANY_TYPE = #DUAL_COMPANY_TYPE#
+           AND MAIL_TYPE = #MAIL_TYPE#
+    </update>
+    
+</sqlMap>

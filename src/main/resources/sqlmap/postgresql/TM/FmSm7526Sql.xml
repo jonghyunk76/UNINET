@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="SM7526">
+
+    <select id="SM7526.selectItmList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+        SELECT ITM.COMPANY_CD
+              ,ITM.ITEM_CD
+              ,I.ITEM_NAME
+              ,ITM.ITEM_MAP_CD
+              ,ITM.IN_ITEM_TYPE
+              ,ITM.APPLY_DATE
+              ,ITM.END_DATE
+              ,ITM.DELETE_YN
+              ,TO_CHAR(ITM.CREATE_DATE, 'YYYYMMDD') AS CREATE_DATE
+              ,ITM.CREATE_BY
+              ,TO_CHAR(ITM.UPDATE_DATE, 'YYYYMMDD') AS UPDATE_DATE
+              ,ITM.UPDATE_BY
+          FROM ITEM_TRANCE_MAPPING ITM 
+              LEFT OUTER JOIN ITEM I
+                ON I.COMPANY_CD = ITM.COMPANY_CD
+                AND I.ITEM_CD = ITM.ITEM_CD
+          WHERE ITM.COMPANY_CD = #COMPANY_CD#
+         <isNotEmpty property="schKeyWord">
+          AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+         </isNotEmpty>
+         <include refid="select-paging-end" />
+         ORDER BY ITEM_CD
+    </select>
+
+    <update id="SM7526.insertItm" parameterClass="java.util.Map">
+        INSERT INTO ITEM_TRANCE_MAPPING(
+               COMPANY_CD
+              ,ITEM_CD
+              ,ITEM_MAP_CD
+              ,IN_ITEM_TYPE
+              ,APPLY_DATE
+              ,END_DATE
+              ,DELETE_YN
+              ,CREATE_DATE
+              ,CREATE_BY
+              ,UPDATE_DATE
+              ,UPDATE_BY)
+        VALUES(        
+               #COMPANY_CD#
+              ,#ITEM_CD#
+              ,#ITEM_MAP_CD#
+              ,#IN_ITEM_TYPE#
+              ,#APPLY_DATE#
+              ,#END_DATE#
+              ,#DELETE_YN#
+              ,SYSDATE
+              ,#SESSION_USER_ID#
+              ,SYSDATE
+              ,#SESSION_USER_ID#)
+    </update>
+    
+    <update id="SM7526.updateItm" parameterClass="java.util.Map">
+        UPDATE ITEM_TRANCE_MAPPING 
+           SET END_DATE         = #END_DATE#
+              ,ITEM_MAP_CD      = #ITEM_MAP_CD#
+              ,IN_ITEM_TYPE     = #IN_ITEM_TYPE#
+              ,DELETE_YN        = #DELETE_YN#
+              ,UPDATE_DATE      = SYSDATE
+              ,UPDATE_BY        = #USER_ID#
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND ITEM_CD = #ITEM_CD#
+           AND APPLY_DATE = #APPLY_DATE#
+    </update>
+    
+    <delete id="SM7526.deleteItm" parameterClass="java.util.Map">
+        DELETE FROM ITEM_TRANCE_MAPPING 
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND ITEM_CD = #ITEM_CD#
+           AND ITEM_MAP_CD = #ITEM_MAP_CD#
+           AND IN_ITEM_TYPE = #IN_ITEM_TYPE#
+           AND APPLY_DATE = #APPLY_DATE#
+    </delete>
+
+</sqlMap>

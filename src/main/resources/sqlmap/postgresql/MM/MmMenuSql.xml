@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+
+<sqlMap namespace="mmMenu">
+
+	<select id="leftMenu.getMenuList" parameterClass="java.util.HashMap" resultClass="com.yni.fta.mm.menu.MenuItem" >
+	    SELECT MU.sysId,
+               MU.menuId,
+               MU.hgrnkMenuId,
+               MU.menuName,
+               MU.DirectUrl,
+               MU.doesMenuDisplay,
+               MU.menuType,
+               MU.menuLevelNumber,
+               MU.menuSortSerial,
+               MU.PRGM_ID,
+               (CASE WHEN MU.SEL_AUTH = 'Y' THEN 'inline-block' ELSE 'none' END) AS selAuth,
+               (CASE WHEN MU.REG_AUTH = 'Y' THEN 'inline-block' ELSE 'none' END) AS regAuth,
+               (CASE WHEN MU.UPD_AUTH = 'Y' THEN 'inline-block' ELSE 'none' END) AS updAuth,
+               (CASE WHEN MU.DEL_AUTH = 'Y' THEN 'inline-block' ELSE 'none' END) AS delAuth,
+               (CASE WHEN MU.EXC_AUTH = 'Y' THEN 'inline-block' ELSE 'none' END) AS excAuth,
+               (CASE WHEN MU.FLE_AUTH = 'Y' THEN 'inline-block' ELSE 'none' END) AS fleAuth,
+               MAX(CASE WHEN ISM.SCHEDULE_CD = 'MONTHLY_BATCH' AND IIM.FILE_TYPE = 'C' THEN ISM.IF_METHOD
+                        WHEN ISM.SCHEDULE_CD = 'MANUALLY_BATCH' AND IIM.FILE_TYPE = 'M' THEN ISM.IF_METHOD
+                        ELSE ''
+               END) AS MenuIfMethod
+		  FROM (SELECT MENU.SYS_ID        AS sysId,
+		               MENU.MENU_ID       AS menuId,
+		               MENU.HGRNK_MENU_ID AS hgrnkMenuId,
+		               COALESCE(DIC.WORD, MENU.MENU_NM) AS menuName,
+		               MENU.DIRECT_URL    AS DirectUrl,
+		               MENU.MENU_DSPLY_YN AS doesMenuDisplay,
+		               MENU.MENU_TYPE     AS menuType,
+		               MENU.MENU_LVL_NO   AS menuLevelNumber,
+		               MENU.MENU_SORT_SER AS menuSortSerial,
+                       MENU.PRGM_ID,
+                       AUTH.SEL_AUTH,
+                       AUTH.REG_AUTH,
+                       AUTH.UPD_AUTH,
+                       AUTH.DEL_AUTH,
+                       AUTH.EXC_AUTH,
+                       AUTH.FLE_AUTH
+		          FROM MENU_MGMT MENU
+		               INNER JOIN AUTH_USER USERS
+		                  ON USERS.COMPANY_CD = #company#
+		                 AND USERS.USER_ID = #user#
+		               INNER JOIN AUTH_MENU AUTH
+		                  ON AUTH.COMPANY_CD = USERS.COMPANY_CD
+		                 AND AUTH.AUTH_GROUP_ID = USERS.AUTH_GROUP_ID
+		                 AND AUTH.MENU_ID = MENU.MENU_ID
+		                LEFT OUTER JOIN MENU_LANG_DIC DIC
+                          ON MENU.MENU_ID = DIC.MENU_ID
+                         AND DIC.LANGUAGE_CAT = #selectedLanguage#
+                         AND DIC.LANG_ID = 1
+                 WHERE MENU.USE_YN = 'Y'
+		        UNION
+		        SELECT MENU.SYS_ID,
+		               MENU.MENU_ID,
+		               MENU.HGRNK_MENU_ID,
+		               COALESCE(DIC.WORD, MENU.MENU_NM) AS WORD,
+		               MENU.DIRECT_URL,
+		               MENU.MENU_DSPLY_YN,
+		               MENU.MENU_TYPE,
+		               MENU.MENU_LVL_NO,
+		               MENU.MENU_SORT_SER,
+					   MENU.PRGM_ID,
+                       AUTH.SEL_AUTH,
+                       AUTH.REG_AUTH,
+                       AUTH.UPD_AUTH,
+                       AUTH.DEL_AUTH,
+                       AUTH.EXC_AUTH,
+                       AUTH.FLE_AUTH
+		          FROM MENU_MGMT MENU
+		               INNER JOIN AUTH_USER USERS
+                          ON USERS.COMPANY_CD = #company#
+                         AND USERS.USER_ID = #user#
+                       INNER JOIN AUTH_MENU AUTH
+                          ON AUTH.COMPANY_CD = USERS.COMPANY_CD
+                         AND AUTH.AUTH_GROUP_ID = USERS.AUTH_GROUP_ID
+                         AND AUTH.MENU_ID = MENU.MENU_ID
+	                    LEFT OUTER JOIN MENU_LANG_DIC DIC
+	                      ON MENU.MENU_ID = DIC.MENU_ID
+	                     AND DIC.LANGUAGE_CAT = #selectedLanguage#
+                         AND DIC.LANG_ID = 1
+		         WHERE MENU.HGRNK_MENU_ID = MENU.MENU_ID
+		           AND MENU.USE_YN = 'Y'
+             ) MU
+            LEFT OUTER JOIN INTERFACE_SCHEDULE_MAPPING ISM
+              ON ISM.COMPANY_CD = #company#
+             AND ISM.IF_CD = MU.PRGM_ID
+             AND ISM.SCHEDULE_CD IN('MONTHLY_BATCH', 'MANUALLY_BATCH')
+            LEFT OUTER JOIN INTERFACE_ITEM_MST IIM
+              ON IIM.COMPANY_CD = ISM.COMPANY_CD
+             AND IIM.IF_CD = ISM.IF_CD
+             AND IIM.USING_YN = 'Y'
+             AND IIM.ITEM_TYPE != 'P'
+        GROUP BY MU.sysId,
+                 MU.menuId,
+                 MU.hgrnkMenuId,
+                 MU.menuName,
+                 MU.DirectUrl,
+                 MU.doesMenuDisplay,
+                 MU.menuType,
+                 MU.menuLevelNumber,
+                 MU.menuSortSerial,
+                 MU.PRGM_ID,
+                 MU.SEL_AUTH,
+                 MU.REG_AUTH,
+                 MU.UPD_AUTH,
+                 MU.DEL_AUTH,
+                 MU.EXC_AUTH,
+                 MU.FLE_AUTH
+		ORDER BY MU.menuSortSerial
+	</select>
+	
+	<select id="leftMenu.getMenuInterfaceInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+		SELECT COALESCE(ISM.IF_METHOD, 'N') AS MENU_IF_METHOD
+		  FROM MENU_MGMT MM
+		       LEFT OUTER JOIN INTERFACE_SCHEDULE_MAPPING ISM
+		         ON ISM.COMPANY_CD = #SESSION_COMPANY_CD#
+		        AND ISM.IF_CD = MM.PRGM_ID
+		        AND ISM.SCHEDULE_CD = 'MONTHLY_BATCH'
+		 WHERE MM.MENU_ID = #MENU_ID#
+    </select>
+	
+	<select id="leftMenu.selectMenuAuthInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT (CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END) AS AUTHTARIFF
+          FROM MENU_MGMT MM
+               INNER JOIN AUTH_USER AU
+                  ON AU.COMPANY_CD = #COMPANY_CD#
+                 AND AU.USER_ID = #USER_ID#
+               INNER JOIN AUTH_GROUP AG
+                  ON AG.COMPANY_CD = AU.COMPANY_CD
+                 AND AG.AUTH_GROUP_ID = AU.AUTH_GROUP_ID
+               INNER JOIN AUTH_MENU AM
+                  ON AM.COMPANY_CD = AG.COMPANY_CD
+                 AND AM.AUTH_GROUP_ID = AG.AUTH_GROUP_ID
+                 AND AM.MENU_ID = MM.MENU_ID
+         WHERE MM.MENU_ID = #MENU_ID#
+           AND MM.USE_YN = 'Y'
+    </select>
+    
+</sqlMap>

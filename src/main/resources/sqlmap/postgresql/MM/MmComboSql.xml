@@ -1,0 +1,877 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="mmcbox">
+    
+    <sql id="select-combo-start">
+        SELECT C.* FROM (
+    </sql>
+    
+    <sql id="select-combo-all">
+        SELECT <isNotEmpty property="CODE_VAL"> 
+               #CODE_VAL# AS CODE
+               </isNotEmpty>
+               <isEmpty property="CODE_VAL">
+               ' ' AS CODE
+               </isEmpty> 
+              ,MESSAGE AS NAME
+          FROM MESSAGE_TABLE
+         WHERE MESSAGE_CODE = COALESCE(#MESSAGE_CODE#, 'ALL')
+           AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+       UNION ALL
+    </sql>
+    
+    <sql id="select-combo-end">
+        ) C ORDER BY C.CODE
+    </sql>
+    
+    <select id="MMCOMBO.selectCompany" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT COMPANY_CD AS CODE
+                <isNotEmpty property="SEPERATOR_STR">
+                  ,COMPANY_CD || #SEPERATOR_STR# || COMPANY_NAME AS NAME
+                </isNotEmpty>
+                <isEmpty property="SEPERATOR_STR">
+                  ,COMPANY_NAME AS NAME
+                </isEmpty>
+              FROM COMPANY
+             <isEqual property="AUTH_GROUP_YN" compareValue="Y">
+             WHERE COMPANY_CD IN(SELECT DISTINCT C.AUTH_GROUP_ID FROM COMPANY C)
+             </isEqual>
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectFTAMgmtSysCompany" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT DISTINCT COMPANY_CD AS CODE
+            <isNotEmpty property="SEPERATOR_STR">
+              ,COMPANY_CD || #SEPERATOR_STR# || COMPANY_NAME AS NAME
+            </isNotEmpty>
+            <isEmpty property="SEPERATOR_STR">
+              ,COMPANY_NAME AS NAME
+            </isEmpty>
+              ,OFFICER_NAME AS OFFICER_NAME
+              ,OFFICER_PHONE_NO AS OFFICER_PHONE_NO
+              ,OFFICER_EMAIL OFFICER_EMAIL
+          FROM COMPANY 
+         WHERE (REPLACE(BUSINESS_NO, '-', '') = REPLACE(#BUSINESS_NO#, '-', '') OR COMPANY_CD = #BUSINESS_NO#)
+           AND FN_GET_SYSTEM_CONFIG(COMPANY_CD, 'RUN_TYPE') IN('R', 'P')
+         <isNotEmpty property="COMPANY_CD">
+           AND COMPANY_CD = #COMPANY_CD#
+         </isNotEmpty>
+    </select>
+    
+    <select id="MMCOMBO.selectSupplierSysCompany" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT DISTINCT C.COMPANY_CD AS CODE
+              ,C.COMPANY_NAME AS NAME
+              ,C.OFFICER_NAME
+              ,C.OFFICER_PHONE_NO
+              ,C.OFFICER_EMAIL
+          FROM VENDOR V
+               INNER JOIN COMPANY C
+                  ON V.COMPANY_CD = C.COMPANY_CD
+                 AND FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'RUN_TYPE') IN('R', 'P')
+                <isNotEmpty property="COMPANY_CD">
+                  AND C.COMPANY_CD = #COMPANY_CD#
+                </isNotEmpty>
+         WHERE ((REPLACE(V.BUSINESS_NO, '-', '') = REPLACE(#BUSINESS_NO#, '-', '') AND V.BUSINESS_NO != '9999999999') OR V.VENDOR_CD = #BUSINESS_NO#)
+           AND COALESCE(DELETE_YN, 'N') = 'N'
+    </select>
+    
+    <select id="MMCOMBO.selectDivision" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = 'ALL'
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isEqual>
+            <isNotEmpty property="MESSAGE_CODE">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = #MESSAGE_CODE#
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isNotEmpty>
+            SELECT DIVISION_CD AS CODE
+                <isNotEmpty property="SEPERATOR_STR">
+                  ,DIVISION_CD || #SEPERATOR_STR# || DIVISION_NAME AS NAME
+                </isNotEmpty>
+                <isEmpty property="SEPERATOR_STR">
+                  ,DIVISION_NAME AS NAME
+                </isEmpty>
+                  ,1 AS SORT_NO
+              FROM DIVISION
+             WHERE COMPANY_CD = #COMPANY_CD#
+             <isNotEmpty property="DIVISION_TYPE">
+               AND DIVISION_TYPE IN(#DIVISION_TYPE#, 'A')
+             </isNotEmpty>
+               AND STATUS = 'Y'
+       <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectStandardCode" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , '' AS CODE_DESC
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = 'ALL'
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isEqual>
+            <isNotEmpty property="MESSAGE_CODE">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , '' AS CODE_DESC
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = #MESSAGE_CODE#
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isNotEmpty>
+            SELECT CD.CODE AS CODE
+                <isNotEmpty property="SEPERATOR_STR">
+                  ,CD.CODE || #SEPERATOR_STR# || COALESCE(CLD.WORD, COALESCE(CD.CODE_NAME, CD.CODE_NAME_ENG)) AS NAME
+                </isNotEmpty>
+                <isEmpty property="SEPERATOR_STR">
+                 , COALESCE(CLD.WORD, COALESCE(CD.CODE_NAME, CD.CODE_NAME_ENG)) AS NAME
+                </isEmpty>
+                 , CD.TXT_VALUE1 AS CODE_DESC
+                 , CD.SORT_NO AS SORT_NO
+              FROM CODE_DTL CD
+                   LEFT OUTER JOIN CODE_LANG_DIC CLD
+                     ON CLD.COMPANY_CD = CD.COMPANY_CD
+                    AND CLD.CATEGORY_CD = CD.CATEGORY_CD
+                    AND CLD.CODE = CD.CODE
+                    AND CLD.LANGUAGE_CAT = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             WHERE CD.COMPANY_CD = #COMPANY_CD#
+               AND CD.CATEGORY_CD = #CATEGORY_CD#
+             <isNotEmpty property="TXT_VALUE1">
+               AND TXT_VALUE1 = #TXT_VALUE1#
+             </isNotEmpty>
+             <isNotEmpty property="IGNORE_CODE">
+               AND CD.CODE NOT IN($IGNORE_CODE$)
+             </isNotEmpty>
+             <isNotEmpty property="INCLUDE_CODE">
+               AND CD.CODE IN($INCLUDE_CODE$)
+             </isNotEmpty>
+             <isNotEmpty property="TXT_VALUE5">
+               AND TXT_VALUE5 = #TXT_VALUE5#
+             </isNotEmpty>             
+            ) C ORDER BY C.SORT_NO
+    </select>
+    
+    <select id="MMCOMBO.selectProductLine" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT PRODUCT_LINE_CD AS CODE
+                  ,PRODUCT_LINE_NAME AS NAME
+              FROM PRODUCT_LINE
+             WHERE COMPANY_CD = #COMPANY_CD#
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectFta" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT FTA_CD AS CODE
+                <isNotEmpty property="SEPERATOR_STR">
+                  ,FTA_CD || #SEPERATOR_STR# || FTA_NAME AS NAME
+                </isNotEmpty>
+                <isEmpty property="SEPERATOR_STR">
+                  ,FTA_NAME AS NAME
+                </isEmpty>
+              FROM FTA_MST
+             WHERE DELETE_YN = 'N'
+               AND SUBSTRING(FTA_CD, 2, 2) = #SESSION_FTA_NATION#
+            <isNotEmpty property="FTA_GROUP_CD">
+               AND FTA_GROUP_CD = #FTA_GROUP_CD#
+            </isNotEmpty>
+            <isNotEmpty property="CO_ISSUE_TYPE">
+               AND CO_ISSUE_TYPE = #CO_ISSUE_TYPE#
+            </isNotEmpty>
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectSignature" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            <isNotEmpty property="MESSAGE_CODE">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = #MESSAGE_CODE#
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isNotEmpty>
+            SELECT SIGNATURE_SEQ::text AS CODE
+                 , SIGNATURE_NAME AS NAME
+              FROM SIGNATURE
+             WHERE COMPANY_CD = #COMPANY_CD#
+             <isNotEmpty property="DIVISION_CD">
+               AND DIVISION_CD = #DIVISION_CD#
+             </isNotEmpty>
+             <isEqual property="VALID" compareValue="Y">
+               AND END_DATE >= TO_CHAR(NOW(), 'YYYYMMDD')
+             </isEqual>
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectCustomerSalesType" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT CD.CODE AS CODE
+                 , COALESCE(CLD.WORD, COALESCE(CD.CODE_NAME, CD.CODE_NAME_ENG)) AS NAME
+              FROM CODE_DTL CD
+                   LEFT OUTER JOIN CODE_LANG_DIC CLD
+                     ON CLD.COMPANY_CD = CD.COMPANY_CD
+                    AND CLD.CATEGORY_CD = CD.CATEGORY_CD
+                    AND CLD.CODE = CD.CODE
+                    AND CLD.LANGUAGE_CAT = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             WHERE CD.COMPANY_CD = #COMPANY_CD#
+               AND CD.CATEGORY_CD = 'CUSTOMER_SALES_TYPE'
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectNaladisaVersion" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT CD.CODE AS CODE
+                 , COALESCE(CLD.WORD, COALESCE(CD.CODE_NAME, CD.CODE_NAME_ENG)) AS NAME
+              FROM CODE_DTL CD
+                   LEFT OUTER JOIN CODE_LANG_DIC CLD
+                     ON CLD.COMPANY_CD = CD.COMPANY_CD
+                    AND CLD.CATEGORY_CD = CD.CATEGORY_CD
+                    AND CLD.CODE = CD.CODE
+                    AND CLD.LANGUAGE_CAT = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             WHERE CD.COMPANY_CD = #COMPANY_CD#
+               AND CD.CATEGORY_CD = 'NALADISA_VERSION'
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectTraceType" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT CD.CODE AS CODE
+                 , COALESCE(CLD.WORD, COALESCE(CD.CODE_NAME, CD.CODE_NAME_ENG)) AS NAME
+              FROM CODE_DTL CD
+                   LEFT OUTER JOIN CODE_LANG_DIC CLD
+                     ON CLD.COMPANY_CD = CD.COMPANY_CD
+                    AND CLD.CATEGORY_CD = CD.CATEGORY_CD
+                    AND CLD.CODE = CD.CODE
+                    AND CLD.LANGUAGE_CAT = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             WHERE CD.COMPANY_CD = #COMPANY_CD#
+               AND CD.CATEGORY_CD = 'TRACE_TYPE'
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectSystemType" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT CD.CODE AS CODE
+                 , COALESCE(CLD.WORD, COALESCE(CD.CODE_NAME, CD.CODE_NAME_ENG)) AS NAME
+              FROM CODE_DTL CD
+                   LEFT OUTER JOIN CODE_LANG_DIC CLD
+                     ON CLD.COMPANY_CD = CD.COMPANY_CD
+                    AND CLD.CATEGORY_CD = CD.CATEGORY_CD
+                    AND CLD.CODE = CD.CODE
+                    AND CLD.LANGUAGE_CAT = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             WHERE CD.COMPANY_CD = #COMPANY_CD#
+               AND CD.CATEGORY_CD = 'SYSTEM_TYPE'
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectHighMenu" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = 'ALL'
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isEqual>
+            <isNotEmpty property="MESSAGE_CODE">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = #MESSAGE_CODE#
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isNotEmpty>
+            SELECT MENU_ID AS CODE
+                 , MENU_NM AS NAME
+                 , MENU_SORT_SER AS SORT_NO
+              FROM MENU_MGMT
+             WHERE MENU_LVL_NO = '1'
+         ) C ORDER BY C.SORT_NO
+    </select>
+    
+    <select id="MMCOMBO.selectInvestigate" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT INVESTIGATE_CD AS CODE
+              ,INVESTIGATE_NAME AS NAME
+          FROM INVESTIGATE_CONF
+         WHERE COMPANY_CD = #COMPANY_CD#
+         ORDER BY CREATE_DATE DESC
+    </select>
+    
+    <select id="MMCOMBO.selectInvestigateCoNo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT IT.CODE
+              ,IT.NAME
+          FROM (
+                <isEqual property="ALL" compareValue="Y">
+                SELECT ' ' AS CODE
+                      ,MESSAGE AS NAME
+                  FROM MESSAGE_TABLE
+                 WHERE MESSAGE_CODE = 'ALL'
+                   AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+               UNION ALL
+                </isEqual>
+                SELECT IT.CO_DOC_NO AS CODE
+                      ,IT.CO_DOC_NO ||
+                       (CASE WHEN ICCD.FTA_GROUP_CD IN('MN', 'ML') THEN 
+                                  ' (' || FN_GET_COMMON_CD(IT.COMPANY_CD, 'FTA_GROUP_CD', ICCD.FTA_GROUP_CD, 'CODE_NAME', COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')) || ')'
+                             ELSE ''
+                        END) AS NAME
+                  FROM INVESTIGATE_TARGET IT
+                       INNER JOIN ISSUE_CO_CERTIFICATE_DTL ICCD
+                          ON ICCD.CO_DOC_NO = IT.CO_DOC_NO
+                         AND ICCD.COMPANY_CD = IT.COMPANY_CD
+                         AND ICCD.DIVISION_CD = IT.DIVISION_CD
+                 WHERE IT.INVESTIGATE_CD = #INVESTIGATE_CD#
+                   AND IT.COMPANY_CD = #COMPANY_CD#
+                 <isNotEmpty property="DIVISION_CD">
+                   AND IT.DIVISION_CD = #DIVISION_CD#
+                 </isNotEmpty>
+                ) IT
+         GROUP BY IT.CODE, IT.NAME
+         ORDER BY IT.CODE
+    </select>
+    
+    <select id="MMCOMBO.selectInvestigateProduct" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT DISTINCT IT.PRODUCT_ITEM_CD AS CODE
+                  ,COALESCE('['||IT.PRODUCT_ITEM_CD||'] '||FN_GET_ITEM(IT.COMPANY_CD, IT.DIVISION_CD, IT.PRODUCT_ITEM_CD, 'ITEM_NAME'), IT.PRODUCT_ITEM_CD) AS NAME
+              FROM INVESTIGATE_TARGET IT
+             WHERE IT.INVESTIGATE_CD = #INVESTIGATE_CD#
+               AND IT.COMPANY_CD = #COMPANY_CD#
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectHubCertCustomer" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT C.CUSTOMER_CD AS CODE
+              ,(CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'KR' OR C.CUSTOMER_NAME_ENG IS NULL THEN C.CUSTOMER_NAME
+                     ELSE C.CUSTOMER_NAME_ENG
+                END) AS NAME
+          FROM CUSTOMER C
+         WHERE C.COMPANY_CD = #COMPANY_CD#
+           AND C.HUB_CERT_ID IS NOT NULL
+         ORDER BY C.CUSTOMER_CD
+    </select>
+    
+    <select id="MMCOMBO.selectHubSignature" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT S.SIGNATURE_SEQ AS CODE
+              ,(CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'KR' OR S.SIGNATURE_NAME_ENG IS NULL THEN S.SIGNATURE_NAME
+                     ELSE S.SIGNATURE_NAME_ENG
+                END) AS NAME
+          FROM SIGNATURE S
+         WHERE S.COMPANY_CD = #COMPANY_CD#
+           AND S.HUB_CERT_YN = 'Y'
+         ORDER BY S.SIGNATURE_SEQ
+    </select>
+    
+    <select id="MMCOMBO.selectFtaNation" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT DISTINCT FM.FTA_CD AS CODE
+                  ,(CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'KR' THEN FM.FTA_NAME
+                              ELSE FM.FTA_NAME_ENG 
+                         END) AS NAME
+              FROM FTA_MST FM
+                   LEFT OUTER JOIN FTA_NATION FN
+                     ON FM.FTA_CD = FN.FTA_CD
+             WHERE FM.DELETE_YN = 'N'
+               AND SUBSTRING(FM.FTA_CD, 2, 2) = #SESSION_FTA_NATION#
+            <isNotEmpty property="NATION_CD">
+               AND FN.NATION_CD = #NATION_CD#
+            </isNotEmpty>
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectFtaNationByCode" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT FN.NATION_CD AS CODE
+                  ,FN_GET_COMMON_CD(#COMPANY_CD#, 'NATION', FN.NATION_CD, 'CODE_NAME', #SESSION_DEFAULT_LANGUAGE#) AS NAME
+              FROM FTA_MST FM
+                   INNER JOIN FTA_NATION FN
+                      ON FM.FTA_CD = FN.FTA_CD
+             WHERE FM.FTA_CD = #FTA_CD#
+            <isNotEmpty property="NATION_CD">
+               AND FN.NATION_CD = #NATION_CD#
+            </isNotEmpty>
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectReceiveCoItem" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            <isNotEmpty property="MESSAGE_CODE">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = #MESSAGE_CODE#
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE#, 'EN')
+             UNION ALL
+            </isNotEmpty>
+            SELECT DISTINCT RCCD.ITEM_CD AS CODE
+                  ,RCCD.ITEM_CD || ' | ' || I.ITEM_NAME AS NAME
+              FROM RCV_CO_CERTIFICATE_DTL RCCD
+                   LEFT OUTER JOIN ITEM I
+                     ON I.COMPANY_CD = RCCD.COMPANY_CD
+                    AND I.ITEM_CD = RCCD.ITEM_CD
+             WHERE RCCD.COMPANY_CD = #COMPANY_CD#
+               AND RCCD.CO_DOC_NO = #CO_DOC_NO#
+             <isNotEmpty property="DIVISION_CD">
+               AND RCCD.DIVISION_CD = #DIVISION_CD#
+             </isNotEmpty>
+               AND RCCD.VENDOR_CD = #VENDOR_CD#
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectKcsStandardCode" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = 'ALL'
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE:VARCHAR#, 'EN')
+             UNION ALL
+            </isEqual>
+            <isNotEmpty property="MESSAGE_CODE">
+            SELECT ' ' AS CODE
+                 , MESSAGE AS NAME
+                 , 0 AS SORT_NO
+              FROM MESSAGE_TABLE
+             WHERE MESSAGE_CODE = #MESSAGE_CODE#
+               AND NATION_CODE = COALESCE(#SESSION_DEFAULT_LANGUAGE:VARCHAR#, 'EN')
+             UNION ALL
+            </isNotEmpty>
+            SELECT CD.CODE AS CODE
+               <isEqual property="CODE_VIEW" compareValue="Y">
+                 , '['||CD.CODE||'] '+(CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'KR' THEN CD.CODE_NAME ELSE CD.CODE_NAME_ENG END) AS NAME
+               </isEqual>
+               <isNotEqual property="CODE_VIEW" compareValue="Y">
+                 , (CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'KR' THEN CD.CODE_NAME ELSE CD.CODE_NAME_ENG END) AS NAME
+               </isNotEqual>
+                 , CD.SORT_NO
+              FROM KCS_CODE_MST CD
+             WHERE CD.CATEGORY_CD = #CATEGORY_CD#
+               AND CD.TXT_VALUE1 = #NATION_CD#
+            ) C 
+        ORDER BY C.SORT_NO
+    </select>
+    
+    <select id="MMCOMBO.selectForeignCustomer" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT C.CUSTOMER_CD AS CODE
+                  ,C.CUSTOMER_NAME AS NAME
+              FROM CUSTOMER C
+             WHERE C.COMPANY_CD = #COMPANY_CD#
+               AND C.EXPORT_AGENT_YN = 'Y'
+             <isEqual property="TRANS_YN" compareValue="Y">
+               AND C.PROD_QUALIFIER IS NOT NULL
+             </isEqual>
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="MMCOMBO.selectForeignVendor" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-combo-start" />
+            <isEqual property="ALL" compareValue="Y">
+                <include refid="select-combo-all" />
+            </isEqual>
+            SELECT DISTINCT V.VENDOR_CD AS CODE
+			      ,V.VENDOR_NAME AS NAME
+			  FROM CUSTOMER C
+			       INNER JOIN VENDOR V
+			          ON V.COMPANY_CD = C.COMP_QUALIFIER
+			         AND V.VENDOR_CD = C.PROD_QUALIFIER
+			 WHERE C.COMP_QUALIFIER = #COMPANY_CD#
+			   AND C.PROD_QUALIFIER IS NOT NULL
+        <include refid="select-combo-end" />
+    </select>
+    
+    <select id="GRID.selectGridColumnSetList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT D.*
+          FROM (
+                SELECT DHM.GRID_ID
+                      ,DHM.HEADER_ID
+                      ,DHM.HEADER_NO
+                      ,DHM.SORT_NO AS ORG_SORT_NO
+                      ,COALESCE(DHU.USER_SORT_NO, DHM.SORT_NO) AS SORT_NO
+                      ,DHM.GRID_LANG_CODE
+                      ,DHM.CELL_FIELD
+                      ,DHM.CELL_TITLE
+                      ,DHM.CELL_WIDTH
+                      ,DHM.CELL_ALIGN
+                      ,DHM.CELL_HALIGN
+                      ,DHM.CELL_SORTABLE
+                      ,COALESCE(DHU.USER_HIDDEN_YN, DHM.CELL_HIDDEN) AS CELL_HIDDEN
+                      ,DHM.CELL_EDITOR
+                      ,DHM.CELL_CHECKBOX
+                      ,DHM.CELL_FORMATTER
+                      ,DHM.CELL_ROWSPAN
+                      ,DHM.CELL_COLSPAN
+                      ,DHM.CELL_FROZEN
+                      ,DHM.CELL_STYLER
+                      ,DHM.CELL_ATTRIBUTE1
+                      ,DHM.CELL_ATTRIBUTE2
+                      ,DHM.CELL_ATTRIBUTE3
+                      ,DHM.CELL_ATTRIBUTE4
+                      ,DHM.CELL_ATTRIBUTE5
+                      ,DHM.FIELD_MAPPING_ID
+                      ,DM.CELL_TITLE AS FIELD_MAPPING_NAME
+                      ,(CASE WHEN DHM.CELL_HIDDEN = 'true' THEN NULL ELSE DHU.USER_SORT_TYPE END) AS USER_SORT_TYPE
+                      ,(CASE WHEN DC.MAPPING_CNT > 0 THEN 'Y' ELSE 'N' END) AS SUB_MAPPING_YN
+                      ,DHM.REAL_TABLE
+                      ,DHM.REAL_COLUMN
+                  FROM DGRID_HEADER_MST DHM
+                       LEFT OUTER JOIN DGRID_HEADER_USER DHU
+                         ON DHU.COMPANY_CD = #COMPANY_CD#
+                        AND DHU.GRID_ID = DHM.GRID_ID
+                        AND DHU.HEADER_ID = DHM.HEADER_ID
+                        AND DHU.SORT_NO = DHM.SORT_NO
+                        AND DHU.PID = #PID#
+                        AND DHU.USER_ID = #USER_ID#
+                       LEFT OUTER JOIN (SELECT DHM2.CELL_FIELD, DHM2.CELL_TITLE
+                                          FROM DGRID_HEADER_MST DHM2
+                                         WHERE DHM2.GRID_ID = #GRID_ID#
+                                           AND DHM2.HEADER_NO = 1
+                                         GROUP BY DHM2.CELL_FIELD, DHM2.CELL_TITLE
+                                        ) DM
+                        ON DM.CELL_FIELD = DHM.FIELD_MAPPING_ID
+                       LEFT OUTER JOIN (SELECT DHM2.FIELD_MAPPING_ID, COUNT(1) AS MAPPING_CNT
+                                          FROM DGRID_HEADER_MST DHM2
+                                         WHERE DHM2.GRID_ID = #GRID_ID#
+                                           AND DHM2.HEADER_NO = 2
+                                         GROUP BY DHM2.FIELD_MAPPING_ID
+                                       ) DC
+                        ON DC.FIELD_MAPPING_ID = DHM.CELL_FIELD
+                 WHERE DHM.GRID_ID = #GRID_ID#
+                 <isNotEmpty property="HEADER_NO">
+                   AND DHM.HEADER_NO = #HEADER_NO#::NUMERIC
+                 </isNotEmpty>
+                 <isNotEmpty property="HEADER_ID">
+                   AND DHM.HEADER_ID = #HEADER_ID#
+                 </isNotEmpty>
+                 <isEqual property="SET_YN" compareValue="Y">
+                   AND DHM.CELL_FIELD NOT IN(SELECT DHM2.FIELD_MAPPING_ID
+	                                           FROM DGRID_HEADER_MST DHM2
+	                                          WHERE DHM2.GRID_ID = DHM.GRID_ID
+	                                            AND DHM2.HEADER_NO = 2)
+                 </isEqual>
+                    ) D
+              WHERE 1 = 1
+              <isNotEmpty property="SORT_NO">
+                AND D.ORG_SORT_NO = #SORT_NO#::NUMERIC
+              </isNotEmpty>
+              <isNotEmpty property="CELL_HIDDEN">
+                AND D.CELL_HIDDEN = #CELL_HIDDEN#
+              </isNotEmpty>
+              ORDER BY D.HEADER_NO, D.SORT_NO
+    </select>
+    
+    <delete id="GRID.deleteUserDatagridInfo" parameterClass="java.util.Map">
+        DELETE FROM DGRID_HEADER_USER
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND GRID_ID = #GRID_ID#
+           AND PID = #PID#
+           AND USER_ID = #USER_ID#
+         <isNotEmpty property="HEADER_NO">
+           AND HEADER_ID IN(SELECT HEADER_ID 
+                              FROM DGRID_HEADER_MST DHM
+                             WHERE DHM.GRID_ID = DGRID_HEADER_USER.GRID_ID
+                               AND DHM.HEADER_ID = DGRID_HEADER_USER.HEADER_ID
+                               AND DHM.HEADER_NO = #HEADER_NO#::NUMERIC
+                            )
+         </isNotEmpty>
+    </delete>
+    
+    <insert id="GRID.insertUserDatagridInfo" parameterClass="java.util.Map">
+        INSERT INTO DGRID_HEADER_USER(
+                 COMPANY_CD
+                ,GRID_ID
+                ,HEADER_ID
+                ,SORT_NO
+                ,PID
+                ,USER_ID
+                ,USER_SORT_NO
+                ,USER_HIDDEN_YN
+                ,USER_SORT_TYPE
+                ,USER_ATTRIBUTE1
+                ,USER_ATTRIBUTE2
+                ,USER_ATTRIBUTE3
+                ,USER_ATTRIBUTE4
+                ,USER_ATTRIBUTE5
+                ,CREATE_DATE
+                ,CREATE_BY)
+         VALUES (
+                 #COMPANY_CD#
+                ,#GRID_ID#
+                ,#HEADER_ID#
+                ,#ORG_SORT_NO#::NUMERIC
+                ,#PID#
+                ,#USER_ID#
+                ,#USER_SORT_NO#::NUMERIC
+                ,#USER_HIDDEN_YN#
+                ,#USER_SORT_TYPE#
+                ,#USER_ATTRIBUTE1#
+                ,#USER_ATTRIBUTE2#
+                ,#USER_ATTRIBUTE3#
+                ,#USER_ATTRIBUTE4#
+                ,#USER_ATTRIBUTE5#
+                ,NOW()
+                ,#USER_ID#)
+    </insert>
+    
+    <select id="GRID.selectDatagridInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT D.*
+          FROM (
+		        SELECT DHM.GRID_ID
+		              ,DHM.HEADER_ID
+		              ,DHM.HEADER_NO
+		              ,COALESCE(DHU.USER_SORT_NO, DHM.SORT_NO) AS SORT_NO
+		              ,MP.MAPPING_SORT_NO
+		              ,DHM.FIELD_MAPPING_ID
+		              ,DHM.CELL_FIELD
+		              ,DHM.CELL_TITLE
+		              ,DHM.CELL_WIDTH
+		              ,DHM.CELL_ALIGN
+		              ,DHM.CELL_HALIGN
+		              ,DHM.CELL_SORTABLE
+		              ,(CASE WHEN RW.FIELD_MAPPING_ID = DHM.CELL_FIELD AND COALESCE(RW.COLSPAN_NM, DHM.CELL_COLSPAN::NUMERIC)-RW.HIDDEN_NM = 0 THEN 'true'
+		                     ELSE COALESCE(DHU.USER_HIDDEN_YN, DHM.CELL_HIDDEN)
+		                END) AS CELL_HIDDEN
+		              ,DHM.CELL_EDITOR
+		              ,DHM.CELL_CHECKBOX
+		              ,DHM.CELL_FORMATTER
+		              ,(CASE WHEN RM.SHOW_CNT > 0 AND RW.FIELD_MAPPING_ID IS NULL THEN '2' ELSE '0' END) AS CELL_ROWSPAN
+				      ,(CASE WHEN RW.COLSPAN_NM IS NULL THEN '0'
+				             ELSE (CASE WHEN RW.FIELD_MAPPING_ID = DHM.CELL_FIELD THEN 
+				                             COALESCE(RW.COLSPAN_NM, DHM.CELL_COLSPAN::NUMERIC)-RW.HIDDEN_NM
+				                        ELSE '0'
+				                   END)
+				        END) AS CELL_COLSPAN
+		              ,DHM.CELL_FROZEN
+		              ,DHM.CELL_STYLER
+		              ,DHM.CELL_ATTRIBUTE1
+		              ,DHM.CELL_ATTRIBUTE2
+		              ,DHM.CELL_ATTRIBUTE3
+		              ,DHM.CELL_ATTRIBUTE4
+		              ,DHM.CELL_ATTRIBUTE5
+		              ,RU.SORT_NAME
+		              ,RU.SORT_ORDER
+		              ,(CASE WHEN RU.SORT_CNT > 1 THEN 'true' ELSE 'false' END) AS MULTI_SORT
+		          FROM DGRID_HEADER_MST DHM
+		               LEFT OUTER JOIN DGRID_HEADER_USER DHU
+		                 ON DHU.COMPANY_CD = #COMPANY_CD#
+		                AND DHU.GRID_ID = DHM.GRID_ID
+		                AND DHU.HEADER_ID = DHM.HEADER_ID
+		                AND DHU.SORT_NO = DHM.SORT_NO
+		                AND DHU.PID = #PID#
+		                AND DHU.USER_ID = #USER_ID#
+		               LEFT OUTER JOIN(SELECT DHM2.FIELD_MAPPING_ID
+		                                     ,COUNT(1) AS COLSPAN_NM
+		                                     ,SUM(CASE WHEN UPPER(DHU2.USER_HIDDEN_YN) = 'TRUE' THEN 1 ELSE 0 END) AS HIDDEN_NM
+		                                 FROM DGRID_HEADER_MST DHM2
+		                                      LEFT OUTER JOIN DGRID_HEADER_USER DHU2
+		                                        ON DHU2.COMPANY_CD = #COMPANY_CD#
+		                                       AND DHU2.GRID_ID = DHM2.GRID_ID
+		                                       AND DHU2.HEADER_ID = DHM2.HEADER_ID
+		                                       AND DHU2.SORT_NO = DHM2.SORT_NO
+		                                       AND DHU2.PID = #PID#
+		                                       AND DHU2.USER_ID = #USER_ID#
+		                                WHERE DHM2.GRID_ID = #GRID_ID#
+		                                  AND DHM2.HEADER_NO = 2
+		                                GROUP BY DHM2.FIELD_MAPPING_ID
+		                               ) RW
+		                 ON DHM.CELL_FIELD = RW.FIELD_MAPPING_ID
+		                LEFT OUTER JOIN(SELECT COUNT(1)-SUM(CASE WHEN UPPER(DHU2.USER_HIDDEN_YN) = 'TRUE' THEN 1 ELSE 0 END) AS SHOW_CNT
+		                                  FROM DGRID_HEADER_MST DHM2
+		                                       LEFT OUTER JOIN DGRID_HEADER_USER DHU2
+		                                         ON DHU2.COMPANY_CD = #COMPANY_CD#
+		                                        AND DHU2.GRID_ID = DHM2.GRID_ID
+		                                        AND DHU2.HEADER_ID = DHM2.HEADER_ID
+		                                        AND DHU2.SORT_NO = DHM2.SORT_NO
+		                                        AND DHU2.PID = #PID#
+		                                        AND DHU2.USER_ID = #USER_ID#
+		                                 WHERE DHM2.GRID_ID = #GRID_ID#
+		                                   AND DHM2.HEADER_NO = 2
+		                               ) RM
+		                 ON 1 = 1
+		                LEFT OUTER JOIN(SELECT DHM2.FIELD_MAPPING_ID, DHM2.SORT_NO
+                                             ,(SELECT COALESCE(DHU3.USER_SORT_NO, DHM3.SORT_NO)
+                                                 FROM DGRID_HEADER_MST DHM3
+                                                      LEFT OUTER JOIN DGRID_HEADER_USER DHU3
+                                                        ON DHU3.COMPANY_CD = #COMPANY_CD#
+                                                       AND DHU3.GRID_ID = DHM3.GRID_ID
+                                                       AND DHU3.HEADER_ID = DHM3.HEADER_ID
+                                                       AND DHU3.SORT_NO = DHM3.SORT_NO
+                                                       AND DHU3.PID = #PID#
+                                                       AND DHU3.USER_ID = #USER_ID#
+                                                WHERE DHM3.GRID_ID = DHM2.GRID_ID
+                                                  AND DHM3.HEADER_NO = 1
+                                                  AND DHM3.CELL_FIELD = DHM2.FIELD_MAPPING_ID) AS MAPPING_SORT_NO
+                                         FROM DGRID_HEADER_MST DHM2
+                                        WHERE DHM2.GRID_ID = #GRID_ID#
+                                          AND DHM2.HEADER_NO = 2
+                                          AND DHM2.FIELD_MAPPING_ID IS NOT NULL
+                                       ) MP
+                          ON MP.SORT_NO = DHM.SORT_NO
+                         AND DHM.HEADER_NO = 2
+		                LEFT OUTER JOIN(SELECT MAX(CASE WHEN D.SORT_NO = 1 THEN D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 2 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 3 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 4 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 5 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 6 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 7 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 8 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 9 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 10 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 11 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 12 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 13 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 14 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 15 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 16 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 17 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 18 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 19 THEN ','||D.CELL_FIELD ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 20 THEN ','||D.CELL_FIELD ELSE '' END) AS SORT_NAME
+		                                      ,MAX(CASE WHEN D.SORT_NO = 1 THEN D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 2 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 3 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 4 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 5 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 6 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 7 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 8 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 9 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 10 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 11 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 12 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 13 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 14 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 15 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 16 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 17 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 18 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 19 THEN ','||D.USER_SORT_TYPE ELSE '' END) ||
+		                                       MAX(CASE WHEN D.SORT_NO = 20 THEN ','||D.USER_SORT_TYPE ELSE '' END) AS SORT_ORDER
+		                                      ,COUNT(1) AS SORT_CNT
+		                                  FROM (
+		                                        SELECT DHM2.CELL_FIELD
+		                                              ,LOWER(DHU2.USER_SORT_TYPE) AS USER_SORT_TYPE
+		                                              ,RANK() OVER(ORDER BY DHU2.HEADER_ID, DHU2.USER_SORT_NO) AS SORT_NO
+		                                          FROM DGRID_HEADER_MST DHM2
+		                                               INNER JOIN DGRID_HEADER_USER DHU2
+		                                                  ON DHU2.COMPANY_CD = #COMPANY_CD#
+		                                                 AND DHU2.GRID_ID = DHM2.GRID_ID
+		                                                 AND DHU2.HEADER_ID = DHM2.HEADER_ID
+		                                                 AND DHU2.SORT_NO = DHM2.SORT_NO
+		                                                 AND DHU2.PID = #PID#
+		                                                 AND DHU2.USER_ID = #USER_ID#
+		                                                 AND UPPER(DHU2.USER_SORT_TYPE) IN('ASC', 'DESC')
+		                                                 AND (DHU2.USER_HIDDEN_YN IS NULL OR UPPER(DHU2.USER_HIDDEN_YN) = 'FALSE')
+		                                         WHERE DHM2.GRID_ID = #GRID_ID#
+		                                        ) D
+		                               ) RU
+		                 ON 1 = 1
+		         WHERE DHM.GRID_ID = #GRID_ID#
+		         <isNotEmpty property="HEADER_ID">
+		           AND DHM.HEADER_ID = #HEADER_ID#
+		         </isNotEmpty>
+		         <isNotEmpty property="HEADER_NO">
+		           AND DHM.HEADER_NO = #HEADER_NO#::NUMERIC
+		         </isNotEmpty>
+                ) D
+         WHERE UPPER(D.CELL_HIDDEN) = 'FALSE'
+           AND (D.MAPPING_SORT_NO IS NULL OR D.MAPPING_SORT_NO != 0)
+         ORDER BY D.HEADER_NO, D.MAPPING_SORT_NO, D.SORT_NO
+    </select>
+    
+    <select id="GRID.selectDatagridTableList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+	    SELECT GRID_ID
+		      ,MAX(GRID_LANG_CODE) AS GRID_NAME
+		  FROM DGRID_HEADER_MST
+		<isNotEmpty property="GRID_LIST">
+		 WHERE GRID_ID IN($GRID_LIST$)
+	    </isNotEmpty>
+		 GROUP BY GRID_ID
+		 ORDER BY GRID_ID
+    </select>
+    
+    <select id="GRID.selectDatagridColumnList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT GRID_ID
+              ,MAX(GRID_LANG_CODE) AS REAL_TABLE_NM
+              ,CELL_FIELD
+              ,REPLACE(MAX(CELL_TITLE), 'CC_', '') AS CELL_TITLE
+          FROM DGRID_HEADER_MST
+         WHERE REAL_COLUMN IS NOT NULL
+           AND REAL_COLUMN != ''
+         <isNotEmpty property="GRID_ID">
+           AND GRID_ID = #GRID_ID#
+         </isNotEmpty>
+         <isNotEmpty property="IEM_KEYWORD">
+           AND CELL_TITLE LIKE '%'||#IEM_KEYWORD#||'%'
+         </isNotEmpty>
+         <isNotEmpty property="STT_DTA_KEYWORD">
+           AND GRID_LANG_CODE LIKE '%'||#STT_DTA_KEYWORD#||'%'
+         </isNotEmpty>
+         GROUP BY GRID_ID
+                 ,CELL_FIELD
+         ORDER BY GRID_ID
+                 ,CELL_FIELD
+    </select>
+    
+</sqlMap>

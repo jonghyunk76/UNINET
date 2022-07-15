@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="SM7527">
+
+    <select id="SM7527.selectDatagridMst" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+        SELECT GRID_ID
+              ,HEADER_ID
+              ,HEADER_NO
+              ,SORT_NO
+              ,GRID_LANG_CODE
+              ,CELL_FIELD
+              ,CELL_TITLE
+              ,CELL_WIDTH
+              ,CELL_ALIGN
+              ,CELL_HALIGN
+              ,CELL_SORTABLE
+              ,CELL_HIDDEN
+              ,CELL_EDITOR
+              ,CELL_CHECKBOX
+              ,CELL_FORMATTER
+              ,CELL_ROWSPAN
+              ,CELL_COLSPAN
+              ,CELL_FROZEN
+              ,CELL_STYLER
+              ,CELL_ATTRIBUTE1
+              ,CELL_ATTRIBUTE2
+              ,CELL_ATTRIBUTE3
+              ,CELL_ATTRIBUTE4
+              ,CELL_ATTRIBUTE5
+              ,FIELD_MAPPING_ID
+              ,REAL_TABLE
+              ,REAL_COLUMN
+              ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CREATE_BY
+          FROM DGRID_HEADER_MST
+         WHERE 1 = 1
+         <isNotEmpty property="GRID_ID">
+           AND GRID_ID = #GRID_ID#
+         </isNotEmpty>
+         <isNotEmpty property="GRID_LANG_CODE">
+           AND GRID_LANG_CODE = #GRID_LANG_CODE#
+         </isNotEmpty>
+         <isNotEmpty property="schKeyWord">
+           AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+         </isNotEmpty>
+        <include refid="select-paging-end" />
+    </select>
+    
+    <select id="SM7527.selectDatagridUser" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+        SELECT COMPANY_CD
+              ,GRID_ID
+              ,HEADER_ID
+              ,SORT_NO
+              ,PID
+              ,USER_ID
+              ,USER_SORT_NO
+              ,USER_HIDDEN_YN
+              ,USER_SORT_TYPE
+              ,USER_ATTRIBUTE1
+              ,USER_ATTRIBUTE2
+              ,USER_ATTRIBUTE3
+              ,USER_ATTRIBUTE4
+              ,USER_ATTRIBUTE5
+              ,TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+              ,CREATE_BY
+          FROM DGRID_HEADER_USER
+        WHERE COMPANY_CD = #COMPANY_CD#
+           AND GRID_ID = #GRID_ID#
+        <isNotEmpty property="schKeyWord">
+           AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+        </isNotEmpty>
+        <include refid="select-paging-end" />
+    </select>
+    
+</sqlMap>

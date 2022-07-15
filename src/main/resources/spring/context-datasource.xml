@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <bean
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <value>classpath:config/db.properties</value>
+        </property>
+    </bean>
+    <!-- LOCAL -->      
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${application.currentdriverclass}"/>
+        <property name="url" value="${application.currenturl}"/>
+        <property name="username" value="${application.currentusername}"/>
+        <property name="password" value="${application.currentpassword}"/>
+        <property name="initialSize" value="10"/>
+        <property name="maxActive" value="50"/>
+        <property name="maxIdle" value="50"/>
+        <property name="maxWait" value="60000"/>
+        <property name="validationQuery" value="${application.currentvalidationQuery}" />
+        <property name="testWhileIdle" value="true"/>
+        <property name="timeBetweenEvictionRunsMillis" value="300000"/> <!-- 5분마다 Connection 유효 체크 (validationQuery, testWhileIdle 필수) -->
+                                                  
+    </bean>
+    
+    <!-- JavaMelody Monitoring(DB) -->
+    <!-- <bean id="springDataSourceBeanPostProcessor" class="net.bull.javamelody.SpringDataSourceBeanPostProcessor"></bean> -->
+        
+    <!-- Direct query interface
+    <bean id="erpSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"/>
+        <property name="url" value="jdbc:sqlserver://localhost:1433;databaseName=TOMSFTA"/>
+        <property name="username" value="toms"/>
+        <property name="password" value="toms1219"/>
+        <property name="initialSize" value="5"/>
+        <property name="maxActive" value="200"/>
+        <property name="maxIdle" value="20"/>
+        <property name="maxWait" value="60000"/>
+        <property name="validationQuery" value="select 1" />  
+    </bean>
+     -->
+</beans>

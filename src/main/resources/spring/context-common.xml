@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:p="http://www.springframework.org/schema/p" 
+        xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:aop="http://www.springframework.org/schema/aop"
+        xmlns:tx="http://www.springframework.org/schema/tx"
+        xmlns:task="http://www.springframework.org/schema/task"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans 
+                            http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+                            http://www.springframework.org/schema/context 
+                            http://www.springframework.org/schema/context/spring-context.xsd
+                            http://www.springframework.org/schema/aop 
+                            http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+                            http://www.springframework.org/schema/task  
+                            http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+                                   
+    <!-- Interface를 구현하지 않은 클래스를 적용하기 위한 proxy생성 -->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+    
+    <bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver" />
+    
+    <!-- Multi language properties info -->
+    <bean id="messageSource" class="kr.yni.frame.resources.FrameResourceBundleMessageSource">
+        <property name="defaultEncoding" value="UTF-8"/>
+        <property name="basenames">
+            <list>
+                <value>classpath:/message/message</value>
+            </list>
+        </property>
+        <property name="cacheSeconds" value="5"/>
+    </bean>
+    
+    <!-- Batch Job -->
+    <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref local="eframeTrigger"/>
+            </list>
+        </property>
+        <property name="quartzProperties">  
+            <props>  
+                <prop key="org.quartz.threadPool.class">org.quartz.simpl.SimpleThreadPool</prop>  
+                <prop key="org.quartz.threadPool.threadCount">1</prop>  
+                <prop key="org.quartz.threadPool.threadPriority">5</prop>  
+                <prop key="org.quartz.jobStore.misfireThreshold">43200000</prop>
+                <prop key="org.quartz.jobStore.class">org.quartz.simpl.RAMJobStore</prop>  
+                <prop key="org.quartz.scheduler.skipUpdateCheck">true</prop>
+            </props>
+        </property>
+    </bean>
+    
+    <bean id="eframeTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean">
+        <property name="jobDetail" ref="eframeBatchJob" />
+        <property name="startDelay" value="0" />
+        <property name="repeatInterval" value="604800000" /> 
+    </bean>
+    
+    <bean id="eframeBatchJob" class="org.springframework.scheduling.quartz.JobDetailBean">  
+        <property name="jobClass" value="com.yni.fta.common.beans.YNIFrameBatchJobBean"/>
+    </bean>
+    
+    <bean id="batchTargetService" class="com.yni.fta.common.beans.InterfaceFactoryBean">
+        <property name="target">
+            <ref local="batchServiceTarget"/>
+        </property>
+        <property name="interceptorNames">
+            <list>
+                <value>interfaceAdvisor</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="interfaceAdvisor" class="org.springframework.aop.support.DefaultPointcutAdvisor">
+        <property name="advice">
+            <ref local="interfaceAdvice"/>
+        </property>
+        <property name="pointcut">
+            <bean class="com.yni.fta.common.beans.pointcut.InterfacePointcut"/>
+        </property>
+    </bean>
+    
+    <bean id="interfaceAdvice" class="com.yni.fta.common.beans.advice.InterfaceAdvice"/>
+
+    <bean id="batchServiceTarget" class="com.yni.fta.common.beans.target.InterfaceTarget">
+        <property name="batchDao">
+            <ref bean="batchDao"/>
+        </property>
+        <property name="rpcTransDao">
+            <ref bean="rpcTransDao"/>
+        </property>
+         <property name="rfcTransDAO">
+            <ref bean="rfcTransDAO"/>
+        </property>
+        <property name="excelTransDao">
+            <ref bean="excelTransDao"/>
+        </property>
+        <property name="hubTransDAO">
+            <ref bean="hubTransDAO"/>
+        </property>
+        <property name="cloudTransDao">
+            <ref bean="cloudTransDAO"/>
+        </property>
+        <property name="passTransDao">
+            <ref bean="passTransDao"/>
+        </property>
+        <property name="poTransDao">
+            <ref bean="poTransDao"/>
+        </property>
+        <property name="systemTransDao">
+            <ref bean="systemTransDao"/>
+        </property>
+    </bean>
+    
+    <bean id="batchDao" class="com.yni.fta.mm.batch.impl.BatchDao"/>
+    <bean id="rpcTransDao" class="com.yni.fta.mm.batch.impl.RPCTransDao"/>
+    <bean id="excelTransDao" class="com.yni.fta.mm.batch.impl.ExcelTransDao"/>
+    <bean id="hubTransDAO" class="com.yni.fta.mm.batch.impl.HubTransDAO"/>
+    <bean id="cloudTransDAO" class="com.yni.fta.mm.batch.impl.CloudTransDao"/>
+    <bean id="rfcTransDAO" class="com.yni.fta.mm.batch.impl.RFCTransDAO"/>
+    <bean id="passTransDao" class="com.yni.fta.mm.batch.impl.PassTransDao"/>
+    <bean id="poTransDao" class="com.yni.fta.mm.batch.impl.POTransDao"/>
+    <bean id="systemTransDao" class="com.yni.fta.mm.batch.impl.SystemTransDao"/>
+    
+    <!-- Exception 아니지만 후처리 로직을 수행하도록 설정(현재 사용안함) -->
+    <!-- 
+    <bean id="leaveaTrace" class="egovframework.rte.fdl.cmmn.trace.LeaveaTrace">
+        <property name="traceHandlerServices">
+            <list>
+                <ref bean="traceHandlerService" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="traceHandlerService"
+        class="egovframework.rte.fdl.cmmn.trace.manager.DefaultTraceHandleManager">
+        <property name="reqExpMatcher">
+            <ref bean="antPathMater" />
+        </property>
+        <property name="patterns">
+            <list>
+                <value>*</value>
+            </list>
+        </property>
+        <property name="handlers">
+            <list>
+                <ref bean="defaultTraceHandler" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="defaultTraceHandler"
+        class="egovframework.rte.fdl.cmmn.trace.handler.DefaultTraceHandler" />
+    -->
+    
+    <bean id="antPathMater" class="org.springframework.util.AntPathMatcher" />
+    
+    <!-- 비지니스 class에 등록된 annotation 설정 -->
+    <context:component-scan base-package="com.yni">
+       <context:exclude-filter type="regex" expression="com/.yni/.fta/..*DAO.*" />
+       <context:exclude-filter type="regex" expression="com/.yni/.fta/..*Service.*" />
+       <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+    </context:component-scan>
+    
+    <!-- 비동기 @Async 사용 -->
+        <task:executor id="testExecutor" pool-size="10"/>
+        <task:annotation-driven executor="testExecutor"/>      
+</beans>

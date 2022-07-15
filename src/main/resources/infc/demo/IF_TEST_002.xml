@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jco id="IF_CRM_002">
+    <function name="NONE" desc="Salesforce 데이터 송신 테스트">
+        <!-- 2.실제 송신 시 메시지 맵핑을 위한 파라메터 정보 셋팅 -->
+        <import>
+            <!-- 송신전에 <table>에서 지정한 parameter name을 다른 이름으로 변경할 경우 trans를 지정함 -->
+            <parameter type="CHAR" name="result" trans="member"/>
+        </import>
+        <!-- 3.송신결과를 저장할 파라메터 설정정보 셋팅 -->
+        <export>
+            <parameter name="resultMsg"      type="CHAR"  offset="500"    length="500" trans="ERROR_MESSAGE"   decimals="0"   desc="결과 메시지"/>
+            <parameter name="resultCode"      type="CHAR"  offset="2"    length="2"  trans="BATCH_STATUS"  decimals="0"   desc="결과코드"/>
+        </export>
+        <!-- 1.송신할 데이터를 인터페이스 이력 테이블에서 조회하기 위한 정보 셋팅 -->
+        <!-- result(수신된 정보의 테이블명)은 인터페이스 이력의 저장테이블(interface_history_data_id) 컬럼과 비교 -->
+        <table>
+            <parameter type="itable" name="result"> 
+                <column name="ATTRIBUTE01"   type="DATS"  offset="10"   length="8"   decimals="0"   trans="IN_DATE" format="yyyyMMdd" desc="등록일자" />
+                <column name="ATTRIBUTE02"   type="CHAR"  offset="20"   length="20"   decimals="0"   trans="JOIN_YN" desc="가입여부" />
+            </parameter>
+        </table>
+    </function>
+</jco>

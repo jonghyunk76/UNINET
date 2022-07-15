@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="SM7523">
+
+    <select id="SM7523.selectDocMatrixList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+        SELECT DM.DOC_ID
+              ,DM.DOC_NAME
+              ,DM.DOC_NAME_ENG
+              ,DM.FTA_CD
+              ,DM.EXPORT_FLAG
+              ,DM.APPLY_DATE
+              ,DM.END_DATE
+              ,DM.DOC_FILE_NAME
+              ,DM.USE_YN
+              ,DM.SORT_NO
+              ,DM.FTA_NATION
+              ,TO_CHAR(DM.CREATE_DATE, 'YYYYMMDD') AS CREATE_DATE
+              ,DM.CREATE_BY
+              ,TO_CHAR(DM.UPDATE_DATE, 'YYYYMMDD') AS UPDATE_DATE
+              ,DM.UPDATE_BY
+              ,DM.URL
+          FROM DOC_MATRIX DM
+         WHERE 1 = 1
+         <isNotEmpty property="FTA_NATION">
+           AND DM.FTA_NATION = #FTA_NATION#
+         </isNotEmpty>
+         <isNotEmpty property="schKeyWord">
+           AND UPPER($schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+         </isNotEmpty>
+        <include refid="select-paging-end" />
+        ORDER BY DOC_NAME
+    </select>
+    
+    <update id="SM7523.insertDocMatrix" parameterClass="java.util.Map">
+        INSERT INTO DOC_MATRIX(
+               DOC_ID
+              ,DOC_NAME
+              ,DOC_NAME_ENG
+              ,FTA_CD
+              ,EXPORT_FLAG
+              ,APPLY_DATE
+              ,END_DATE
+              ,DOC_FILE_NAME
+              ,USE_YN
+              ,SORT_NO
+              ,FTA_NATION
+              ,CREATE_DATE
+              ,CREATE_BY
+              ,UPDATE_DATE
+              ,UPDATE_BY
+              ,URL)
+        VALUES(
+               #DOC_ID#
+              ,#DOC_NAME#
+              ,#DOC_NAME_ENG#
+              ,#FTA_CD#
+              ,#EXPORT_FLAG#
+              ,#APPLY_DATE#
+              ,#END_DATE#
+              ,#DOC_FILE_NAME#
+              ,#USE_YN#
+              ,FN_PG_GET_CAST_NUM(#SORT_NO#)
+              ,#FTA_NATION#
+              ,NOW()
+              ,#USER_ID#
+              ,NOW()
+              ,#USER_ID#
+              ,#URL#)
+    </update>
+    
+    <update id="SM7523.updateDocMatrix" parameterClass="java.util.Map">
+        UPDATE DOC_MATRIX
+           SET DOC_NAME      = #DOC_NAME#   
+              ,DOC_NAME_ENG  = #DOC_NAME_ENG#
+              ,FTA_CD        = #FTA_CD#
+              ,EXPORT_FLAG   = #EXPORT_FLAG#
+              ,APPLY_DATE    = #APPLY_DATE#
+              ,END_DATE      = #END_DATE#
+              ,DOC_FILE_NAME = #DOC_FILE_NAME#
+              ,USE_YN        = #USE_YN#
+              ,SORT_NO       = FN_PG_GET_CAST_NUM(#SORT_NO#)
+              ,URL           = #URL#
+              ,FTA_NATION    = #FTA_NATION#
+              ,UPDATE_DATE   = NOW()
+              ,UPDATE_BY     = #USER_ID#
+         WHERE DOC_ID = #DOC_ID#
+    </update>
+    
+    <delete id="SM7523.deleteDocMatrix" parameterClass="java.util.Map">
+        DELETE FROM DOC_MATRIX
+         WHERE DOC_ID = #DOC_ID#
+    </delete>
+    
+</sqlMap>

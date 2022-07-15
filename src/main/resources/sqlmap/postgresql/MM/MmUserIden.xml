@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="MmIden">
+    
+    <select id="AuthorityCheck.selectUserStatus" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT (CASE WHEN COUNT(*) > 0 THEN
+                          (CASE WHEN TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN MAX(USR.START_DATE) AND MIN(USR.END_DATE) THEN
+                                    (CASE WHEN COALESCE(MAX(USR.STATUS), 'Y') = 'Y' THEN 'S'
+                                          ELSE 'D'
+                                     END)
+                                ELSE 'B'
+                           END)
+                     WHEN COUNT(*) = 0 THEN 'N'
+                END) AS REG_STATUS
+          FROM FTA_USER USR
+         WHERE USR.COMPANY_CD = #COMPANY_CD#
+           AND USR.USER_ID = #USER_ID#
+    </select>
+    
+    <select id="AuthorityCheck.selectMember" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+		SELECT U.*
+		      ,COALESCE(ER.EXCHANGE_RATE, 0) AS EXCHANGE_RATE
+		  FROM (
+				SELECT USR.USER_ID,
+				       USR.COMPANY_CD,
+				       CMY.COMPANY_NAME AS COMPANY_NAME,
+				       CMY.PARENT_COMPANY_CD,
+				       USR.NAME AS USER_NAME,
+				       COALESCE(USR.DEFAULT_LANGUAGE, '') AS DEFAULT_LANGUAGE,
+				       CASE WHEN USR.WORK_YYYY_MM = '' OR USR.WORK_YYYY_MM IS NULL THEN TO_CHAR(NOW(), 'YYYYMM') ELSE USR.WORK_YYYY_MM END AS WORK_YYYY_MM,
+				       USR.PASSWORD AS USER_PASS,
+				       '1' AS LOGIN_STATUS,
+				       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'FTA') AS FTA_NATION,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'LOCAL_CURRENCY') AS LOCAL_CURRENCY,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'EXCHANGE_CURRENCY') AS EXCHANGE_CURRENCY,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'EXCHANGE_CURRENCY_TYPE') AS EXCHANGE_CURRENCY_TYPE,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'VENDOR_CO_TARGET') AS VENDOR_CO_TARGET,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'RUN_TYPE') AS RUN_TYPE,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_GOOD_YN') AS CRTCT_GOOD_YN,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_IMP_YN') AS CRTCT_IMP_YN,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CUSTOMER_CO_TARGET') AS CUSTOMER_CO_TARGET,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_SUBITEM_YN') AS CRTCT_SUBITEM_YN,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_EXPORT_YN') AS CRTCT_EXPORT_YN,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'EXCEL_MAX_ROWNUM') AS EXCEL_MAX_ROWNUM,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CSV_MAX_ROWNUM') AS CSV_MAX_ROWNUM,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS TOMS_FTA_CERT_KEY,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CLOUD_SERVER_URL') AS TOMS_CLOUD_SITE,
+		               NULL AS BUSINESS_NO,
+		               (SELECT MAX(CASE WHEN UPPER(AU.AUTH_GROUP_ID) = 'MASTER' THEN AU.AUTH_GROUP_ID ELSE NULL END)
+                          FROM AUTH_USER AU
+                         WHERE AU.COMPANY_CD = USR.COMPANY_CD
+                           AND AU.USER_ID = USR.USER_ID) AS AUTH_GROUP,
+                       'internal' AS SESSION_CERTIFY_TYPE,
+                       CD2.TXT_VALUE1 AS AMOUNT_POINT_NM,
+                       USR.KAKAO_SCRIPT_KEY,
+                       USR.MANAGER_YN
+				  FROM FTA_USER USR
+				       INNER JOIN COMPANY CMY
+				          ON USR.COMPANY_CD = CMY.COMPANY_CD
+				        LEFT OUTER JOIN CODE_DTL CD1
+                          ON CD1.COMPANY_CD = CMY.COMPANY_CD
+                         AND CD1.CATEGORY_CD = 'SYS_CONFIG'
+                         AND CD1.CODE = 'LOCAL_CURRENCY'
+                        LEFT OUTER JOIN CODE_DTL CD2
+                          ON CD2.COMPANY_CD = CD1.COMPANY_CD
+                         AND CD2.CATEGORY_CD = 'CURRENCY'
+                         AND CD2.CODE = CD1.TXT_VALUE1
+				 WHERE USR.USER_ID = #USER_ID#
+				   AND USR.PASSWORD IN(#PASSWORD#, #INIT_PASSWORD#)
+				   AND USR.COMPANY_CD = #COMPANY_CD#
+				   AND COALESCE(USR.STATUS, 'Y') = 'Y'
+				   AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN USR.START_DATE AND USR.END_DATE
+				) U
+                LEFT OUTER JOIN EXCHANGE_RATE ER
+                  ON U.COMPANY_CD = ER.COMPANY_CD
+                 AND U.WORK_YYYY_MM = ER.YYYYMM
+                 AND U.LOCAL_CURRENCY = ER.CURRENCY
+                 AND U.EXCHANGE_CURRENCY = ER.EXCHANGE_CURRENCY
+    </select>  
+    
+    <select id="AuthorityCheck.selectPassMember" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT U.*
+              ,COALESCE(ER.EXCHANGE_RATE, 0) AS SESSION_EXCHANGE_RATE
+          FROM (
+		        SELECT USR.USER_ID AS SESSION_USER_ID,
+		               USR.COMPANY_CD AS SESSION_COMPANY_CD,
+		               CMY.COMPANY_NAME AS SESSION_COMPANY_NAME,
+		               CMY.PARENT_COMPANY_CD AS SESSION_PARENT_COMPANY_CD,
+		               USR.NAME AS SESSION_USER_NAME,
+		               COALESCE(USR.DEFAULT_LANGUAGE, '') AS SESSION_DEFAULT_LANGUAGE,
+		               CASE WHEN USR.WORK_YYYY_MM = '' OR USR.WORK_YYYY_MM IS NULL THEN TO_CHAR(NOW(), 'YYYYMM') ELSE USR.WORK_YYYY_MM END AS SESSION_WORK_YYYY_MM,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'FTA') AS SESSION_FTA_NATION,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'LOCAL_CURRENCY') AS SESSION_LOCAL_CURRENCY,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'EXCHANGE_CURRENCY') AS SESSION_EXCHANGE_CURRENCY,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'EXCHANGE_CURRENCY_TYPE') AS SESSION_EXCHANGE_CURRENCY_TYPE,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'VENDOR_CO_TARGET') AS SESSION_VENDOR_CO_TARGET,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'RUN_TYPE') AS SESSION_RUN_TYPE,
+		               FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_GOOD_YN') AS SESSION_CRTCT_GOOD_YN,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_IMP_YN') AS SESSION_CRTCT_IMP_YN,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CUSTOMER_CO_TARGET') AS SESSION_CUSTOMER_CO_TARGET,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_SUBITEM_YN') AS SESSION_CRTCT_SUBITEM_YN,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CRTCT_EXPORT_YN') AS SESSION_CRTCT_EXPORT_YN,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'EXCEL_MAX_ROWNUM') AS SESSION_EXCEL_MAX_ROWNUM,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CSV_MAX_ROWNUM') AS SESSION_CSV_MAX_ROWNUM,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS SESSION_TOMS_FTA_CERT_KEY,
+                       FN_GET_SYSTEM_CONFIG(USR.COMPANY_CD, 'CLOUD_SERVER_URL') AS SESSION_TOMS_CLOUD_SITE,
+                       NULL AS SESSION_BUSINESS_NO,
+		               (SELECT MAX(CASE WHEN UPPER(AU.AUTH_GROUP_ID) = 'MASTER' THEN AU.AUTH_GROUP_ID ELSE NULL END)
+                          FROM AUTH_USER AU
+                         WHERE AU.COMPANY_CD = USR.COMPANY_CD
+                           AND AU.USER_ID = USR.USER_ID) AS SESSION_AUTH_GROUP,
+                       'internal' AS SESSION_CERTIFY_TYPE,
+                       CD2.TXT_VALUE1 AS AMOUNT_POINT_NM,
+                       USR.KAKAO_SCRIPT_KEY AS SESSION_KAKAO_SCRIPT_KEY,
+                       USR.MANAGER_YN AS SESSION_MANAGER_YN
+		          FROM FTA_USER USR
+		               INNER JOIN COMPANY CMY
+		                  ON USR.COMPANY_CD = CMY.COMPANY_CD
+		                LEFT OUTER JOIN CODE_DTL CD1
+                           ON CD1.COMPANY_CD = CMY.COMPANY_CD
+                          AND CD1.CATEGORY_CD = 'SYS_CONFIG'
+                          AND CD1.CODE = 'LOCAL_CURRENCY'
+                         LEFT OUTER JOIN CODE_DTL CD2
+                           ON CD2.COMPANY_CD = CD1.COMPANY_CD
+                          AND CD2.CATEGORY_CD = 'CURRENCY'
+                          AND CD2.CODE = CD1.TXT_VALUE1
+		         WHERE USR.USER_ID = #USER_ID#
+		           AND USR.COMPANY_CD = #COMPANY_CD#
+		           AND COALESCE(USR.STATUS, 'Y') = 'Y'
+		           AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN USR.START_DATE AND USR.END_DATE
+                ) U
+                LEFT OUTER JOIN EXCHANGE_RATE ER
+                  ON U.SESSION_COMPANY_CD = ER.COMPANY_CD
+                 AND U.SESSION_WORK_YYYY_MM = ER.YYYYMM
+                 AND U.SESSION_LOCAL_CURRENCY = ER.CURRENCY
+                 AND U.SESSION_EXCHANGE_CURRENCY_TYPE = ER.EXCHANGE_CURRENCY
+    </select>
+    
+    <select id="AuthorityCheck.selectCompanyOfUser" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT DISTINCT FU.COMPANY_CD AS CODE, C.COMPANY_NAME AS NAME
+		  FROM FTA_USER FU
+		       INNER JOIN (SELECT AU.COMPANY_CD
+                                 ,AU.AUTH_GROUP_ID
+                             FROM AUTH_USER AU
+                            WHERE AU.USER_ID = #USER_ID#
+                           ) AU
+                 ON AU.COMPANY_CD = FU.COMPANY_CD
+                AND FU.COMPANY_CD = (CASE WHEN AU.AUTH_GROUP_ID IN('user', 'guest') THEN #COMPANY_CD#
+                                         ELSE AU.COMPANY_CD 
+                                    END)
+		       INNER JOIN COMPANY C
+		          ON C.COMPANY_CD = FU.COMPANY_CD
+		         AND COALESCE(C.PARENT_COMPANY_CD, '*') = (CASE WHEN #USER_ID# = 'fta' OR AU.AUTH_GROUP_ID = C.AUTH_GROUP_ID THEN COALESCE(C.PARENT_COMPANY_CD, '*')
+                                                           ELSE #SESSION_PARENT_COMPANY_CD#
+                                                      END)
+		 WHERE FU.USER_ID = #USER_ID#
+		   AND COALESCE(FU.STATUS, 'Y') = 'Y'
+		   AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN FU.START_DATE AND FU.END_DATE
+		 ORDER BY C.COMPANY_NAME
+    </select>
+    
+    <select id="AuthorityCheck.selectSupplierIdenCheck" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT VC.CHARGER_ID AS USER_ID,
+               VC.COMPANY_CD,
+               C.COMPANY_NAME,
+               C.PARENT_COMPANY_CD,
+               VC.VENDOR_CD,
+               (CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'EN' THEN V.VENDOR_NAME_ENG ELSE V.VENDOR_NAME END) AS VENDOR_NAME,
+               VC.NAME AS USER_NAME,
+               '' AS DEFAULT_LANGUAGE,
+               '' AS WORK_YYYY_MM,
+               VC.PASSWORD AS USER_PASS,
+               '1' AS LOGIN_STATUS,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'FTA') AS FTA_NATION,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'LOCAL_CURRENCY') AS LOCAL_CURRENCY,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'EXCHANGE_CURRENCY') AS EXCHANGE_CURRENCY,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'VENDOR_CO_TARGET') AS VENDOR_CO_TARGET,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'RUN_TYPE') AS RUN_TYPE,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_GOOD_YN') AS CRTCT_GOOD_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_IMP_YN') AS CRTCT_IMP_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CUSTOMER_CO_TARGET') AS CUSTOMER_CO_TARGET,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_SUBITEM_YN') AS CRTCT_SUBITEM_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_EXPORT_YN') AS CRTCT_EXPORT_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'EXCEL_MAX_ROWNUM') AS EXCEL_MAX_ROWNUM,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CSV_MAX_ROWNUM') AS CSV_MAX_ROWNUM,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS TOMS_FTA_CERT_KEY,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CLOUD_SERVER_URL') AS TOMS_CLOUD_SITE,
+               REPLACE(V.BUSINESS_NO, '-', '') AS BUSINESS_NO,
+               NULL AS AUTH_GROUP,
+               'external' AS SESSION_CERTIFY_TYPE,
+               CD2.TXT_VALUE1 AS AMOUNT_POINT_NM
+          FROM VENDOR_CHARGER VC
+		       INNER JOIN VENDOR V
+		          ON VC.COMPANY_CD = V.COMPANY_CD
+		         AND VC.VENDOR_CD = V.VENDOR_CD
+		         AND COALESCE(V.DELETE_YN, 'N') = 'N'
+		       INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = VC.COMPANY_CD
+                LEFT OUTER JOIN CODE_DTL CD1
+                  ON CD1.COMPANY_CD = C.COMPANY_CD
+                 AND CD1.CATEGORY_CD = 'SYS_CONFIG'
+                 AND CD1.CODE = 'LOCAL_CURRENCY'
+                LEFT OUTER JOIN CODE_DTL CD2
+                  ON CD2.COMPANY_CD = CD1.COMPANY_CD
+                 AND CD2.CATEGORY_CD = 'CURRENCY'
+                 AND CD2.CODE = CD1.TXT_VALUE1
+         WHERE VC.CHARGER_ID = #USER_ID#
+           AND VC.PASSWORD IN(#PASSWORD#, #INIT_PASSWORD#)
+           AND VC.COMPANY_CD = #COMPANY_CD#
+           AND VC.CHARGER_ID != 'manager'
+           AND COALESCE(VC.DELETE_YN, 'N') = 'N'
+           AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN VC.START_DATE AND VC.END_DATE
+    </select>
+    
+    <select id="AuthorityCheck.selectSsoSupplierIdenCheck" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT VC.CHARGER_ID AS SESSION_USER_ID,
+               VC.COMPANY_CD AS SESSION_COMPANY_CD,
+               C.COMPANY_NAME AS SESSION_COMPANY_NAME,
+               C.PARENT_COMPANY_CD AS SESSION_PARENT_COMPANY_CD,
+               VC.VENDOR_CD AS SESSION_VENDOR_CD,
+               (CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'EN' THEN V.VENDOR_NAME_ENG ELSE V.VENDOR_NAME END) AS SESSION_VENDOR_NAME,
+               VC.NAME AS SESSION_USER_NAME,
+               '' AS SESSION_DEFAULT_LANGUAGE,
+               '' AS SESSION_WORK_YYYY_MM,
+               VC.PASSWORD AS SESSION_USER_PASS,
+               '1' AS SESSION_LOGIN_STATUS,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'FTA') AS SESSION_FTA_NATION,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'LOCAL_CURRENCY') AS SESSION_LOCAL_CURRENCY,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'EXCHANGE_CURRENCY') AS SESSION_EXCHANGE_CURRENCY,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'VENDOR_CO_TARGET') AS SESSION_VENDOR_CO_TARGET,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'RUN_TYPE') AS SESSION_RUN_TYPE,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_GOOD_YN') AS SESSION_CRTCT_GOOD_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_IMP_YN') AS SESSION_CRTCT_IMP_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CUSTOMER_CO_TARGET') AS SESSION_CUSTOMER_CO_TARGET,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_SUBITEM_YN') AS SESSION_CRTCT_SUBITEM_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CRTCT_EXPORT_YN') AS SESSION_CRTCT_EXPORT_YN,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'EXCEL_MAX_ROWNUM') AS SESSION_EXCEL_MAX_ROWNUM,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CSV_MAX_ROWNUM') AS SESSION_CSV_MAX_ROWNUM,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS SESSION_TOMS_FTA_CERT_KEY,
+               FN_GET_SYSTEM_CONFIG(VC.COMPANY_CD, 'CLOUD_SERVER_URL') AS SESSION_TOMS_CLOUD_SITE,
+               REPLACE(V.BUSINESS_NO, '-', '') AS SESSION_BUSINESS_NO,
+               NULL AS SESSION_AUTH_GROUP,
+               'external' AS SESSION_CERTIFY_TYPE,
+               CD2.TXT_VALUE1 AS AMOUNT_POINT_NM
+          FROM VENDOR_CHARGER VC
+               INNER JOIN VENDOR V
+                  ON VC.COMPANY_CD = V.COMPANY_CD
+                 AND VC.VENDOR_CD = V.VENDOR_CD
+                 AND COALESCE(V.DELETE_YN, 'N') = 'N'
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = VC.COMPANY_CD
+               INNER JOIN CODE_DTL CD3
+                  ON CD3.COMPANY_CD = V.COMPANY_CD
+                 AND CD3.CATEGORY_CD = 'SYS_CONFIG'
+                 AND CD3.CODE = 'VENDOR_ID_TYPE'
+                LEFT OUTER JOIN CODE_DTL CD1
+                  ON CD1.COMPANY_CD = C.COMPANY_CD
+                 AND CD1.CATEGORY_CD = 'SYS_CONFIG'
+                 AND CD1.CODE = 'LOCAL_CURRENCY'
+                LEFT OUTER JOIN CODE_DTL CD2
+                  ON CD2.COMPANY_CD = CD1.COMPANY_CD
+                 AND CD2.CATEGORY_CD = 'CURRENCY'
+                 AND CD2.CODE = CD1.TXT_VALUE1
+         WHERE VC.COMPANY_CD = #COMPANY_CD#
+           AND VC.VENDOR_CD = #VENDOR_CD#
+           AND VC.CHARGER_ID = (CASE WHEN CD3.TXT_VALUE1 = '2' THEN COALESCE(REPLACE(V.BUSINESS_NO, '-', ''), '9999999999')
+                                     ELSE V.VENDOR_CD
+                                END)||CD3.TXT_VALUE2
+           AND COALESCE(VC.DELETE_YN, 'N') = 'N'
+           AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN VC.START_DATE AND VC.END_DATE
+    </select>
+    
+    <select id="AuthorityCheck.selectPassSupplier" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT VC.CHARGER_ID AS SESSION_USER_ID,
+               C.COMPANY_CD AS SESSION_COMPANY_CD,
+               C.COMPANY_NAME AS SESSION_COMPANY_NAME,
+               C.PARENT_COMPANY_CD AS SESSION_PARENT_COMPANY_CD,
+               V.VENDOR_CD AS SESSION_VENDOR_CD,
+               (CASE WHEN #SESSION_DEFAULT_LANGUAGE# = 'EN' THEN V.VENDOR_NAME_ENG ELSE V.VENDOR_NAME END) AS SESSION_VENDOR_NAME,
+               VC.NAME AS SESSION_USER_NAME,
+               '' AS SESSION_DEFAULT_LANGUAGE,
+               '' AS SESSION_WORK_YYYY_MM,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'FTA') AS SESSION_FTA_NATION,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'LOCAL_CURRENCY') AS SESSION_LOCAL_CURRENCY,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'EXCHANGE_CURRENCY') AS SESSION_EXCHANGE_CURRENCY,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'VENDOR_CO_TARGET') AS SESSION_VENDOR_CO_TARGET,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'RUN_TYPE') AS SESSION_RUN_TYPE,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'CRTCT_GOOD_YN') AS SESSION_CRTCT_GOOD_YN,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'CRTCT_IMP_YN') AS SESSION_CRTCT_IMP_YN,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'CUSTOMER_CO_TARGET') AS SESSION_CUSTOMER_CO_TARGET,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'CRTCT_SUBITEM_YN') AS SESSION_CRTCT_SUBITEM_YN,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'CRTCT_EXPORT_YN') AS SESSION_CRTCT_EXPORT_YN,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'EXCEL_MAX_ROWNUM') AS SESSION_EXCEL_MAX_ROWNUM,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'CSV_MAX_ROWNUM') AS SESSION_CSV_MAX_ROWNUM,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS SESSION_TOMS_FTA_CERT_KEY,
+               FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'CLOUD_SERVER_URL') AS SESSION_TOMS_CLOUD_SITE,
+               REPLACE(V.BUSINESS_NO, '-', '') AS SESSION_BUSINESS_NO,
+               NULL AS SESSION_AUTH_GROUP,
+               'external' AS SESSION_CERTIFY_TYPE,
+               CD2.TXT_VALUE1 AS AMOUNT_POINT_NM
+          FROM (SELECT REPLACE(V.BUSINESS_NO, '-', '') AS BUSINESS_NO
+                      ,MAX(VC.CHARGER_ID) AS CHARGER_ID
+                      ,COALESCE(#SESSION_USER_NAME#, MAX(VC.NAME)) AS NAME
+                  FROM VENDOR_CHARGER VC
+                       INNER JOIN VENDOR V
+                          ON V.COMPANY_CD = VC.COMPANY_CD
+                         AND V.VENDOR_CD = VC.VENDOR_CD
+                         AND COALESCE(V.DELETE_YN, 'N') = 'N'
+                         AND REPLACE(V.BUSINESS_NO, '-', '') = #SESSION_BUSINESS_NO#
+                       INNER JOIN VENDOR_ITEM VI
+                          ON VI.COMPANY_CD = V.COMPANY_CD
+                         AND VI.VENDOR_CD = V.VENDOR_CD
+                         AND VI.CO_DOC_TYPE = 'C'
+                 WHERE VC.COMPANY_CD = #COMPANY_CD#
+                   AND COALESCE(VC.DELETE_YN, 'N') = 'N'
+                   AND VC.CHARGER_ID != 'manager'
+                   AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN VC.START_DATE AND VC.END_DATE
+                 GROUP BY REPLACE(V.BUSINESS_NO, '-', '')
+                ) VC
+               INNER JOIN VENDOR V
+                  ON V.COMPANY_CD = #COMPANY_CD#
+                 AND REPLACE(V.BUSINESS_NO, '-', '') = VC.BUSINESS_NO
+                 AND COALESCE(V.DELETE_YN, 'N') = 'N'
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = V.COMPANY_CD
+                LEFT OUTER JOIN CODE_DTL CD1
+                  ON CD1.COMPANY_CD = C.COMPANY_CD
+                 AND CD1.CATEGORY_CD = 'SYS_CONFIG'
+                 AND CD1.CODE = 'LOCAL_CURRENCY'
+                LEFT OUTER JOIN CODE_DTL CD2
+                  ON CD2.COMPANY_CD = CD1.COMPANY_CD
+                 AND CD2.CATEGORY_CD = 'CURRENCY'
+                 AND CD2.CODE = CD1.TXT_VALUE1
+         LIMIT 1 
+    </select>
+    
+    <select id="AuthorityCheck.selectCompanyOfSupplier" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT DISTINCT C.COMPANY_CD AS CODE, C.COMPANY_NAME AS NAME
+          FROM (SELECT DISTINCT REPLACE(V.BUSINESS_NO, '-', '') AS BUSINESS_NO
+                  FROM VENDOR_CHARGER VC
+                       INNER JOIN VENDOR V
+                          ON V.COMPANY_CD = VC.COMPANY_CD
+                         AND V.VENDOR_CD = VC.VENDOR_CD
+                         AND COALESCE(V.DELETE_YN, 'N') = 'N'
+                 WHERE VC.CHARGER_ID = #USER_ID#
+                   AND VC.COMPANY_CD = #SESSION_COMPANY_CD#
+                   AND COALESCE(VC.DELETE_YN, 'N') = 'N'
+                   AND VC.CHARGER_ID != 'manager'
+                   AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN VC.START_DATE AND VC.END_DATE
+                ) VC
+               INNER JOIN VENDOR V
+                  ON REPLACE(V.BUSINESS_NO, '-', '') = VC.BUSINESS_NO
+                 AND COALESCE(V.DELETE_YN, 'N') = 'N'
+               INNER JOIN VENDOR_ITEM VI
+                  ON VI.COMPANY_CD = V.COMPANY_CD
+                 AND VI.VENDOR_CD = V.VENDOR_CD
+                 AND VI.CO_DOC_TYPE = 'C'
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = V.COMPANY_CD
+         ORDER BY C.COMPANY_NAME
+    </select>
+    
+    <select id="AuthorityCheck.selectMenuAuthorityInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT AM.COMPANY_CD
+		      ,AM.MENU_ID
+		      ,(CASE WHEN MAX(AM.SEL_AUTH) = 'Y' THEN 'inline-block' ELSE 'none' END) AS SEL_AUTH
+		      ,(CASE WHEN MAX(AM.REG_AUTH) = 'Y' THEN 'inline-block' ELSE 'none' END) AS REG_AUTH
+		      ,(CASE WHEN MAX(AM.UPD_AUTH) = 'Y' THEN 'inline-block' ELSE 'none' END) AS UPD_AUTH
+		      ,(CASE WHEN MAX(AM.DEL_AUTH) = 'Y' THEN 'inline-block' ELSE 'none' END) AS DEL_AUTH
+		      ,(CASE WHEN MAX(AM.EXC_AUTH) = 'Y' THEN 'inline-block' ELSE 'none' END) AS EXC_AUTH
+		      ,(CASE WHEN MAX(AM.FLE_AUTH) = 'Y' THEN 'inline-block' ELSE 'none' END) AS FLE_AUTH
+		  FROM AUTH_USER AU
+		       INNER JOIN AUTH_MENU AM
+		          ON AM.COMPANY_CD = AU.COMPANY_CD
+		         AND AM.AUTH_GROUP_ID = AU.AUTH_GROUP_ID
+		         AND AM.MENU_ID = #MENU_ID#
+		 WHERE AU.COMPANY_CD = #COMPANY_CD#
+		   AND AU.USER_ID = #USER_ID#
+		 GROUP BY AM.COMPANY_CD, AM.MENU_ID
+    </select>
+    
+    <insert id="AuthorityCheck.insertUseLogInfo" parameterClass="java.util.Map">
+        INSERT INTO USER_LOG_DTL(
+             LOG_SEQ
+            ,COMPANY_CD
+            ,USER_ID
+            ,SITE_TYPE
+            ,MENU_ID
+            ,COOPER_CD
+            ,SERVER_IP
+            ,REQUEST_DATE
+            ,REQUEST_TYPE
+            ,REQUEST_URL
+            ,CLIENT_IP
+            ,PARAMETER
+            ,RESPONSE_DATE)
+         VALUES(
+             #LOG_SEQ#
+            ,#COMPANY_CD#
+            ,#USER_ID#
+            ,#SITE_TYPE#
+            ,#MENU_ID#
+            ,#COOPER_CD#
+            ,#SERVER_IP#
+            ,NOW()::TIMESTAMP
+            ,CASE WHEN #REQUEST_TYPE# = 'null' OR #REQUEST_TYPE# = '' OR #REQUEST_TYPE# IS NULL THEN '1' ELSE #REQUEST_TYPE# END
+            ,#REQUEST_URL#
+            ,#CLIENT_IP#
+            ,#PARAMETER#
+            ,(CASE WHEN #MENU_ID# = 'MM-0001' OR #MENU_ID# = 'MM-0000' THEN NOW()::TIMESTAMP ELSE NULL END)
+            )
+    </insert>
+    
+    <update id="AuthorityCheck.updateUseLogInfo" parameterClass="java.util.Map">
+        UPDATE USER_LOG_DTL
+           SET RESPONSE_DATE = NOW()::TIMESTAMP
+              ,RESPONSE_RESULT = #RESPONSE_RESULT#
+              ,DATA_COUNT = #DATA_COUNT#
+              ,RESPONSE_MSG = #RESPONSE_MSG#
+         WHERE LOG_SEQ = #LOG_SEQ#
+    </update>
+    
+    <update id="AuthorityCheck.updateUseLogStatus" parameterClass="java.util.Map">
+		WITH UPSERT AS (
+		SELECT #COMPANY_CD# AS COMPANY_CD
+		      ,#USER_ID# AS USER_ID
+		      ,#SITE_TYPE# AS SITE_TYPE
+		      ,COALESCE(#MENU_ID#, '-') AS MENU_ID
+		      ,#COOPER_CD# AS COOPER_CD
+		      ,COALESCE((SELECT MAX(TRANS_COUNT)
+				           FROM   USER_LOG_STATUS
+				           WHERE  COMPANY_CD = #COMPANY_CD#
+				           AND    USER_ID = #USER_ID#
+				           AND    SITE_TYPE = #SITE_TYPE#
+				           AND    MENU_ID = #MENU_ID#
+				           AND    COOPER_CD = #COOPER_CD#
+				           GROUP  BY COMPANY_CD
+				                    ,USER_ID
+				                    ,SITE_TYPE
+				                    ,MENU_ID
+				                    ,COOPER_CD), 0) + 1 AS TRANS_COUNT
+		),
+		UPDATE_OPTOIN AS
+		( 
+		UPDATE USER_LOG_STATUS ULS
+		SET    TRANS_COUNT = D.TRANS_COUNT
+		      ,LAST_TIME   = NOW()::TIMESTAMP FROM UPSERT D
+		WHERE  ULS.COMPANY_CD = D.COMPANY_CD
+		AND    ULS.USER_ID = D.USER_ID
+		AND    ULS.SITE_TYPE = D.SITE_TYPE
+		AND    ULS.MENU_ID = D.MENU_ID
+		AND    ULS.COOPER_CD = D.COOPER_CD
+		) 
+		INSERT INTO USER_LOG_STATUS
+		    (COMPANY_CD ,USER_ID, SITE_TYPE, MENU_ID, COOPER_CD, TRANS_COUNT, FIRST_TIME, LAST_TIME)
+		    SELECT D.COMPANY_CD, D.USER_ID, D.SITE_TYPE, D.MENU_ID, D.COOPER_CD
+		          ,1
+		          ,NOW()::TIMESTAMP
+		          ,NOW()::TIMESTAMP 
+		    FROM   UPSERT D
+		    WHERE  NOT EXISTS (SELECT 1
+		            FROM   USER_LOG_STATUS ULS
+		            WHERE  ULS.COMPANY_CD = D.COMPANY_CD
+		              AND  ULS.USER_ID = D.USER_ID
+		              AND  ULS.SITE_TYPE = D.SITE_TYPE
+		              AND  ULS.MENU_ID = D.MENU_ID
+		              AND  ULS.COOPER_CD = D.COOPER_CD)
+    </update>
+    
+    <update id="AuthorityCheck.updateWorkDate" parameterClass="java.util.Map">
+        UPDATE FTA_USER
+           SET WORK_YYYY_MM = #WORK_YYYYMM#
+         WHERE USER_ID = #SESSION_USER_ID#
+           AND COMPANY_CD = #SESSION_COMPANY_CD#
+    </update>
+    
+    <select id="AuthorityCheck.selectInquireUserInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT FU.USER_ID AS INQUIRY_ID
+		      ,FU.NAME AS INQUIRY_NAME
+		      ,FU.POSITION AS INQUIRY_POSITION
+		      ,COALESCE(FU.CELL_PHONE_NO, FU.OFFICE_PHONE_NO) AS INQUIRY_TEL
+		      ,FU.EMAIL AS INQUIRY_EMAIL
+		      ,FN_GET_SYSTEM_CONFIG(FU.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS LICENSE_KEY
+		      ,(CASE WHEN C.TOMS_HUB_ID IS NULL OR C.TOMS_HUB_ID = '' THEN C.COMPANY_CD ELSE C.TOMS_HUB_ID END) AS MEMBER_ID
+		      ,FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'FTA') AS FTA_NATION
+		      ,'internal' AS CERTIFY_TYPE
+		      ,'2' AS INQUIRY_TYPE
+          FROM FTA_USER FU
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = FU.COMPANY_CD
+         WHERE FU.COMPANY_CD = #SESSION_COMPANY_CD#
+           AND FU.USER_ID = #SESSION_USER_ID#
+    </select>
+    
+    <select id="AuthorityCheck.selectInquireSupplierInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT VC.CHARGER_ID AS INQUIRY_ID
+              ,VC.NAME AS INQUIRY_NAME
+              ,VC.POSITION AS INQUIRY_POSITION
+              ,VC.PHONE_NO AS INQUIRY_TEL
+              ,VC.EMAIL AS INQUIRY_EMAIL
+              ,C.COMPANY_NAME AS CUSTOMER_NAME
+              ,FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'TOMS_FTA_CERT_KEY') AS LICENSE_KEY
+              ,(CASE WHEN C.TOMS_HUB_ID IS NULL OR C.TOMS_HUB_ID = '' THEN C.COMPANY_CD ELSE C.TOMS_HUB_ID END) AS MEMBER_ID
+              ,FN_GET_SYSTEM_CONFIG(C.COMPANY_CD, 'FTA') AS FTA_NATION
+              ,'external' AS CERTIFY_TYPE
+              ,'3' AS INQUIRY_TYPE
+          FROM VENDOR_CHARGER VC
+               INNER JOIN COMPANY C
+                  ON C.COMPANY_CD = VC.COMPANY_CD
+         WHERE VC.CHARGER_ID = #SESSION_USER_ID#
+           AND VC.COMPANY_CD = #SESSION_COMPANY_CD#
+           AND VC.VENDOR_CD = #SESSION_VENDOR_CD#
+    </select>
+    
+  </sqlMap>

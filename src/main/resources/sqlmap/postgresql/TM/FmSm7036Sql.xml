@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="SM7036">
+
+   <select id="SM7036.selectTaxtyRqiList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        <include refid="select-paging-start" />
+            SELECT TR.HS_SL
+                  ,TR.PRDNM
+                  ,TR.RQI
+                  ,TR.TAXRT_SE_CD
+                  ,CD.CODE_NAME AS TAXRT_SE_NM
+                  ,TR.APC_BEGIN_DE
+                  ,TR.APC_END_DE
+                  ,TO_CHAR(TR.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+                  ,TR.CREATE_BY
+                  ,TO_CHAR(TR.UPDATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DATE
+                  ,TR.UPDATE_BY
+              FROM CC_TAXTY_RQI TR
+                   INNER JOIN CODE_DTL CD
+                      ON CD.COMPANY_CD = #COMPANY_CD#
+                     AND CD.CATEGORY_CD = 'C_TRRT_TPCD'
+                     AND CD.CODE = TR.TAXRT_SE_CD
+                   <isNotEmpty property="TAXRT_SE_CD">
+                     AND CD.TXT_VALUE2 = #TAXRT_SE_CD#
+                   </isNotEmpty>
+              WHERE 1=1
+              <isNotEmpty property="HS_SL">
+			   AND TR.HS_SL = #HS_SL#
+			 </isNotEmpty>
+			 <isNotEmpty property="RQI">
+		       AND UPPER(TR.RQI) LIKE '%'||UPPER(#RQI#)||'%'
+			 </isNotEmpty>
+	   <include refid="select-paging-end" />
+	   ORDER BY HS_SL
+    </select>
+    
+    <update id="SM7036.insertTaxtyRqi" parameterClass="java.util.Map">
+        INSERT INTO CC_TAXTY_RQI(
+		       HS_SL
+		      ,TAXRT_SE_CD
+		      ,APC_BEGIN_DE
+		      ,APC_END_DE
+		      ,PRDNM
+		      ,RQI
+		      ,CREATE_DATE
+		      ,CREATE_BY
+		      ,UPDATE_DATE
+		      ,UPDATE_BY)
+        VALUES(
+		       #HS_SL#
+		      ,#TAXRT_SE_CD#
+		      ,#APC_BEGIN_DE#
+		      ,#APC_END_DE#
+		      ,#PRDNM#
+		      ,#RQI#
+		      ,NOW()
+		      ,#USER_ID#
+		      ,NOW()
+		      ,#USER_ID#)
+    </update>
+    
+    <update id="SM7036.updateTaxtyRqi" parameterClass="java.util.Map">
+	    UPDATE CC_TAXTY_RQI
+		   SET APC_END_DE   = #APC_END_DE#
+		      ,PRDNM        = #PRDNM#
+		      ,RQI          = #RQI#
+		      ,UPDATE_DATE  = NOW()
+		      ,UPDATE_BY    = #USER_ID#
+		 WHERE HS_SL        = #HS_SL#
+		   AND TAXRT_SE_CD  = #TAXRT_SE_CD#
+		   AND APC_BEGIN_DE = #APC_BEGIN_DE#
+    </update>
+    
+    <delete id="SM7036.deleteTaxtyRqi" parameterClass="java.util.Map">
+	   DELETE FROM CC_TAXTY_RQI
+        WHERE HS_SL        = #HS_SL#
+		  AND TAXRT_SE_CD  = #TAXRT_SE_CD#
+		  AND APC_BEGIN_DE = #APC_BEGIN_DE#
+    </delete>
+    
+</sqlMap>

@@ -1,0 +1,860 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="mmKRPop">
+
+    <!-- MMA017 : 서명파일 이미지 조회 -->
+    <select id="MMA017.selectSignatureImage" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT SIGN_CARD
+          FROM RCV_CO_CERTIFICATE_MST
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND VENDOR_CD = #VENDOR_CD#
+           AND CO_DOC_NO = #CO_DOC_NO#
+           LIMIT 1 
+    </select>
+    
+    <!-- 품목별 원산지 리스트 조회 -->
+    <select id="MMA017.selectItemListCaseInsert" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT I.ITEM_CD,
+               I.ITEM_NAME,
+               I.FTA_CD,
+               I.FTA_NAME,
+               I.HS_CODE,
+               (CASE WHEN I.HS_CODE IS NOT NULL AND I.FTA_CD = 'PKRAP' AND FP.RULE_CONTENTS IS NULL THEN 'B55'
+                     ELSE COALESCE(FP.RULE_CONTENTS, '')
+                END) AS RULE_CONTENTS,
+               (CASE WHEN I.HS_CODE IS NOT NULL AND I.FTA_CD = 'PKRAP' AND FP.RULE_CONTENTS IS NULL THEN '55'
+                     WHEN COALESCE(FP.BD_RULE, 0)+COALESCE(FP.BU_RULE, 0)+COALESCE(FP.NC_RULE, 0)+COALESCE(FP.MC_RULE, 0) > 0 THEN
+                          (COALESCE(FP.BD_RULE, 0)+COALESCE(FP.BU_RULE, 0)+COALESCE(FP.NC_RULE, 0)+COALESCE(FP.MC_RULE, 0))::text
+                     ELSE ''
+                END) AS RVC_RATE,
+               '' AS FTA_CO_YN,
+               '' AS ORIGIN_NATION_CD,
+               '' AS NONORIGIN_REASON_CD,
+               '' AS NONORIGIN_REASON_DESC,
+               FN_GET_RULE_CODES(I.FTA_CD, I.HS_CODE, NULL) AS RULE_CODES,
+               '' AS WRITET_DESC,
+               I.FTA_GROUP_CD,
+               NULL AS BEFORE_CO_DOC_NO,
+               I.TEMP_COLUMN3,
+               I.TEMP_COLUMN4,
+               I.FTA_CNCS_MTH
+          FROM (
+		        SELECT I.ITEM_CD,
+		               IM.ITEM_NAME,
+		               FM.FTA_CD,
+		               FM.FTA_NAME,
+		               I.HS_CODE,
+		               I.FTA_GROUP_CD,
+		               IM.TEMP_COLUMN3,
+                       IM.TEMP_COLUMN4,
+                       FM.FTA_CNCS_MTH
+		          FROM (SELECT I.COMPANY_CD,
+		                       I.ITEM_CD,
+		                       I.VENDOR_CD,
+		                       I.FTA_GROUP_CD,
+		                     <isNotEmpty property="END_DATE">
+		                       MAX(FN_GET_ITEM_HS_CODE(I.COMPANY_CD, I.ITEM_CD, 'HSK', #END_DATE#, NULL)) AS HS_CODE
+		                     </isNotEmpty>
+		                     <isEmpty property="END_DATE">
+		                       MAX(FN_GET_ITEM_HS_CODE(I.COMPANY_CD, I.ITEM_CD, 'HSK', TO_CHAR(NOW(), 'YYYYMM'), NULL)) AS HS_CODE
+		                     </isEmpty>
+		                  FROM VENDOR_ITEM I
+		                       <isNotEmpty property="gridData">
+                               INNER JOIN EXCELDATA E
+                                  ON E.COMPANY_CD = I.COMPANY_CD
+                                 AND E.TEXTVALUE1 = I.VENDOR_CD
+                                 AND E.TEXTVALUE3 = I.ITEM_CD
+                                 AND E.CATEGORY_CD = 'RCV_REQ_ITEM'
+                                 AND E.ID = #VENDOR_CD#||'_'||#USER_ID#
+                               </isNotEmpty>
+		                 WHERE I.COMPANY_CD = #COMPANY_CD#
+		                   AND I.VENDOR_CD = #VENDOR_CD#
+		                   AND I.FTA_GROUP_CD = #FTA_GROUP_CD#
+		                 <isEmpty property="gridData">
+                           AND I.ITEM_CD = #excel#
+                         </isEmpty>
+		                 GROUP BY I.COMPANY_CD,
+                                  I.ITEM_CD,
+                                  I.VENDOR_CD,
+                                  I.FTA_GROUP_CD
+		                ) I
+		               LEFT OUTER JOIN ITEM IM
+		                 ON IM.COMPANY_CD = I.COMPANY_CD
+		                AND IM.ITEM_CD = I.ITEM_CD
+		               LEFT OUTER JOIN FTA_MST FM
+		                 ON FM.FTA_STATUS = '5'
+		                AND FM.FTA_GROUP_CD = I.FTA_GROUP_CD
+		              <isNotEmpty property="END_DATE">
+                        <![CDATA[   AND FM.EFFECTIVE_DATE <= #END_DATE# ]]>
+                      </isNotEmpty>
+		         WHERE 1 = 1
+		        <dynamic>
+		            <isNotEmpty property="gridData">
+		                <isEqual property="excel" compareValue="Y">
+		                    AND EXISTS(SELECT 1
+                                 FROM EXCELDATA E
+                                WHERE E.COMPANY_CD = I.COMPANY_CD
+                                  AND E.TEXTVALUE1 = I.VENDOR_CD
+                                  AND E.TEXTVALUE3 = I.ITEM_CD
+                                  AND E.TEXTVALUE4 = FM.FTA_CD
+                                  AND E.CATEGORY_CD = 'RCV_REQ_ITEM'
+                                  AND E.ID = #VENDOR_CD#||'_'||#USER_ID#)
+                            <!-- iterate open="(" close=")" property="gridData" conjunction=" OR " prepend="AND">
+		                        (I.ITEM_CD = #gridData[].ITEM_CD# AND FM.FTA_CD = #gridData[].FTA_CD#)
+		                    </iterate -->
+		                </isEqual>
+		                <isNotEqual property="excel" compareValue="Y">
+		                    AND EXISTS(SELECT 1
+                                 FROM EXCELDATA E
+                                WHERE E.COMPANY_CD = I.COMPANY_CD
+                                  AND E.TEXTVALUE1 = I.VENDOR_CD
+                                  AND E.TEXTVALUE3 = I.ITEM_CD
+                                  AND E.CATEGORY_CD = 'RCV_REQ_ITEM'
+                                  AND E.ID = #VENDOR_CD#||'_'||#USER_ID#)
+                            <!-- iterate open="(" close=")" property="gridData" conjunction=" OR " prepend="AND">
+		                        I.ITEM_CD = #gridData[].ITEM_CD#
+		                    </iterate -->
+		                </isNotEqual>
+		            </isNotEmpty>
+		            <isEmpty property="gridData">
+		           AND I.ITEM_CD = #excel#
+		            </isEmpty>
+		        </dynamic>
+		        <isNotEmpty property="APPLY_FTA_CD">
+		           AND FM.FTA_CD IN($APPLY_FTA_CD$)
+		        </isNotEmpty>
+		       ) I
+		       LEFT OUTER JOIN FTA_PSR FP
+                 ON FP.FTA_CODE = I.FTA_CD
+                AND FP.HS_CODE = SUBSTR(I.HS_CODE, 1, LENGTH(FP.HS_CODE))
+                AND FP.HS_CODE_SUB_CATEGORY = '1'
+                AND FP.RULE_SEQ = (CASE WHEN FP.FTA_CODE = 'PKRAP' THEN '2' ELSE '1' END)
+                AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN FP.APPLY_DATE AND FP.END_DATE
+         ORDER BY I.ITEM_CD, I.FTA_CD
+    </select>
+    
+    <select id="MMA017.selectCoItemMappCaseInsert" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT DISTINCT RCIT.ITEM_CD
+              ,I.ITEM_NAME
+              ,FM.FTA_CD
+              ,FM.FTA_NAME
+              ,RCDA.E_HS_CODE_PROC AS HS_CODE
+              ,FP.RULE_CONTENTS
+              ,(CASE WHEN RCIT.FTA_CD = 'PKRAP' AND (RCDA.E_RULE_CONTETNS IS NULL OR RCDA.E_RULE_CONTETNS = '') THEN '55'
+                     WHEN COALESCE(FP.BD_RULE, 0)+COALESCE(FP.BU_RULE, 0)+COALESCE(FP.NC_RULE, 0)+COALESCE(FP.MC_RULE, 0) > 0 THEN
+                          (COALESCE(FP.BD_RULE, 0)+COALESCE(FP.BU_RULE, 0)+COALESCE(FP.NC_RULE, 0)+COALESCE(FP.MC_RULE, 0))::text
+                     ELSE ''
+                END) AS RVC_RATE
+              ,RCDA.E_FTA_CO_YN AS FTA_CO_YN
+              ,FP.RULE_CONTENTS AS RULE_CODES
+              ,FM.FTA_GROUP_CD
+              ,RCIT.FTA_CD AS RC_FTA_CD
+          FROM RCV_CO_COIL_ITEM RCIT
+               INNER JOIN RCV_CO_COIL_DATA RCDA
+                  ON RCDA.COMPANY_CD = RCIT.COMPANY_CD
+                 AND RCDA.VENDOR_CD = RCIT.VENDOR_CD
+                 AND RCDA.IF_CD = RCIT.IF_CD
+                 AND RCDA.REG_NO = RCIT.REG_NO
+                 AND RCDA.E_FTA_CD = RCIT.E_FTA_CD
+                LEFT OUTER JOIN ITEM I
+                  ON I.COMPANY_CD = RCIT.COMPANY_CD
+                 AND I.ITEM_CD = RCIT.ITEM_CD
+                LEFT OUTER JOIN FTA_MAPPING FMP
+                  ON FMP.COMPANY_CD = RCDA.COMPANY_CD
+                 AND FMP.CLIENT_CD = RCDA.VENDOR_CD
+                 AND FMP.CLIENT_FTA_CD = RCDA.E_FTA_CD
+                LEFT OUTER JOIN FTA_MST FM
+                  ON FM.FTA_CD = COALESCE(FMP.FTA_CD, RCIT.FTA_CD)
+                LEFT OUTER JOIN FTA_PSR FP
+                  ON FP.FTA_CODE = COALESCE(FMP.FTA_CD, RCIT.FTA_CD)
+                 AND FP.HS_CODE = SUBSTRING(RCDA.E_HS_CODE_PROC, 1, LENGTH(FP.HS_CODE))
+                 AND FP.RULE_CONTENTS = REPLACE(RCDA.E_RULE_CONTETNS, ' ', '')
+                 AND RCDA.E_APPLY_DATE BETWEEN FP.APPLY_DATE AND FP.END_DATE
+         WHERE RCIT.COMPANY_CD = #COMPANY_CD#
+           AND RCIT.VENDOR_CD = #VENDOR_CD#
+         <dynamic>
+             <isNotEmpty property="gridData">
+                 AND EXISTS(SELECT 1
+                              FROM EXCELDATA E
+                             WHERE E.COMPANY_CD = RCIT.COMPANY_CD
+                               AND E.TEXTVALUE1 = RCIT.VENDOR_CD
+                               AND E.TEXTVALUE5 = RCIT.IF_CD
+                               AND E.TEXTVALUE7 = RCIT.REG_NO
+                               AND E.CATEGORY_CD = 'RCV_REQ_ITEM'
+                               AND E.ID = #VENDOR_CD#||'_'||#USER_ID#)
+                 <!-- iterate open="(" close=")" property="gridData" conjunction=" OR " prepend="AND">
+                     (RCIT.IF_CD = #gridData[].IF_CD# AND RCIT.REG_NO = #gridData[].REG_NO#)
+                 </iterate -->
+             </isNotEmpty>
+         </dynamic>
+         <isNotEmpty property="APPLY_FTA_CD">
+            AND RCIT.FTA_CD IN($APPLY_FTA_CD$)
+         </isNotEmpty>
+         ORDER BY RCIT.ITEM_CD, FM.FTA_CD
+    </select>
+    
+    <!-- 품목별 원산지 리스트 갱신정보 조회 -->
+    <select id="MMA017.selectItemListCaseRenew" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+          SELECT DISTINCT RCCD.ITEM_CD,
+                 RCCD.ITEM_NAME,
+                 RCCD.FTA_CD,
+                 RCCD.FTA_NAME,
+               <isEqual property="CUSTOMER_HS_CODE_YN" compareValue="Y">
+                  SUBSTR(COALESCE(RCCD.HS_CODE, I.HS_CODE), 1, 6) AS HS_CODE,
+                 (CASE WHEN SUBSTR(RCCD.HS_CODE, 1, 6) != SUBSTR(COALESCE(I.HS_CODE, '0'), 1, 6) OR FP.RULE_CONTENTS IS NULL THEN FP1.RULE_CONTENTS ELSE I.RULE_CONTENTS END) AS RULE_CONTENTS,
+                 (CASE WHEN SUBSTR(RCCD.HS_CODE, 1, 6) != SUBSTR(COALESCE(I.HS_CODE, '0'), 1, 6) OR FP.RULE_CONTENTS IS NULL THEN 
+                            (CASE WHEN (COALESCE(FP1.BD_RULE, 0)+COALESCE(FP1.BU_RULE, 0)+COALESCE(FP1.NC_RULE, 0)+COALESCE(FP1.MC_RULE, 0)) > 0 THEN 
+                                       (COALESCE(FP1.BD_RULE, 0)+COALESCE(FP1.BU_RULE, 0)+COALESCE(FP1.NC_RULE, 0)+COALESCE(FP1.MC_RULE, 0))
+                                  ELSE NULL
+                             END)
+                       ELSE (CASE WHEN (COALESCE(FP.BD_RULE, 0)+COALESCE(FP.BU_RULE, 0)+COALESCE(FP.NC_RULE, 0)+COALESCE(FP.MC_RULE, 0)) > 0 AND I.RVC_RATE IS NULL THEN 
+                                       (CASE WHEN (COALESCE(FP.BD_RULE, 0)+COALESCE(FP.BU_RULE, 0)+COALESCE(FP.NC_RULE, 0)) > 0 THEN
+		                                          (CASE WHEN COALESCE(I.FTA_CO_YN, 'N') = 'N' THEN 0 ELSE (COALESCE(FP.BD_RULE, 0)+COALESCE(FP.BU_RULE, 0)+COALESCE(FP.NC_RULE, 0)) END)
+		                                     WHEN COALESCE(FP.MC_RULE, 0) > 0 THEN
+		                                          (CASE WHEN COALESCE(I.FTA_CO_YN, 'N') = 'N' THEN 100 ELSE COALESCE(FP.MC_RULE, 0) END)
+		                                     ELSE NULL
+		                                END)
+                                  ELSE I.RVC_RATE
+                             END)
+                  END) AS RVC_RATE,
+                 (CASE WHEN SUBSTR(RCCD.HS_CODE, 1, 6) != SUBSTR(COALESCE(I.HS_CODE, '0'), 1, 6) OR FP.RULE_CONTENTS IS NULL THEN NULL ELSE I.FTA_CO_YN END) AS FTA_CO_YN,
+                 (CASE WHEN RCCD.FTA_CNCS_MTH = 'M' OR COALESCE(I.ORIGIN_NATION_CD, '') != '' THEN I.ORIGIN_NATION_CD 
+                       ELSE (CASE WHEN SUBSTR(RCCD.HS_CODE, 1, 6) != SUBSTR(COALESCE(I.HS_CODE, '0'), 1, 6) OR FP.RULE_CONTENTS IS NULL THEN NULL ELSE (CASE WHEN I.FTA_CO_YN = 'Y' THEN RCCD.FTA_GROUP_CD ELSE NULL END) END)
+                  END) AS ORIGIN_NATION_CD,
+                 FN_GET_RULE_CODES(RCCD.FTA_CD, COALESCE(RCCD.HS_CODE, I.HS_CODE), NULL) AS RULE_CODES,
+               </isEqual>
+               <isNotEqual property="CUSTOMER_HS_CODE_YN" compareValue="Y">
+                 I.HS_CODE,
+                 <isNotEqual property="flag" compareValue="view">
+                     (CASE WHEN FP.RULE_CONTENTS IS NULL THEN NULL ELSE I.RULE_CONTENTS END) AS RULE_CONTENTS,
+	                 (CASE WHEN FP.RULE_CONTENTS IS NULL THEN NULL ELSE I.RVC_RATE END) AS RVC_RATE,
+	                 (CASE WHEN FP.RULE_CONTENTS IS NULL THEN NULL ELSE I.FTA_CO_YN END) AS FTA_CO_YN,
+	                 (CASE WHEN RCCD.FTA_CNCS_MTH = 'M' OR COALESCE(I.ORIGIN_NATION_CD, '') != '' THEN I.ORIGIN_NATION_CD 
+	                       ELSE (CASE WHEN FP.RULE_CONTENTS IS NULL THEN NULL ELSE (CASE WHEN I.FTA_CO_YN = 'Y' THEN RCCD.FTA_GROUP_CD ELSE NULL END) END)
+	                  END) AS ORIGIN_NATION_CD,
+                 </isNotEqual>
+                 <isEqual property="flag" compareValue="view">
+                     I.RULE_CONTENTS,
+                     I.RVC_RATE,
+                     I.FTA_CO_YN,
+                     I.ORIGIN_NATION_CD,
+                 </isEqual>
+                 FN_GET_RULE_CODES(RCCD.FTA_CD, RCCD.HS_CODE, NULL) AS RULE_CODES,
+               </isNotEqual>
+                 NULL AS NONORIGIN_REASON_CD,
+                 NULL AS NONORIGIN_REASON_DESC,
+                 '' AS WRITET_DESC,
+                 RCCD.FTA_GROUP_CD,
+                 RCCD.CO_DOC_NO,
+                 RCCD.TEMP_COLUMN3,
+                 RCCD.TEMP_COLUMN4,
+                 RCCD.FTA_CNCS_MTH
+            FROM (SELECT FM.FTA_CD
+                        ,RCCD.COMPANY_CD
+                        ,RCCD.DIVISION_CD
+                        ,RCCD.VENDOR_CD
+                        ,RCCD.ITEM_CD
+                        ,MAX(FN_GET_ITEM_HS_CODE(RCCD.COMPANY_CD, RCCD.ITEM_CD, 'HSK', #END_DATE#, NULL)) AS HS_CODE
+                        ,MAX(IM.ITEM_NAME) AS ITEM_NAME
+                        ,MAX(FM.FTA_NAME) AS FTA_NAME
+                        ,MAX(FM.FTA_GROUP_CD) AS FTA_GROUP_CD
+                        ,MAX(CASE WHEN FM.FTA_CD = RCCD.FTA_CD THEN RCCD.CO_DOC_NO ELSE NULL END) AS CO_DOC_NO
+                        ,MAX(IM.TEMP_COLUMN3) AS TEMP_COLUMN3
+                        ,MAX(IM.TEMP_COLUMN4) AS TEMP_COLUMN4
+                        ,MAX(FM.FTA_CNCS_MTH) AS FTA_CNCS_MTH
+                    FROM FTA_MST FM
+                         LEFT OUTER JOIN (SELECT RD.COMPANY_CD
+                                                ,RD.DIVISION_CD
+                                                ,RD.VENDOR_CD
+                                                ,MAX(RCCM.CO_DOC_NO) AS CO_DOC_NO
+                                                ,RD.FTA_GROUP_CD
+                                                ,RD.ITEM_CD
+                                                ,RCCD.FTA_CD
+                                            FROM (SELECT RM.CO_DOC_NO
+                                                         ,RM.COMPANY_CD
+                                                         ,MAX(VI.DIVISION_CD) AS DIVISION_CD
+                                                         ,RM.VENDOR_CD
+                                                         ,RD.ITEM_CD
+                                                         ,SUBSTR(RM.END_DATE, 1, 4) AS COVER_YYYY
+                                                         ,RD.FTA_GROUP_CD
+                                                    FROM RCV_CO_CERTIFICATE_MST RM
+                                                         INNER JOIN RCV_CO_CERTIFICATE_DTL RD
+                                                             ON RD.COMPANY_CD = RM.COMPANY_CD
+                                                             AND RD.DIVISION_CD = RM.DIVISION_CD
+                                                             AND RD.VENDOR_CD = RM.VENDOR_CD
+                                                             AND RD.CO_DOC_NO = RM.CO_DOC_NO
+                                                             AND RD.FTA_GROUP_CD = RM.FTA_GROUP_CD
+                                                          INNER JOIN VENDOR_ITEM VI
+                                                            ON VI.COMPANY_CD = RD.COMPANY_CD
+                                                           AND VI.DIVISION_CD = RD.DIVISION_CD
+                                                           AND VI.VENDOR_CD = RD.VENDOR_CD
+                                                           AND VI.ITEM_CD = RD.ITEM_CD
+                                                    WHERE RM.COMPANY_CD = #COMPANY_CD#
+                                                      AND RM.VENDOR_CD = #VENDOR_CD#
+                                                      AND RM.CO_DOC_TYPE = 'C'
+                                                    <dynamic>
+                                                        <isNotEmpty property="gridData">
+                                                            AND EXISTS(SELECT 1
+                                                                         FROM EXCELDATA E
+                                                                        WHERE E.COMPANY_CD = RM.COMPANY_CD
+                                                                          AND E.TEXTVALUE1 = RM.VENDOR_CD
+                                                                          AND E.TEXTVALUE2 = RM.CO_DOC_NO
+                                                                          AND E.TEXTVALUE3 = RD.ITEM_CD
+                                                                          AND E.CATEGORY_CD = 'RCV_REQ_ITEM'
+                                                                          AND E.ID = #VENDOR_CD#||'_'||#USER_ID#)
+                                                            <!-- iterate open="(" close=")" property="gridData" conjunction=" OR " prepend="AND">
+                                                                (RM.CO_DOC_NO = #gridData[].CO_DOC_NO# AND RD.ITEM_CD = #gridData[].ITEM_CD#)
+                                                            </iterate -->
+                                                        </isNotEmpty>
+                                                        <isEmpty property="gridData">
+                                                       AND RD.ITEM_CD = ''
+                                                        </isEmpty>
+                                                    </dynamic>
+                                                    GROUP BY RM.CO_DOC_NO
+                                                             ,RM.COMPANY_CD
+                                                             ,RM.VENDOR_CD
+                                                             ,RD.ITEM_CD
+                                                             ,SUBSTR(RM.END_DATE, 1, 4)
+                                                             ,RD.FTA_GROUP_CD
+                                                    ) RD
+                                                  INNER JOIN RCV_CO_CERTIFICATE_MST RCCM
+                                                     ON RD.COMPANY_CD = RCCM.COMPANY_CD
+                                                    AND RD.DIVISION_CD = RCCM.DIVISION_CD
+                                                    AND RD.VENDOR_CD = RCCM.VENDOR_CD
+                                                    AND RD.COVER_YYYY = SUBSTR(RCCM.END_DATE, 1, 4)
+                                                    AND RD.FTA_GROUP_CD = RCCM.FTA_GROUP_CD
+                                                    AND RCCM.CO_DOC_TYPE != 'E'
+                                                  <isEqual property="PRINT_FLAG" compareValue="modify">
+                                                    AND RD.CO_DOC_NO = RCCM.CO_DOC_NO
+                                                  </isEqual>
+                                                  INNER JOIN RCV_CO_CERTIFICATE_DTL RCCD
+                                                     ON RCCD.COMPANY_CD = RCCM.COMPANY_CD
+                                                    AND RCCD.DIVISION_CD = RCCM.DIVISION_CD
+                                                    AND RCCD.VENDOR_CD = RCCM.VENDOR_CD
+                                                    AND RCCD.CO_DOC_NO = RCCM.CO_DOC_NO
+                                                    AND RCCD.FTA_GROUP_CD = RCCM.FTA_GROUP_CD
+                                                    AND RD.ITEM_CD = RCCD.ITEM_CD
+                                              GROUP BY RD.COMPANY_CD
+                                                      ,RD.DIVISION_CD
+                                                      ,RD.VENDOR_CD
+                                                      ,RD.FTA_GROUP_CD
+                                                      ,RD.ITEM_CD
+                                                      ,RCCD.FTA_CD
+                                            ) RCCD
+                           ON 1 = 1
+                         LEFT OUTER JOIN ITEM IM
+                           ON IM.COMPANY_CD = RCCD.COMPANY_CD
+                          AND IM.ITEM_CD = RCCD.ITEM_CD
+                   WHERE FM.FTA_STATUS = '5'
+                     AND FM.FTA_GROUP_CD = RCCD.FTA_GROUP_CD
+                   <isNotEmpty property="APPLY_FTA_CD">
+                     AND FM.FTA_CD IN($APPLY_FTA_CD$)
+                   </isNotEmpty>
+                   <![CDATA[   AND FM.EFFECTIVE_DATE <= #END_DATE# ]]>
+                   GROUP BY FM.FTA_CD
+                           ,RCCD.COMPANY_CD
+                           ,RCCD.DIVISION_CD
+                           ,RCCD.VENDOR_CD
+                           ,RCCD.ITEM_CD
+                  ) RCCD
+               <isEqual property="CUSTOMER_HS_CODE_YN" compareValue="Y"> 
+                 LEFT OUTER JOIN RCV_CO_CERTIFICATE_DTL I
+               </isEqual>
+               <isNotEqual property="CUSTOMER_HS_CODE_YN" compareValue="Y"> 
+                 INNER JOIN RCV_CO_CERTIFICATE_DTL I
+               </isNotEqual>
+                   ON I.CO_DOC_NO = RCCD.CO_DOC_NO
+                  AND I.COMPANY_CD = RCCD.COMPANY_CD
+                  AND I.VENDOR_CD = RCCD.VENDOR_CD
+                  AND I.DIVISION_CD = RCCD.DIVISION_CD
+                  AND I.FTA_CD = RCCD.FTA_CD
+                  AND I.ITEM_CD = RCCD.ITEM_CD
+                  AND I.FTA_GROUP_CD = RCCD.FTA_GROUP_CD
+                 LEFT OUTER JOIN ITEM IM
+                   ON IM.COMPANY_CD = I.COMPANY_CD
+                  AND IM.ITEM_CD = I.ITEM_CD
+                 LEFT OUTER JOIN FTA_PSR FP
+                   ON FP.FTA_CODE = I.FTA_CD
+                  AND FP.HS_CODE = SUBSTR(I.HS_CODE, 1, LENGTH(FP.HS_CODE))
+                  AND FP.RULE_CONTENTS = I.RULE_CONTENTS
+                 LEFT OUTER JOIN FTA_PSR FP1
+	               ON FP1.FTA_CODE = RCCD.FTA_CD
+	              AND FP1.HS_CODE = SUBSTR(RCCD.HS_CODE, 1, LENGTH(FP1.HS_CODE))
+	              AND FP1.HS_CODE_SUB_CATEGORY = '1'
+	              AND FP1.RULE_SEQ = (CASE WHEN RCCD.FTA_CD = 'PKRAP' THEN '2' ELSE '1' END)
+	              AND TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN FP1.APPLY_DATE AND FP1.END_DATE
+        ORDER BY RCCD.ITEM_CD, RCCD.FTA_CD
+    </select>
+    
+    <!-- MMA022 : Excel Sample 데이터 조회 -->
+    <select id="MMA022.selectExcelSampleList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-paging-start" />
+	        SELECT T.COMPANY_CD AS COMPANY_CD
+                  ,T.CATEGORY_CD
+                  ,T.ID AS USER_ID
+                  ,T.SPID
+                  ,MAX(T.COMMENTS) AS ERR_MSG
+                  ,MAX(T.TEXTVALUE1) AS ITEM_CD
+                  ,MAX(T.TEXTVALUE2) AS ITEM_NAME
+                  ,MAX(T.TEXTVALUE3) AS FTA_CD
+                  ,MAX(T.TEXTVALUE4) AS FTA_NAME
+                  ,MAX(T.TEXTVALUE5) AS HS_CODE
+                  ,MAX(T.TEXTVALUE6) AS RULE_CONTENTS
+                  ,MAX(T.TEXTVALUE7) AS RVC_RATE
+                  ,MAX(T.TEXTVALUE8) AS FTA_CO_YN
+                  ,MAX(T.TEXTVALUE9) AS NONORIGIN_REASON_CD
+                  ,MAX(T.TEXTVALUE10) AS NONORIGIN_REASON_DESC
+                  ,MAX(T.TEXTVALUE11) AS ORIGIN_NATION_CD
+                  ,MAX(FP.RULE_ID) AS RULE_ID
+                  ,MAX(FP.RULE_SEQ) AS RULE_SEQ
+                  ,#FTA_GROUP_CD# AS FTA_GROUP_CD
+                  ,MAX(CD1.WORD) AS NONORIGIN_REASON_NAME
+              FROM EXCELDATA T
+                   LEFT OUTER JOIN FTA_PSR FP
+                     ON FP.FTA_CODE = T.TEXTVALUE4
+                    AND FP.HS_CODE = SUBSTR(T.TEXTVALUE6, 1, LENGTH(FP.HS_CODE))
+                    AND FP.RULE_CONTENTS = T.TEXTVALUE7
+                   LEFT OUTER JOIN CODE_LANG_DIC CD1
+	                 ON CD1.COMPANY_CD = T.COMPANY_CD
+	                AND CD1.CATEGORY_CD = 'NONORIGIN_REASON' 
+	                AND CD1.CODE = T.TEXTVALUE9
+	                AND CD1.LANGUAGE_CAT = #SESSION_DEFAULT_LANGUAGE#
+           WHERE T.COMPANY_CD = #COMPANY_CD#
+             AND T.CATEGORY_CD = 'RCV_CO_DTL'
+             AND T.ID = #USER_ID#
+           GROUP BY T.COMPANY_CD
+                   ,T.CATEGORY_CD
+                   ,T.ID
+                   ,T.SPID
+        <include refid="select-paging-end" />
+        ORDER BY SPID
+    </select>
+    
+    <!-- MMA022 : 엑셀 임시테이블 데이터 건수 조회 -->
+    <select id="MMA022.selectExcelSampleCnt" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT COUNT(*) AS EXCEL_CNT
+          FROM EXCELDATA
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND CATEGORY_CD = 'RCV_CO_DTL'
+           AND ID = #USER_ID#
+    </select>
+    
+    <!-- MMA022 : Excel Sample 데이터 등록 -->
+    <insert id="MMA022.saveExcelSample" parameterClass="java.util.Map">
+        INSERT INTO EXCELDATA
+            (COMPANY_CD
+            ,CATEGORY_CD
+            ,ID
+            ,CREATE_DATE
+            ,SPID
+            ,TEXTVALUE1
+			,TEXTVALUE2
+			,TEXTVALUE3
+			,TEXTVALUE4
+			,TEXTVALUE5
+			,TEXTVALUE6
+			,TEXTVALUE7
+			,TEXTVALUE8
+			,TEXTVALUE9
+			,TEXTVALUE10
+			,TEXTVALUE11)
+        VALUES(#COMPANY_CD#
+              ,'RCV_CO_DTL'
+              ,#USER_ID#
+              ,NOW()
+              ,#SEQ#::numeric
+              ,#ITEM_CD#
+              ,#ITEM_NAME#
+              ,#FTA_CD#
+              ,#FTA_NAME#
+              ,#HS_CODE#
+              ,#RULE_CONTENTS#
+              ,#RVC_RATE#
+              ,#FTA_CO_YN#
+              ,#NONORIGIN_REASON_CD#
+              ,#NONORIGIN_REASON_DESC#
+              ,#ORIGIN_NATION_CD#)
+    </insert>
+    
+    <!-- MMA022 : Excel Sample 데이터 삭제 -->
+    <delete id="MMA022.deleteExcelSample" parameterClass="java.util.Map">
+        DELETE FROM EXCELDATA
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND CATEGORY_CD = 'RCV_CO_DTL'
+           AND ID = #USER_ID#
+    </delete>
+    
+    <!-- com.yni.fta.common.postgresql.PostgresqlDao 클래스에서 직접 구현
+    <parameterMap id="MMA022ExecuteItemErrorCheckMap" class="java.util.Map">
+        <parameter property="COMPANY_CD"   jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="USER_ID"      jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="FTA_GROUP_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="GLOBAL_CD"    jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="ISSUE_DATE"   jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="APPLY_DATE"   jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="END_DATE"     jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="O_RETURN"     jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_RETURNMSG"  jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_LINES"      jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+    </parameterMap>
+    <procedure id="MMA022.executeItemErrorCheck" parameterMap="MMA022ExecuteItemErrorCheckMap">
+        { CALL CH_RCV_KR_CO_VALIDATION(?, ?, ?, ?, ?, ?, ?, ?, ?, ?) }
+    </procedure>
+    -->
+    <!-- MMA022 : 베트남 엑셀 임시테이블 데이터 건수 조회 -->
+    <select id="MMA022.selectVientnamExcelSampleCnt" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT COUNT(*) AS EXCEL_CNT
+          FROM EXCELDATA
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND CATEGORY_CD = 'RCV_VN_CO_DTL'
+           AND ID = #USER_ID#
+    </select>
+    
+    <select id="MMA022.selectVientnamExcelSampleList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-paging-start" />
+            SELECT T.COMPANY_CD AS COMPANY_CD
+                  ,T.CATEGORY_CD
+                  ,T.ID AS USER_ID
+                  ,T.SPID
+                  ,MAX(T.COMMENTS) AS ERR_MSG
+                  ,MAX(T.TEXTVALUE1) AS DIVISION_CD
+                  ,MAX(T.TEXTVALUE2) AS VENDOR_CD
+                  ,MAX(T.TEXTVALUE3) AS VENDOR_NAME
+                  ,MAX(T.TEXTVALUE4) AS RCV_CO_DOC_NO
+                  ,MAX(T.TEXTVALUE5) AS RCV_ISSUE_DATE
+                  ,MAX(T.TEXTVALUE6) AS INVOICE_NO
+                  ,MAX(T.TEXTVALUE7) AS INVOICE_DATE
+                  ,MAX(T.TEXTVALUE8) AS ITEM_CD
+                  ,MAX(T.TEXTVALUE9) AS ITEM_NAME
+                  ,MAX(T.TEXTVALUE10) AS FTA_CD
+                  ,MAX(T.TEXTVALUE11) AS FTA_NAME
+                  ,MAX(T.TEXTVALUE12) AS RCV_HS_CODE
+                  ,MAX(T.TEXTVALUE13) AS RCV_RULE_CONTENTS
+                  ,MAX(T.TEXTVALUE14) AS RVC_RATE
+                  ,MAX(T.TEXTVALUE15) AS RCV_FTA_CO_YN
+                  ,MAX(T.TEXTVALUE16) AS ORIGIN_NATION_CD
+                  ,MAX(FP.RULE_ID) AS RULE_ID
+                  ,MAX(FP.RULE_SEQ) AS RULE_SEQ
+                  ,#FTA_GROUP_CD# AS FTA_GROUP_CD
+              FROM EXCELDATA T
+                   LEFT OUTER JOIN FTA_PSR FP
+                     ON FP.FTA_CODE = T.TEXTVALUE4
+                    AND FP.HS_CODE = SUBSTR(T.TEXTVALUE6, 1, LENGTH(FP.HS_CODE))
+                    AND FP.RULE_CONTENTS = T.TEXTVALUE7
+           WHERE T.COMPANY_CD = #COMPANY_CD#
+             AND T.CATEGORY_CD = 'RCV_VN_CO_DTL'
+             AND T.ID = #USER_ID#
+           GROUP BY T.COMPANY_CD
+                   ,T.CATEGORY_CD
+                   ,T.ID
+                   ,T.SPID
+        <include refid="select-paging-end" />
+        ORDER BY SPID
+    </select>
+    
+    <insert id="MMA022.saveVientnamExcelSample" parameterClass="java.util.Map">
+        INSERT INTO EXCELDATA
+              (COMPANY_CD
+              ,CATEGORY_CD
+              ,ID
+              ,CREATE_DATE
+              ,SPID
+              ,TEXTVALUE1
+              ,TEXTVALUE2
+              ,TEXTVALUE3
+              ,TEXTVALUE4
+              ,TEXTVALUE5
+              ,TEXTVALUE6
+              ,TEXTVALUE7
+              ,TEXTVALUE8
+              ,TEXTVALUE9
+              ,TEXTVALUE10
+              ,TEXTVALUE11
+              ,TEXTVALUE12
+              ,TEXTVALUE13
+              ,TEXTVALUE14
+              ,TEXTVALUE15
+              ,TEXTVALUE16)
+        VALUES(#COMPANY_CD#
+              ,'RCV_VN_CO_DTL'
+              ,#USER_ID#
+              ,NOW()
+              ,#SEQ#::numeric
+              ,#DIVISION_CD#
+              ,#VENDOR_CD#
+              ,#VENDOR_NAME#
+              ,#RCV_CO_DOC_NO#
+              ,#RCV_ISSUE_DATE#
+              ,#INVOICE_NO#
+              ,#INVOICE_DATE#
+              ,#ITEM_CD#
+              ,#ITEM_NAME#
+              ,#FTA_CD#
+              ,#FTA_NAME#
+              ,#RCV_HS_CODE#
+              ,#RCV_RULE_CONTENTS#
+              ,#RVC_RATE#
+              ,#RCV_FTA_CO_YN#
+              ,#ORIGIN_NATION_CD#)
+    </insert>
+    
+    <delete id="MMA022.deleteVientnamExcelSample" parameterClass="java.util.Map">
+        DELETE FROM EXCELDATA
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND CATEGORY_CD = 'RCV_VN_CO_DTL'
+           AND ID = #USER_ID#
+    </delete>
+    
+    <update id="MMA022.insertVientnamImpCoMaster" parameterClass="java.util.Map">
+         INSERT INTO RCV_CO_CERTIFICATE_MST
+               (CO_DOC_NO
+               ,VENDOR_CD
+               ,COMPANY_CD
+               ,DIVISION_CD
+               ,CO_DOC_TYPE
+               ,ISSUE_DATE
+               ,APPLY_DATE
+               ,END_DATE
+               ,VENDOR_CHARGE_NAME
+               ,VENDOR_CHARGE_POSITION
+               ,VENDOR_CHARGE_PHONE_NO
+               ,VENDOR_CHARGE_EMAIL
+               ,PRODUCER_NAME
+               ,PRODUCER_PRESIDENT_NAME
+               ,PRODUCER_BUSINESS_NO
+               ,PRODUCER_PHONE_NO
+               ,PRODUCER_FAX_NO
+               ,PRODUCER_EMAIL
+               ,PRODUCER_ADDRESS
+               ,SIGN_CARD
+               ,REGISTED_BY
+               ,FTA_GROUP_CD
+               ,CO_ISSUE_STATUS
+               ,MODIFY_REQ
+               ,BF_CO_DOC_NO
+               ,DELETE_YN
+               ,INVOICE_NO
+               ,CREATE_DATE
+               ,CREATE_BY
+               ,UPDATE_DATE
+               ,UPDATE_BY)
+         SELECT A.CO_DOC_NO
+               ,A.VENDOR_CD
+               ,A.COMPANY_CD
+               ,A.DIVISION_CD
+               ,'N' AS CO_DOC_TYPE
+               ,A.ISSUE_DATE
+               ,A.APPLY_DATE
+               ,A.END_DATE
+               ,V.CHARGE_NAME AS VENDOR_CHARGE_NAME
+               ,V.CHARGE_POSITION AS VENDOR_CHARGE_POSITION
+               ,V.CHARGE_PHONE_NO AS VENDOR_CHARGE_PHONE_NO
+               ,V.CHARGE_EMAIL AS VENDOR_CHARGE_EMAIL
+               ,COALESCE(V.VENDOR_NAME_ENG, V.VENDOR_NAME) AS PRODUCER_NAME
+               ,COALESCE(V.PRESIDENT_NAME_ENG, V.PRESIDENT_NAME) AS PRODUCER_PRESIDENT_NAME
+               ,V.BUSINESS_NO AS PRODUCER_BUSINESS_NO
+               ,V.PHONE_NO AS PRODUCER_PHONE_NO
+               ,V.FAX_NO AS PRODUCER_FAX_NO
+               ,V.PRESIDENT_EMAIL AS PRODUCER_EMAIL
+               ,COALESCE(V.ADDRESS_ENG, V.ADDRESS) AS PRODUCER_ADDRESS
+               ,V.CHARGE_SIGNATURE AS SIGN_CARD
+               ,'2' AS REGISTED_BY
+               ,#FTA_GROUP_CD# AS FTA_GROUP_CD
+               ,'2' AS CO_ISSUE_STATUS
+               ,A.MODIFY_REQ
+               ,NULL AS BF_CO_DOC_NO
+               ,'N' AS DELETE_YN
+               ,(CASE WHEN A.INVOICE_NO = '' THEN NULL ELSE A.INVOICE_NO END) AS INVOICE_NO
+               ,NOW()
+               ,#USER_ID#
+               ,NOW()
+               ,#USER_ID#
+         FROM (
+               SELECT A.TEXTVALUE4 AS CO_DOC_NO
+                     ,A.TEXTVALUE2 AS VENDOR_CD
+                     ,A.COMPANY_CD AS COMPANY_CD
+                     ,A.TEXTVALUE1 AS DIVISION_CD
+                     ,A.TEXTVALUE6 AS INVOICE_NO
+                     ,MAX(A.TEXTVALUE5) AS ISSUE_DATE
+                     ,MAX(COALESCE(A.TEXTVALUE7, A.TEXTVALUE5)) AS APPLY_DATE
+                     ,MIN(COALESCE(A.TEXTVALUE7, A.TEXTVALUE5)) AS END_DATE
+                     ,(CASE WHEN MAX(RCCH.SEQ) IS NOT NULL THEN MAX(RCCH.SEQ) ELSE 0 END) AS MODIFY_REQ
+                 FROM EXCELDATA A
+                      LEFT OUTER JOIN RCV_CO_CHANGE_HISTORY RCCH
+                        ON RCCH.COMPANY_CD = A.COMPANY_CD
+                       AND RCCH.VENDOR_CD = A.TEXTVALUE2
+                       AND RCCH.CO_DOC_NO = A.TEXTVALUE4
+                       AND RCCH.MODIFY_REQUEST_STATUS = 'D'
+                WHERE A.ID = #USER_ID#
+                  AND A.COMPANY_CD = #COMPANY_CD#
+                  AND A.CATEGORY_CD = 'RCV_VN_CO_DTL'
+                GROUP BY A.TEXTVALUE4
+                        ,A.TEXTVALUE2
+                        ,A.COMPANY_CD
+                        ,A.TEXTVALUE1
+                        ,A.TEXTVALUE6
+               ) A
+              LEFT OUTER JOIN VENDOR V
+                ON V.COMPANY_CD = A.COMPANY_CD
+               AND V.VENDOR_CD = A.VENDOR_CD
+    </update>
+
+    <update id="MMA022.insertVientnamImpCoDetail" parameterClass="java.util.Map">
+        INSERT INTO RCV_CO_CERTIFICATE_DTL
+             ( CO_DOC_NO
+             , COMPANY_CD
+             , DIVISION_CD
+             , VENDOR_CD
+             , ITEM_CD
+             , FTA_CD
+             , TXN_NO
+             , TXN_SEQ
+             , FTA_CO_YN
+             , FTA_CO_N_REASON
+             , HS_CODE
+             , SALES_UNIT_PRICE
+             , TRACE_VALUE
+             , NALADISA_CODE
+             , CURRENCY
+             , SALES_CURRENCY
+             , RULE_CONTENTS
+             , RVC_RATE
+             , FTA_GROUP_CD
+             , ORIGIN_NATION_CD
+             , RULE_ID
+             , RULE_SEQ
+             , NONORIGIN_REASON_CD
+             , NONORIGIN_REASON_DESC
+             , CREATE_DATE
+             , CREATE_BY
+             , UPDATE_DATE
+             , UPDATE_BY
+             )
+       SELECT A.TEXTVALUE4 AS CO_DOC_NO
+             ,A.COMPANY_CD AS COMPANY_CD
+             ,A.TEXTVALUE1 AS DIVISION_CD
+             ,A.TEXTVALUE2 AS VENDOR_CD
+             ,A.TEXTVALUE8 AS ITEM_CD
+             ,A.TEXTVALUE10 AS FTA_CD
+             ,NULL AS TXN_NO
+             ,NULL AS TXN_SEQ
+             ,A.TEXTVALUE15 AS FTA_CO_YN
+             ,NULL AS FTA_CO_N_REASON
+             ,A.TEXTVALUE12 AS HS_CODE
+             ,NULL AS SALES_UNIT_PRICE
+             ,NULL AS TRACE_VALUE
+             ,NULL AS NALADISA_CODE
+             ,NULL AS CURRENCY
+             ,NULL AS SALES_CURRENCY
+             ,A.TEXTVALUE13 AS RULE_CONTENTS
+             ,FN_PG_GET_CAST_NUM(A.TEXTVALUE14) AS RVC_RATE
+             ,#FTA_GROUP_CD# AS FTA_GROUP_CD
+             ,MAX(CASE WHEN A.TEXTVALUE16 IS NOT NULL AND A.TEXTVALUE16 != '' AND LENGTH(A.TEXTVALUE16) = 2 THEN A.TEXTVALUE16
+                    ELSE (CASE WHEN A.TEXTVALUE15 = 'Y' THEN #FTA_GROUP_CD# ELSE NULL END) END) AS ORIGIN_NATION_CD
+             ,MAX(FP.RULE_ID) AS RULE_ID
+             ,MAX(FP.RULE_SEQ) AS RULE_SEQ
+             ,NULL AS NONORIGIN_REASON_CD
+             ,NULL AS NONORIGIN_REASON_DESC
+             ,NOW()
+             ,#USER_ID#
+             ,NOW()
+             ,#USER_ID#
+         FROM EXCELDATA A
+              LEFT OUTER JOIN FTA_PSR FP
+                 ON FP.FTA_CODE = A.TEXTVALUE10
+                AND FP.HS_CODE = SUBSTRING(A.TEXTVALUE12, 1, LENGTH(FP.HS_CODE))
+                AND FP.RULE_CONTENTS = A.TEXTVALUE13
+                AND A.TEXTVALUE5 BETWEEN FP.APPLY_DATE AND FP.END_DATE
+        WHERE A.ID = #USER_ID#
+          AND A.COMPANY_CD = #COMPANY_CD#
+          AND A.CATEGORY_CD = 'RCV_VN_CO_DTL'
+        GROUP BY A.TEXTVALUE4
+                ,A.COMPANY_CD
+                ,A.TEXTVALUE1
+                ,A.TEXTVALUE2
+                ,A.TEXTVALUE8
+                ,A.TEXTVALUE10
+                ,A.TEXTVALUE15
+                ,A.TEXTVALUE12
+                ,A.TEXTVALUE13
+                ,A.TEXTVALUE14
+    </update>
+    
+    <delete id="MMA022.deleteVientnamExcelSampleRow" parameterClass="java.util.Map">
+        DELETE FROM EXCELDATA
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND CATEGORY_CD = 'RCV_VN_CO_DTL'
+           AND ID = #USER_ID#
+           AND SPID = #SPID#::numeric
+    </delete>
+    
+    <!-- com.yni.fta.common.postgresql.PostgresqlDao 클래스에서 직접 구현
+    <parameterMap id="MMA022.executeVientnamItemErrorCheckMap" class="java.util.Map">
+        <parameter property="COMPANY_CD"   jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="USER_ID"      jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="FTA_GROUP_CD" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="ISSUE_DATE"   jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="LANGUAGE_CD"    jdbcType="VARCHAR" javaType="java.lang.String" mode="IN"/>
+        <parameter property="O_RETURN"     jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_RETURNMSG"  jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+        <parameter property="O_LINES"      jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT"/>
+    </parameterMap>
+    <procedure id="MMA022.executeVientnamItemErrorCheck" parameterMap="MMA022.executeVientnamItemErrorCheckMap">
+        { CALL CH_RCV_VN_CO_VALIDATION(?, ?, ?, ?, ?, ?, ?, ?, ?, ?) }
+    </procedure>
+    -->
+    <update id="MMA017.updateCoItemMapping" parameterClass="java.util.Map">
+		UPDATE RCV_CO_COIL_ITEM RCIT
+		SET    CO_DOC_NO = RC.CO_DOC_NO 
+		      ,FTA_CD = RC.FTA_CD
+		FROM   (SELECT RCIT.COMPANY_CD
+				      ,RCIT.VENDOR_CD
+				      ,RCIT.IF_CD
+				      ,RCIT.REG_NO
+				      ,RCIT.E_FTA_CD
+				      ,FM.FTA_CD
+				      ,RCIT.ITEM_CD
+				      ,MAX(RCCM.CO_DOC_NO) AS CO_DOC_NO
+				FROM   RCV_CO_COIL_ITEM RCIT
+				INNER  JOIN RCV_CO_COIL_DATA RCDA
+				ON     RCDA.COMPANY_CD = RCIT.COMPANY_CD
+				AND    RCDA.VENDOR_CD = RCIT.VENDOR_CD
+				AND    RCDA.IF_CD = RCIT.IF_CD
+				AND    RCDA.REG_NO = RCIT.REG_NO
+				AND    RCDA.E_FTA_CD = RCIT.E_FTA_CD
+				INNER JOIN FTA_MAPPING FM
+                          ON FM.COMPANY_CD = RCDA.COMPANY_CD
+                         AND FM.CLIENT_CD = RCDA.VENDOR_CD
+                         AND FM.CLIENT_FTA_CD = RCDA.E_FTA_CD
+				INNER  JOIN RCV_CO_CERTIFICATE_MST RCCM
+				ON     RCCM.COMPANY_CD = RCDA.COMPANY_CD
+				AND    RCCM.VENDOR_CD = RCDA.VENDOR_CD
+				AND    RCCM.REGISTED_BY = '4'
+				AND    RCCM.APPLY_DATE = RCDA.E_APPLY_DATE
+				AND    RCCM.END_DATE = RCDA.E_END_DATE
+				AND    RCCM.CO_DOC_NO = #CO_DOC_NO#
+				INNER  JOIN RCV_CO_CERTIFICATE_DTL RCCD
+				ON     RCCD.CO_DOC_NO = RCCM.CO_DOC_NO
+				AND    RCCD.COMPANY_CD = RCCM.COMPANY_CD
+				AND    RCCD.VENDOR_CD = RCCM.VENDOR_CD
+				AND    RCCD.DIVISION_CD = RCCM.DIVISION_CD
+				AND    RCCD.ITEM_CD = RCIT.ITEM_CD
+				AND    RCCD.FTA_CD = FM.FTA_CD
+				WHERE  RCIT.COMPANY_CD = #COMPANY_CD#
+				AND    RCIT.VENDOR_CD = #VENDOR_CD#
+				GROUP  BY RCIT.COMPANY_CD
+				         ,RCIT.VENDOR_CD
+				         ,RCIT.IF_CD
+				         ,RCIT.REG_NO
+				         ,RCIT.E_FTA_CD
+				         ,FM.FTA_CD
+				         ,RCIT.ITEM_CD) RC
+		WHERE  RCIT.COMPANY_CD = RC.COMPANY_CD
+		AND    RCIT.VENDOR_CD = RC.VENDOR_CD
+		AND    RCIT.IF_CD = RC.IF_CD
+		AND    RCIT.REG_NO = RC.REG_NO
+		AND    RCIT.E_FTA_CD = RC.E_FTA_CD
+		AND    RCIT.ITEM_CD = RC.ITEM_CD
+    </update>
+    
+</sqlMap>

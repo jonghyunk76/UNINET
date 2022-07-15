@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p" 
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    
+    <bean class="kr.yni.frame.mail.MailSender">
+        <constructor-arg>
+            <ref bean="TOMS_TEST_MailSender" />
+        </constructor-arg>
+    </bean>
+    
+    <!-- Gmail setting -->
+    <bean name="gmailMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+        p:password="@xhatmadmin!1"
+        p:host="smtp.gmail.com"
+        p:protocol="smtp"
+        p:username="toms.fta@gmail.com"
+        p:defaultEncoding="utf-8">
+    <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.debug">false</prop>
+            </props>
+        </property>
+    </bean>
+	
+	<!-- naver setting -->
+	<bean name="naverMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+			p:password="********" 
+			p:host="smtp.naver.com"
+			p:port="465"
+		    p:protocol="smtps" 
+			p:username="****"
+		    p:defaultEncoding="utf-8">
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.smtp.starttls.enable">true</prop>
+				<prop key="mail.smtp.auth">true</prop>
+				<prop key="mail.smtp.ssl.enable">true</prop>
+				<prop key="mail.smtps.ssl.checkserveridentity">true</prop>
+				<prop key="mail.smtps.ssl.trust">*</prop>
+				<prop key="mail.debug">false</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- HyundaiHightec -->
+    <bean name="HyundaiHiTecMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="smtp.daum.net"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">465</prop>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <prop key="mail.smtp.ssl.enable">true</prop>
+                <prop key="mail.smtp.ssl.trust">*</prop>
+                <prop key="mail.smtp.auth">true</prop>
+            </props>
+        </property>
+        <property name="username" value="guest"/>
+        <property name="password" value="1234"/>
+    </bean>
+    
+	<!-- Local Stmp setting -->
+    <bean name="seonyonMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="ekpmail.hanlileh.com"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+			    <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <prop key="mail.smtp.ssl.enable">false</prop>
+                <prop key="mail.smtp.ssl.trust">*</prop>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value="anonymous"/>
+        <property name="password" value=""/>
+    </bean>
+    
+    <!-- DAS -->
+    <bean name="dasMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="gwmail.i-das.com"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">587</prop>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <prop key="mail.smtp.ssl.enable">false</prop>
+                <prop key="mail.smtp.ssl.trust">*</prop>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value="A50074"/>
+        <property name="password" value="110627"/>
+    </bean>
+    
+    <!-- Donghee -->
+    <bean name="dongheeMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="stmp.fta.donghee.co.kr"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <prop key="mail.smtp.ssl.enable">false</prop>
+                <prop key="mail.smtp.ssl.trust">*</prop>
+                <prop key="mail.smtp.auth">false</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value="exchservice"/>
+        <property name="password" value="1234qwer!@#$"/>
+    </bean>
+    
+    <bean name="tomsCloudMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="stmp.i-toms.com"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <prop key="mail.smtp.ssl.enable">false</prop>
+                <prop key="mail.smtp.ssl.trust">*</prop>
+                <prop key="mail.smtp.auth">false</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value="toms"/>
+        <property name="password" value="!23qweasdzxc"/>
+    </bean>
+    
+    <!-- Client -->
+    <bean name="phaMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="sniper.phakr.com"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.ssl.enable">true</prop>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value="pha"/>
+        <property name="password" value="admin123!@#"/>
+    </bean>
+    
+    <!-- dstrust -->
+    <bean name="dstrustCloudMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="mail.dstrust.co.kr"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.auth">false</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+    </bean>     
+    
+    <!-- sejung -->
+    <bean name="jskaMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="mail.sjka.co.kr"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+    </bean>  
+    
+    <!-- 위너콤 winant -->
+    <bean name="W100_MailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="mail.winant.co.kr"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <prop key="mail.smtp.ssl.enable">false</prop>
+                <prop key="mail.smtp.ssl.trust">mail.winant.co.kr</prop>
+                <prop key="mail.smtp.auth">false</prop>
+                <prop key="mail.debug">false</prop>
+            </props>
+        </property>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+    </bean>     
+    
+    <!-- 인팩 -->
+    <bean name="infacMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="59.14.181.5"
+            p:protocol="smtp"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.port">25</prop>
+                <prop key="mail.smtp.auth">false</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+    </bean>
+    
+    <!-- DAEU CNA 메일  -->
+    <bean name="TOMS_TEST_MailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"
+            p:host="smtp.worksmobile.com"
+            p:protocol="smtp"
+            p:port="465"
+            p:defaultEncoding="utf-8">
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <prop key="mail.smtp.ssl.enable">true</prop>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+    </bean>
+</beans>

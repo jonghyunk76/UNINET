@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="mmSmp">
+    
+	<select id="SM1001.selectMainList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+	     <include refid="select-paging-start" />
+	      SELECT CODE, CODE_NAME 
+		  FROM CODE_DTL
+		 WHERE COMPANY_CD = '010101'  /*로그인한 사람의 회사코드*/
+		   AND CATEGORY_CD = 'NATION'
+		 <isNotEmpty property="CODE">
+		   AND UPPER(CODE) LIKE UPPER(#CODE#)||'%' /*입력한 국가 CODE */
+		 </isNotEmpty>
+		 <isNotEmpty property="CODE_NAME">
+		   AND UPPER(CODE_NAME) LIKE UPPER(#CODE_NAME#)||'%' /*입력한 국가명 */
+	     </isNotEmpty>
+	  <include refid="select-paging-end" />
+	</select>
+    
+	<select id="SMP1002.selectSysCategoryList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+	    <include refid="select-paging-start" />
+			SELECT CM.CATEGORY_CD
+			      ,CM.CATEGORY_NAME_ENG
+			      ,CM.CATEGORY_NAME
+			      ,COMPANY_YN
+			      ,UPDATE_YN
+			  FROM CODE_MST CM
+		     WHERE 1 = 1
+		     <isNotEmpty property="schKeyWord">
+	           AND UPPER(CM.$schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+	         </isNotEmpty>
+	         <isNotEqual property="SESSION_USER_ID" compareValue="fta">
+	           AND CM.CATEGORY_CD NOT IN('SYS_CONFIG')
+	           AND CM.COMPANY_YN = 'Y'
+	         </isNotEqual>
+	         <isEqual property="SYSID" compareValue="P">
+	           AND CM.UPDATE_YN = #SYSID#
+	         </isEqual>
+	    <include refid="select-paging-end" />
+	    ORDER BY CATEGORY_CD
+    </select>
+    
+    <select id="SMP1002.selectSysCategoryDetail" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CM.CATEGORY_CD
+              ,CM.CATEGORY_NAME_ENG
+              ,CM.CATEGORY_NAME
+              ,COMPANY_YN
+              ,UPDATE_YN
+          FROM CODE_MST CM
+         WHERE CM.CATEGORY_CD = #CATEGORY_CD#
+    </select>
+    
+	<insert id="SMP1002.insertSysCategoryInfo" parameterClass="java.util.Map">
+		INSERT INTO CODE_MST(
+		       CATEGORY_CD
+		      ,CATEGORY_NAME_ENG
+		      ,CATEGORY_NAME
+		      ,COMPANY_YN
+		      ,UPDATE_YN
+		      ,CREATE_DATE
+		      ,CREATE_BY
+		      ,UPDATE_DATE
+		      ,UPDATE_BY)
+		VALUES(#CATEGORY_CD#
+		      ,#CATEGORY_NAME_ENG#
+		      ,#CATEGORY_NAME#
+		      ,#COMPANY_YN#
+		      ,'Y'
+		      ,NOW()
+		      ,#SESSION_USER_ID#
+		      ,NOW()
+		      ,#SESSION_USER_ID#)
+    </insert>
+		
+    <update id="SMP1002.updateSysCategoryInfo" parameterClass="java.util.Map">
+		UPDATE CODE_MST
+		   SET CATEGORY_NAME_ENG = #CATEGORY_NAME_ENG# 
+		      ,CATEGORY_NAME = #CATEGORY_NAME#
+		      ,COMPANY_YN = #COMPANY_YN#
+		      ,UPDATE_DATE = NOW()
+		      ,UPDATE_BY = #SESSION_USER_ID#
+		 WHERE CATEGORY_CD = #CATEGORY_CD#
+    </update>
+
+    <delete id="SMP1002.deleteSysCategoryInfo" parameterClass="java.util.Map">
+        DELETE FROM CODE_MST
+         WHERE CATEGORY_CD = #CATEGORY_CD#
+    </delete>
+    
+    <select id="SMP1002.selectSysCodeList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+		SELECT CD.COMPANY_CD
+		      ,CD.CATEGORY_CD
+		      ,CD.CODE
+		      ,COALESCE(CLD.WORD, CD.CODE_NAME) AS CODE_NAME
+		      ,CD.CODE_NAME_ENG
+		      ,CD.SORT_NO
+		      ,CD.TXT_VALUE1
+		      ,CD.TXT_VALUE2
+		      ,CD.TXT_VALUE3
+		      ,CD.TXT_VALUE4
+		      ,CD.TXT_VALUE5
+		      ,CD.NUM_VALUE1
+		      ,CD.NUM_VALUE2
+		      ,CD.NUM_VALUE3
+		      ,CD.NUM_VALUE4
+		      ,CD.NUM_VALUE5
+		  FROM CODE_DTL CD
+		       LEFT OUTER JOIN CODE_LANG_DIC CLD
+		         ON CLD.COMPANY_CD = CD.COMPANY_CD
+		        AND CLD.CATEGORY_CD = CD.CATEGORY_CD
+		        AND CLD.CODE = CD.CODE
+		        AND CLD.LANGUAGE_CAT = #SESSION_DEFAULT_LANGUAGE#
+		 WHERE CD.COMPANY_CD = #COMPANY_CD#
+		   AND CD.CATEGORY_CD = #CATEGORY_CD#
+		 <isNotEmpty property="CODE">
+		   AND UPPER(CD.CODE) = UPPER(#CODE#)
+		 </isNotEmpty>
+		 <isNotEmpty property="CODE_NAME">
+           AND UPPER(CD.CODE_NAME) LIKE '%'||UPPER(#CODE_NAME#)||'%'
+         </isNotEmpty>
+         <isNotEmpty property="TXT_VALUE1">
+           AND CD.TXT_VALUE1 = #TXT_VALUE1#
+         </isNotEmpty>
+         <isNotEmpty property="TXT_VALUE2">
+           AND CD.TXT_VALUE2 = #TXT_VALUE2#
+         </isNotEmpty>
+         <isNotEmpty property="TXT_VALUE3">
+           AND CD.TXT_VALUE3 = #TXT_VALUE3#
+         </isNotEmpty>
+         <isNotEmpty property="TXT_VALUE4">
+           AND CD.TXT_VALUE4 = #TXT_VALUE4#
+         </isNotEmpty>
+         <isNotEmpty property="TXT_VALUE5">
+           AND CD.TXT_VALUE5 = #TXT_VALUE5#
+         </isNotEmpty>                                                      
+		 <isNotEmpty property="schKeyWord">
+           AND UPPER(CD.$schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+         </isNotEmpty>
+		 ORDER BY SORT_NO
+    </select>
+    
+    <select id="SMP1002.selectSysCodeDetail" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT CD.CATEGORY_CD
+              ,CD.CODE
+              ,CD.CODE_NAME
+              ,CD.CODE_NAME_ENG
+              ,CD.SORT_NO
+              ,CD.TXT_VALUE1
+              ,CD.TXT_VALUE2
+              ,CD.TXT_VALUE3
+              ,CD.TXT_VALUE4
+              ,CD.TXT_VALUE5
+              ,CD.NUM_VALUE1
+              ,CD.NUM_VALUE2
+              ,CD.NUM_VALUE3
+              ,CD.NUM_VALUE4
+              ,CD.NUM_VALUE5
+          FROM CODE_DTL CD
+         WHERE CD.CATEGORY_CD = #CATEGORY_CD#
+           AND CD.COMPANY_CD = #COMPANY_CD#
+           AND CD.CODE = #CODE#
+    </select>
+    
+    <insert id="SMP1002.insertSysCodeInfo" parameterClass="java.util.Map">
+		INSERT INTO CODE_DTL(
+		       COMPANY_CD
+		      ,CATEGORY_CD
+		      ,CODE
+		      ,CODE_NAME
+		      ,CODE_NAME_ENG
+		      ,SORT_NO
+		      ,TXT_VALUE1
+		      ,TXT_VALUE2
+		      ,TXT_VALUE3
+		      ,TXT_VALUE4
+		      ,TXT_VALUE5
+		      ,NUM_VALUE1
+		      ,NUM_VALUE2
+		      ,NUM_VALUE3
+		      ,NUM_VALUE4
+		      ,NUM_VALUE5
+		      ,CREATE_DATE
+		      ,CREATE_BY
+		      ,UPDATE_DATE
+		      ,UPDATE_BY)
+		SELECT COMPANY_CD
+		      ,#CATEGORY_CD#
+		      ,#CODE#
+		      ,#CODE_NAME#
+		      ,#CODE_NAME_ENG#
+		      ,#SORT_NO#::numeric
+		      ,#TXT_VALUE1#
+		      ,#TXT_VALUE2#
+		      ,#TXT_VALUE3#
+		      ,#TXT_VALUE4#
+		      ,#TXT_VALUE5#
+		      ,FN_PG_GET_CAST_NUM(#NUM_VALUE1#)
+		      ,FN_PG_GET_CAST_NUM(#NUM_VALUE2#)
+		      ,FN_PG_GET_CAST_NUM(#NUM_VALUE3#)
+		      ,FN_PG_GET_CAST_NUM(#NUM_VALUE4#)
+		      ,FN_PG_GET_CAST_NUM(#NUM_VALUE5#)
+		      ,NOW()
+		      ,#SESSION_USER_ID#
+		      ,NOW()
+		      ,#SESSION_USER_ID#
+		  FROM COMPANY
+	   <isNotEmpty property="COMPANY_CD">
+		 WHERE COMPANY_CD = #COMPANY_CD#
+	   </isNotEmpty>
+    </insert>
+		
+	<update id="SMP1002.updateSysCodeInfo" parameterClass="java.util.Map">
+		UPDATE CODE_DTL
+		   SET CODE_NAME = #CODE_NAME#
+		      ,CODE_NAME_ENG = #CODE_NAME_ENG#
+		      ,SORT_NO = #SORT_NO#::numeric
+		      ,TXT_VALUE1 = #TXT_VALUE1#
+		      ,TXT_VALUE2 = #TXT_VALUE2#
+		      ,TXT_VALUE3 = #TXT_VALUE3#
+		      ,TXT_VALUE4 = #TXT_VALUE4#
+		      ,TXT_VALUE5 = #TXT_VALUE5#
+		      ,NUM_VALUE1 = FN_PG_GET_CAST_NUM(#NUM_VALUE1#)
+              ,NUM_VALUE2 = FN_PG_GET_CAST_NUM(#NUM_VALUE2#)
+              ,NUM_VALUE3 = FN_PG_GET_CAST_NUM(#NUM_VALUE3#)
+              ,NUM_VALUE4 = FN_PG_GET_CAST_NUM(#NUM_VALUE4#)
+              ,NUM_VALUE5 = FN_PG_GET_CAST_NUM(#NUM_VALUE5#)
+		      ,UPDATE_DATE = NOW()::TIMESTAMP
+		      ,UPDATE_BY = #SESSION_USER_ID#
+		 WHERE CATEGORY_CD = #CATEGORY_CD#
+		 <isNotEmpty property="COMPANY_CD">
+           AND COMPANY_CD = #COMPANY_CD#
+       </isNotEmpty>
+           AND CODE = #CODE#
+    </update>
+    
+    <delete id="SMP1002.deleteSysCodeInfo" parameterClass="java.util.Map">
+		DELETE FROM CODE_DTL
+		 WHERE CATEGORY_CD = #CATEGORY_CD#
+	   <isNotEmpty property="COMPANY_CD">
+           AND COMPANY_CD = #COMPANY_CD#
+       </isNotEmpty>
+           AND CODE = #CODE#
+    </delete>
+    
+    <select id="SMP1002.selectSysCodeLangList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT COMPANY_CD
+              ,CATEGORY_CD
+              ,CODE
+              ,LANGUAGE_CAT
+              ,FN_GET_COMMON_CD(COMPANY_CD, 'LENG_CD', LANGUAGE_CAT, 'NAME', #SESSION_DEFAULT_LANGUAGE#) AS LANGUAGE_CAT_NAME
+              ,LANG_ID
+              ,WORD
+              ,MEANNING
+          FROM CODE_LANG_DIC
+         WHERE COMPANY_CD = #COMPANY_CD#
+           AND CATEGORY_CD = #CATEGORY_CD#
+           AND CODE = #CODE#
+         ORDER BY LANGUAGE_CAT
+    </select>
+    
+    <select id="SMP1002.selectSysCodeLangDetail" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT COMPANY_CD
+              ,CATEGORY_CD
+              ,CODE
+              ,LANGUAGE_CAT
+              ,LANG_ID
+              ,WORD
+              ,MEANNING
+          FROM CODE_LANG_DIC
+         WHERE CATEGORY_CD = #CATEGORY_CD#
+           AND COMPANY_CD = #COMPANY_CD#
+           AND CODE = #CODE#
+           AND LANGUAGE_CAT = #LANGUAGE_CAT#
+    </select>
+    
+    <insert id="SMP1002.insertSysCodeLangInfo" parameterClass="java.util.Map">
+        INSERT INTO CODE_LANG_DIC(
+               COMPANY_CD
+			  ,CATEGORY_CD
+			  ,CODE
+			  ,LANGUAGE_CAT
+			  ,LANG_ID
+			  ,WORD
+			  ,MEANNING)
+        VALUES(#COMPANY_CD#
+              ,#CATEGORY_CD#
+              ,#CODE#
+              ,#LANGUAGE_CAT#
+              ,FN_PG_GET_CAST_NUM(#LANG_ID#)
+              ,#WORD#
+              ,#MEANNING#)
+    </insert>
+        
+    <update id="SMP1002.updateSysCodeLangInfo" parameterClass="java.util.Map">
+        UPDATE CODE_LANG_DIC
+           SET WORD = #WORD#
+              ,MEANNING = #MEANNING#
+         WHERE CATEGORY_CD = #CATEGORY_CD#
+         <isNotEmpty property="COMPANY_CD">
+           AND COMPANY_CD = #COMPANY_CD#
+       </isNotEmpty>
+           AND CODE = #CODE#
+           AND LANGUAGE_CAT = #LANGUAGE_CAT#
+    </update>
+    
+    <delete id="SMP1002.deleteSysCodeLangInfo" parameterClass="java.util.Map">
+        DELETE FROM CODE_LANG_DIC
+         WHERE CATEGORY_CD = #CATEGORY_CD#
+       <isNotEmpty property="COMPANY_CD">
+           AND COMPANY_CD = #COMPANY_CD#
+       </isNotEmpty>
+           AND CODE = #CODE#
+           AND LANGUAGE_CAT = #LANGUAGE_CAT#
+    </delete>
+    
+    <select id="SMP1009.selectMessgeList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        <include refid="select-paging-start" />
+	        SELECT MT.MESSAGE
+			      ,MT.MESSAGE_CODE
+			      ,MT.NATION_CODE
+			      ,TO_CHAR(MT.CREATE_DATE, 'YYYYMMDD') AS CREATE_DATE
+			      ,MT.CREATE_BY
+			  FROM MESSAGE_TABLE MT
+			 WHERE MT.USE_YN = 'Y'
+			 <isNotEmpty property="NATION_CODE">
+			   AND MT.NATION_CODE = #NATION_CODE#
+			 </isNotEmpty>
+			 <isNotEmpty property="schKeyWord">
+			   AND UPPER(MT.$schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
+		     </isNotEmpty>
+			 <isNotEmpty property="SCH_FROM_DATE">
+			   AND TO_CHAR(MT.CREATE_DATE, 'YYYYMMDD') BETWEEN #SCH_FROM_DATE# AND #SCH_TO_DATE#
+			 </isNotEmpty>
+        <include refid="select-paging-end" />
+        ORDER BY MESSAGE_CODE, NATION_CODE
+    </select>
+    
+    <select id="SMP1009.selectMessgeDetail" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" >
+        SELECT MT.MESSAGE
+              ,MT.MESSAGE_CODE
+              ,MT.NATION_CODE
+              ,TO_CHAR(TO_DATE(MT.APPLY_START_DATE, 'YYYYMMDD'), 'YYYY-MM-DD') AS APPLY_START_DATE
+              ,TO_CHAR(TO_DATE(MT.APPLY_END_DATE, 'YYYYMMDD'), 'YYYY-MM-DD') AS APPLY_END_DATE
+              ,MT.USE_YN AS USE_YN
+              ,MT.COMMENTS
+              ,MT.CREATE_BY
+          FROM MESSAGE_TABLE MT
+         WHERE MT.NATION_CODE = #NATION_CODE#
+           AND MT.MESSAGE_CODE = #MESSAGE_CODE#
+    </select>
+    
+    <insert id="SMP1009.insertMessageInfo" parameterClass="java.util.Map">
+        INSERT INTO MESSAGE_TABLE(MESSAGE, MESSAGE_CODE, NATION_CODE, COMMENTS, USE_YN, APPLY_START_DATE, APPLY_END_DATE, CREATE_DATE, CREATE_BY, UPDATE_DATE, UPDATE_BY)
+        VALUES(#MESSAGE#, #MESSAGE_CODE#, #NATION_CODE#, #COMMENTS#, #USE_YN#, #APPLY_START_DATE#, #APPLY_END_DATE#, NOW(), #CREATE_BY#, NOW(), #CREATE_BY#)
+    </insert>
+    
+    <update id="SMP1009.updateMessageInfo" parameterClass="java.util.Map">
+        UPDATE MESSAGE_TABLE
+		   SET MESSAGE = #MESSAGE#
+		      ,COMMENTS = #COMMENTS#
+		      ,USE_YN = #USE_YN#
+		      ,APPLY_START_DATE = #APPLY_START_DATE#
+		      ,APPLY_END_DATE = #APPLY_END_DATE#
+		      ,UPDATE_BY = #CREATE_BY#
+		      ,UPDATE_DATE = NOW()
+		 WHERE NATION_CODE = #NATION_CODE#
+		   AND MESSAGE_CODE = #MESSAGE_CODE#
+    </update>
+    
+    <delete id="SMP1009.deleteMessgeDetail" parameterClass="java.util.Map">
+        DELETE FROM MESSAGE_TABLE
+         WHERE NATION_CODE = #NATION_CODE#
+           AND MESSAGE_CODE = #MESSAGE_CODE#
+    </delete>
+    
+</sqlMap>

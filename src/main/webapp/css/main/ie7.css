@@ -1,0 +1,22 @@
+@charset "utf-8";
+
+/* main */
+#header{z-index:1; position:relative;width:100%;height:67px;background:#276697 url('../images/icon/top_bg.gif') repeat-x 0 0;}
+
+/* table */
+.sch_boxIn table{table-layout:fixed;}
+.sch_boxIn table td{padding:0 0px 1px 0px;}
+
+.listT td{border:1px solid #e1e1e1;border-top:none;background-color:#fff;}
+.listT .sel td{border:1px solid #93c3e1;border-top:none;background-color:#d5eafa;}
+
+.sec_area .sec_list{float:right;}
+.sec_area .sec_tit{width:30%;}
+.sec_area .sec_list{width:68%;}
+
+.sec_area2 .sec_list2{float:right;width:46.5%;}
+
+/* popup */
+a.pop_close{width:29px;}
+a.pop_sch{width:33px;}
+

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="mmTariffBatch">
+    
+    <select id="MMTARIFFBATCH.selectExportTargetList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT SE.NATION_CD
+              ,SUBSTRING(FM.HS_CODE, 1, 4) AS HS_CODE
+          FROM SALES_EXPORT SE
+               INNER JOIN FCR_MST FM
+                  ON FM.CO_REQ_NO = SE.CO_REQ_NO
+                 AND FM.COMPANY_CD = SE.COMPANY_CD
+                 AND FM.DIVISION_CD = SE.DIVISION_CD
+                 AND FM.STATUS = '4'
+                 AND FM.EXPORT_FLAG = 'E'
+         WHERE SE.COMPANY_CD = #COMPANY_CD#
+           AND SE.INVOICE_DATE BETWEEN #FROM_DATE# AND #TO_DATE#
+         GROUP BY SE.NATION_CD
+                 ,SUBSTRING(FM.HS_CODE, 1, 4)
+    </select>
+    
+    <select id="MMTARIFFBATCH.selectSourceTable" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap" remapResults="true">
+        SELECT
+        <dynamic> 
+            <iterate property="COLUMN_LIST" conjunction=",">
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="3"> RTRIM(LTRIM($COLUMN_LIST[].COLUMN_NAME$)) </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="4"> $COLUMN_LIST[].COLUMN_NAME$ </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="6"> 
+                  fn_pg_get_cast_num(#COLUMN_LIST[].COLUMN_VALUE#) 
+              </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="7"> 
+                  fn_pg_get_cast_num(#COLUMN_LIST[].COLUMN_VALUE#)
+              </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="8"> 
+                  fn_pg_get_cast_int(#COLUMN_LIST[].COLUMN_VALUE#)
+              </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="0"> RTRIM(LTRIM($COLUMN_LIST[].COLUMN_NAME$)) </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="1"> RTRIM(LTRIM($COLUMN_LIST[].COLUMN_NAME$)) </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="30"> RTRIM(LTRIM($COLUMN_LIST[].COLUMN_NAME$)) </isEqual>
+               AS $COLUMN_LIST[].COLUMN_NAME$
+            </iterate>
+        </dynamic>
+          FROM $SOURCE_TABLE$
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </select>
+    
+    <delete id="MMTARIFFBATCH.deleteSourceTable" parameterClass="java.util.Map">
+        DELETE FROM $SOURCE_TABLE$
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </delete>
+    
+    <update id="MMTARIFFBATCH.insertSourceTable" parameterClass="java.util.Map">
+        INSERT INTO $SOURCE_TABLE$
+        <dynamic> 
+            <iterate open="(" close=", CREATE_DATE)" property="COLUMN_LIST" conjunction=",">
+                $COLUMN_LIST[].COLUMN_NAME$
+            </iterate>
+        </dynamic>
+        VALUES
+        <dynamic>
+            <iterate open="(" close=", NOW())" property="COLUMN_LIST" conjunction=",">
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="3">
+                <isNotEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    #COLUMN_LIST[].COLUMN_VALUE#::timestamp
+                </isNotEmpty>
+                <isEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    null
+                </isEmpty>
+              </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="4"> #COLUMN_LIST[].COLUMN_VALUE# </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="6"> 
+                <isNotEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    #COLUMN_LIST[].COLUMN_VALUE#::numeric
+                </isNotEmpty>
+                <isEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    null
+                </isEmpty>
+              </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="7"> 
+                <isNotEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    #COLUMN_LIST[].COLUMN_VALUE#::numeric
+                </isNotEmpty>
+                <isEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    null
+                </isEmpty>
+              </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="8"> 
+                <isNotEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    #COLUMN_LIST[].COLUMN_VALUE#::integer
+                </isNotEmpty>
+                <isEmpty property="COLUMN_LIST[].COLUMN_VALUE">
+                    null
+                </isEmpty>
+              </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="0"> #COLUMN_LIST[].COLUMN_VALUE# </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="1"> #COLUMN_LIST[].COLUMN_VALUE# </isEqual>
+              <isEqual property="COLUMN_LIST[].COLUMN_TYPE" compareValue="30"> #COLUMN_LIST[].COLUMN_VALUE# </isEqual>
+            </iterate>
+        </dynamic>
+    </update>
+    
+    <delete id="MMTARIFFBATCH.deleteTargetTable" parameterClass="java.util.Map">
+        DELETE FROM $TARGET_TABLE$
+         WHERE COMPANY_CD = #COMPANY_CD#
+    </delete>
+    
+    <select id="MMTARIFFBATCH.selectInterfaceItemMst" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+    	SELECT SOURCE_TABLE, TARGET_TABLE, HISTORY_TABLE
+    	  FROM INTERFACE_ITEM_MST
+    	 WHERE COMPANY_CD = #COMPANY_CD#
+           AND IF_CD = #IF_CD#
+    </select>
+    
+</sqlMap>
