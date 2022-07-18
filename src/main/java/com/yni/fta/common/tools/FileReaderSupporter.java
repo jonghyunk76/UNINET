@@ -12,7 +12,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.EncryptedDocumentException;
-import org.apache.poi.hssf.record.RecordFormatException;
+//import org.apache.poi.hssf.record.RecordFormatException;
 import org.apache.poi.ss.usermodel.Workbook;
 
 import com.yni.fta.common.Consistent;
@@ -304,9 +304,9 @@ public class FileReaderSupporter {
         } catch(EncryptedDocumentException en) { // 비밀번호와 같은 보안으로 잠겨있는 문서
             sucess = false;
             throw new FrameException(messageSource.getMessage(Consistent.MESSAGE_NUMBER_E4, null, locale), en);
-        } catch(RecordFormatException en) { // 엑셀에 입력된 값에 잘 못된 format/data가 존재 
-            sucess = false;
-            throw new FrameException(messageSource.getMessage(Consistent.MESSAGE_NUMBER_E5, null, locale), en);
+//        } catch(RecordFormatException en) { // 엑셀에 입력된 값에 잘 못된 format/data가 존재 
+//            sucess = false;
+//            throw new FrameException(messageSource.getMessage(Consistent.MESSAGE_NUMBER_E5, null, locale), en);
 //        } catch(POIXMLException ie) {  // 문서 paring오류
 //            sucess = false;
 //            throw new FrameException(messageSource.getMessage(Consistent.MESSAGE_NUMBER_E13, null, locale), ie);
