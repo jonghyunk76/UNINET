@@ -4,7 +4,7 @@ var DEFAULT_LANGUAGE = "KR";		// 화면에 보여질 메시지의 기본언어
 var NATION_DATE_VIEW = "KR"; 		// 화면에 보여질 날짜 표현 국가(US:mmddyyyy, KR:yyyymmdd, MX:ddmmyyyy, VN:ddmmyyyy)
 var NATION_DATE_DB = "KR"; 			// DB에 저장될 날짜 표현 국가(US:mmddyyyy, KR:yyyymmdd, MX:ddmmyyyy)
 var SEPERATOR_OF_DATE = "-"; 		// 일자 구분 문자
-var TOP_SYS_ID = "CC";				// 로그인화면 시스템 ID(FTA:IF, 통관:CC,  중계서버:RS)
+var TOP_SYS_ID = "RS";				// 로그인화면 시스템 ID(FTA:IF, 통관:CC,  중계서버:RS)
 var TAB_MAX_SIZE = 15;				// 화면에 표시할 최대 탭갯수
 var CURRENT_REQUEST_URL;            // 최근 요청경로
 var MAX_MULTI_COUNT = 100;          // 멀티검색 최대 갯수
