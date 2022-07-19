@@ -8,17 +8,12 @@
     <sqlMap resource="sqlmap/postgresql/MM/MmUserIden.xml" />
     
     <!-- MM Popup -->
-    <sqlMap resource="sqlmap/postgresql/MM/MmPopSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MmKRPopSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MmMXPopSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MmComboSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MMMailSql.xml" />
     <sqlMap resource="sqlmap/postgresql/MM/MmBatchSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MmMenuSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MmRpcBatchSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MmHubBatchSql.xml" />
+    <sqlMap resource="sqlmap/postgresql/MM/MmComboSql.xml" />
     <sqlMap resource="sqlmap/postgresql/MM/MmExcelBatchSql.xml" />
-    <sqlMap resource="sqlmap/postgresql/MM/MmTariffBatchSql.xml" />
+    <sqlMap resource="sqlmap/postgresql/MM/MMMailSql.xml" />
+    <sqlMap resource="sqlmap/postgresql/MM/MmMenuSql.xml" />
+    <sqlMap resource="sqlmap/postgresql/MM/MmPopSql.xml" />
     
     <!-- Management site -->
     <sqlMap resource="sqlmap/postgresql/FM/FmSmSql.xml" />
@@ -30,10 +25,6 @@
     <!-- Team Developer Menu -->
     <sqlMap resource="sqlmap/postgresql/TM/FmSm7523Sql.xml" />
     <sqlMap resource="sqlmap/postgresql/TM/FmSm7524Sql.xml" />
-    <sqlMap resource="sqlmap/postgresql/TM/FmSm7525Sql.xml" />
-    <sqlMap resource="sqlmap/postgresql/TM/FmSm7526Sql.xml" />
-    <sqlMap resource="sqlmap/postgresql/TM/FmSm7034Sql.xml" />
-    <sqlMap resource="sqlmap/postgresql/TM/FmSm7036Sql.xml" />
-    <sqlMap resource="sqlmap/postgresql/TM/FmSm7048Sql.xml" />
+    <sqlMap resource="sqlmap/postgresql/TM/FmSm7527Sql.xml" />
     
 </sqlMapConfig>
