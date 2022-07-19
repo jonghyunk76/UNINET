@@ -38,4 +38,22 @@ public interface STR001 {
      */
     int deleteServerMst(Map map) throws Exception;
 	
+    /**
+	 * 송수신 건수 조회
+	 * 
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	List selectConnCountOfChart(Map map) throws Exception;
+	
+	/**
+	 * 데이터 건수 조회
+	 * 
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	List selectConnTrafficOfChart(Map map) throws Exception;
+	
 }

@@ -59,4 +59,27 @@ public class STR001Dao extends YniAbstractDAO {
     public int deleteServerMst(Map map) throws Exception {
         return this.update("STR001.deleteServerMst", map);
     }
+    
+    /**
+	 * 송수신 건수 조회
+	 * 
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	public List selectConnCountOfChart(Map map) throws Exception {
+		return this.list("STR001.selectConnCountOfChart", map);
+	}
+	
+	/**
+	 * 데이터 건수 조회
+	 * 
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	public List selectConnTrafficOfChart(Map map) throws Exception {
+		return this.list("STR001.selectConnTrafficOfChart", map);
+	}
+	
 }

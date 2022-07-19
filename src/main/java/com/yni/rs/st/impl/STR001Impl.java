@@ -61,4 +61,26 @@ public class STR001Impl extends YniAbstractService implements STR001 {
         return stR001Dao.deleteServerMst(map);
     }
 	
+    /**
+	 * 송수신 건수 조회
+	 * 
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	public List selectConnCountOfChart(Map map) throws Exception {
+		return stR001Dao.selectConnCountOfChart(map);
+	}
+	
+	/**
+	 * 데이터 건수 조회
+	 * 
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	public List selectConnTrafficOfChart(Map map) throws Exception {
+		return stR001Dao.selectConnTrafficOfChart(map);
+	}
+	
 }

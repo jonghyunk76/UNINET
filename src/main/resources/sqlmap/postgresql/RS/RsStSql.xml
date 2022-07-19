@@ -117,6 +117,48 @@
            AND SERVER_ID = #SERVER_ID#
     </delete>
     
+    <select id="STR001.selectConnCountOfChart" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+        SELECT IHM.COMPANY_CD
+		      ,IHM.HOUR_SPLIT
+		      ,SUM(CASE WHEN IHM.INTERFACE_MTH = 'S' THEN 1 ELSE 0 END) AS SND_DATA_CNT
+		      ,SUM(CASE WHEN IHM.INTERFACE_MTH = 'R' THEN 1 ELSE 0 END) AS REV_DATA_CNT
+		      ,COUNT(1) AS DATA_CNT
+		  FROM (
+		        SELECT IHM.COMPANY_CD
+		              ,TO_CHAR(IHM.CREATE_DATE, 'HH24') AS HOUR_SPLIT
+		              ,IHM.INTERFACE_HISTORY_ID
+		              ,MAX(SH.INTERFACE_MTH) AS INTERFACE_MTH
+		          FROM INTERFACE_HISTORY IHM
+		               LEFT OUTER JOIN SERVICE_HISTORY SH
+		                 ON SH.COMPANY_CD = IHM.COMPANY_CD
+		                AND SH.IF_CD = IHM.IF_CD
+		                AND SH.SERVICE_HISTORY_ID = IHM.PARENT_HISTORY_ID
+		         WHERE IHM.COMPANY_CD = #COMPANY_CD#
+		           AND IHM.BATCH_STATUS IN('S', 'N')
+		           AND IHM.CREATE_DATE BETWEEN (NOW() + INTERVAL '-24 HOUR') AND NOW()
+		         GROUP BY IHM.COMPANY_CD
+		                 ,TO_CHAR(IHM.CREATE_DATE, 'HH24')
+		                 ,IHM.INTERFACE_HISTORY_ID
+		        ) IHM
+		 GROUP BY IHM.COMPANY_CD
+		         ,IHM.HOUR_SPLIT
+    </select>
+     
+    <select id="STR001.selectConnTrafficOfChart" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
+		SELECT IHM.COMPANY_CD
+		      ,TO_CHAR(IHM.CREATE_DATE, 'HH24') AS HOUR_SPLIT
+		      ,COUNT(1) AS DATA_CNT
+		  FROM INTERFACE_HISTORY IHM
+		       INNER JOIN INTERFACE_HISTORY_DATA IHD
+		          ON IHM.COMPANY_CD = IHD.COMPANY_CD
+		         AND IHM.INTERFACE_HISTORY_ID = IHD.INTERFACE_HISTORY_ID
+		 WHERE IHM.COMPANY_CD = #COMPANY_CD#
+		   AND IHM.BATCH_STATUS = 'S'
+		   AND IHM.CREATE_DATE BETWEEN (NOW() + INTERVAL '-24 HOUR') AND NOW()
+		 GROUP BY IHM.COMPANY_CD
+		         ,TO_CHAR(IHM.CREATE_DATE, 'HH24')
+    </select>
+    
     <select id="STR002.selectServiceList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
         <include refid="select-paging-start" />
             SELECT SM.COMPANY_CD

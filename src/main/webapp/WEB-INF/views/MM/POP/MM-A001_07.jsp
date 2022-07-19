@@ -45,16 +45,16 @@
                 </div>
                 <div data-options="region:'center',border:false">
                     <div class="easyui-layout" data-options="fit:true">
-		                <div data-options="region:'north',border:false" class="h2_etc">
-		                    <p class="h2"><spring:message code="CC_Server 연결상태"/></p>
-		                    <p class="h2_btn">
+                        <div data-options="region:'north',border:false" class="h2_etc">
+                            <p class="h2"><spring:message code="CC_Server 연결상태"/></p>
+                            <p class="h2_btn">
                                 <a href="javascript:MMA001_07.control.selectServerList();" class="btnRefresh"><spring:message code="REFSH"/></a><%--새로고침--%>
                             </p>
-		                </div>
-		                <div data-options="region:'center',border:false">
-		                   <table id="MMA001_07_grid_01"> </table>
-		                </div>
-		            </div>
+                        </div>
+                        <div data-options="region:'center',border:false">
+                           <table id="MMA001_07_grid_01"> </table>
+                        </div>
+                    </div>
                 </div>
                 <div data-options="region:'south',border:false,split:true" style="height:166px;">
                     <div class="easyui-layout" data-options="fit:true">
@@ -93,77 +93,93 @@ Used Auto log - ON
         <div data-options="region:'center',border:false">
             <div class="easyui-layout" data-options="fit:true">
                 <div data-options="region:'center',border:false,split:true">
-		            <div class="easyui-layout" data-options="fit:true">
-		                <div data-options="region:'center',border:false" class="width60">
-		                    <div class="easyui-layout" data-options="fit:true">
-		                        <div data-options="region:'north',border:false" class="h2_etc">
-		                            <p class="h2"><spring:message code="CC_Schedule status"/></p>
-		                        </div>
-		                        <div data-options="region:'center',border:false">
-			                        <form id="MMA001_07_form_01" name="MMA001_07_form_01" method="post">
-					                    <input type="hidden" id="TARGET_PID" name="TARGET_PID" value="${TARGET_PID}"/>
-					                    <input type="hidden" id="DEFAULT_LANGUAGE" name="DEFAULT_LANGUAGE" value="${_MEMBER.SESSION_DEFAULT_LANGUAGE}"/>
-					                    <input type="hidden" id="COMPANY_CD" name="COMPANY_CD" value="${_MEMBER.SESSION_COMPANY_CD}"/>
-					                </form>
-		                           <table id="MMA001_07_grid_02"> </table>
-		                        </div>
-		                    </div>
-		                </div>
-		                <div data-options="region:'east',border:false,split:true" class="width40">
-		                    <div class="easyui-layout" data-options="fit:true">
-		                        <div data-options="region:'north',border:false" class="h2_etc">
-		                            <p class="h2"><spring:message code="CC_Realtime Log"/></p>
-		                        </div>
-		                        <div data-options="region:'center',border:false" style="overflow:hidden;">
-		                           <textarea id="MMA001_07_ta_01" readonly style="height:99%;width:99%;background:#000;color:#f1f1f1;resize:none;"></textarea>
-		                        </div>
-		                        <!-- div data-options="region:'south',border:false" style="text-align:center;">
-		                            <a href="#" class="btn" style="width:48%;font-size:11pt;padding:2px;">Remove Log</a>
-		                            <a href="#" class="btn" style="width:48%;font-size:11pt;padding:2px;">Save log</a>
-		                        </div -->
-		                    </div>
-		                </div>
-		                <div data-options="region:'south',border:false,split:true" style="height:190px;">
-		                    <div class="easyui-layout" data-options="fit:true">
-		                        <div data-options="region:'north',border:false" class="h2_etc">
-		                            <p class="h2"><spring:message code="CC_System Access Log"/></p>
-		                        </div>
-		                        <div data-options="region:'center',border:false">
-		                           <textarea id="MMA001_07_ta_02" readonly style="height:96%;width:99.5%;background:#f5f5f5;color:#000;resize:none;"></textarea>
-		                        </div>
-		                    </div>
-		                </div>
-		            </div>
-		        </div>
-		        <div data-options="region:'south',border:false" style="height:382px;padding-top:16px;">
-		            <div class="easyui-layout" data-options="fit:true">
+                    <div class="easyui-layout" data-options="fit:true">
+                        <div data-options="region:'center',border:false" class="width60">
+                            <div class="easyui-layout" data-options="fit:true">
+                                <div data-options="region:'north',border:false" class="h2_etc">
+                                    <p class="h2"><spring:message code="CC_Schedule status"/></p>
+                                </div>
+                                <div data-options="region:'center',border:false">
+                                    <form id="MMA001_07_form_01" name="MMA001_07_form_01" method="post">
+                                        <input type="hidden" id="TARGET_PID" name="TARGET_PID" value="${TARGET_PID}"/>
+                                        <input type="hidden" id="DEFAULT_LANGUAGE" name="DEFAULT_LANGUAGE" value="${_MEMBER.SESSION_DEFAULT_LANGUAGE}"/>
+                                        <input type="hidden" id="COMPANY_CD" name="COMPANY_CD" value="${_MEMBER.SESSION_COMPANY_CD}"/>
+                                    </form>
+                                   <table id="MMA001_07_grid_02"> </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-options="region:'east',border:false,split:true" class="width40">
+                            <div class="easyui-layout" data-options="fit:true">
+                                <div data-options="region:'north',border:false" class="h2_etc">
+                                    <p class="h2"><spring:message code="CC_Realtime Log"/></p>
+                                </div>
+                                <div data-options="region:'center',border:false" style="overflow:hidden;">
+                                   <textarea id="MMA001_07_ta_01" readonly style="height:99%;width:99%;background:#000;color:#f1f1f1;resize:none;"></textarea>
+                                </div>
+                                <!-- div data-options="region:'south',border:false" style="text-align:center;">
+                                    <a href="#" class="btn" style="width:48%;font-size:11pt;padding:2px;">Remove Log</a>
+                                    <a href="#" class="btn" style="width:48%;font-size:11pt;padding:2px;">Save log</a>
+                                </div -->
+                            </div>
+                        </div>
+                        <div data-options="region:'south',border:false,split:true" style="height:190px;">
+                            <div class="easyui-layout" data-options="fit:true">
+                                <div data-options="region:'north',border:false" class="h2_etc">
+                                    <p class="h2"><spring:message code="CC_System Access Log"/></p>
+                                </div>
+                                <div data-options="region:'center',border:false">
+                                   <textarea id="MMA001_07_ta_02" readonly style="height:96%;width:99.5%;background:#f5f5f5;color:#000;resize:none;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div data-options="region:'south',border:false" style="height:382px;padding-top:16px;">
+                    <div class="easyui-layout" data-options="fit:true">
                         <div data-options="region:'center',border:false">
                             <div class="easyui-layout" data-options="fit:true" class="sec_area">
-		                        <div data-options="region:'north',border:false" class="sec_tit" style="height:20px;overflow:hidden;">
-		                            <ul class="tab_area">
-		                                <li id="MMA001_07_divMove01" class="on"><a><spring:message code="CC_송수신 건수"/></a></li>
-		                            </ul>
-		                        </div>
-		                        <div data-options="region:'center',border:false"  class="width80">
-		                            <div id="MMA001_07_chart_01" style="width:100%; height:153px;background-color:#efefef;"></div>
-		                        </div>
-		                    </div>
+                                <div data-options="region:'north',border:false" class="sec_tit" style="height:20px;overflow:hidden;">
+                                    <ul class="tab_area">
+                                        <li id="MMA001_07_divMove01" class="on">
+                                            <a><spring:message code="CC_송수신 건수"/></a>
+                                        </li>
+	                                    <span style="float:right;margin-top:1px;">
+	                                        <a href="javascript:MMA001_07.control.selectConnCountOfChart();" class="btnRefresh"><spring:message code="CC_재조회"/></a>
+	                                    </span>
+                                    </ul>
+                                </div>
+                                <div data-options="region:'center',border:false"  class="width80">
+                                    <form id="MMA001_07_form_02" name="MMA001_07_form_02" method="post">
+                                        <input type="hidden" id="DEFAULT_LANGUAGE" name="DEFAULT_LANGUAGE" value="${_MEMBER.SESSION_DEFAULT_LANGUAGE}"/>
+                                        <input type="hidden" id="COMPANY_CD" name="COMPANY_CD" value="${_MEMBER.SESSION_COMPANY_CD}"/>
+                                    </form>
+                                    <div id="MMA001_07_chart_01" style="width:100%; height:153px;background-color:#000;"></div>
+                                </div>
+                            </div>
                         </div>
                         <div data-options="region:'south',border:false,split:true" style="height:190px;">
                             <div class="easyui-layout" data-options="fit:true" class="sec_area">
                                 <div data-options="region:'north',border:false" class="sec_tit" style="height:20px;overflow:hidden;">
                                     <ul class="tab_area">
-                                        <li id="MMA001_07_divMove02" class="on"><a href="javascript:MMA001_07.ui.divMove('2');"><spring:message code="CC_데이터 처리량"/></a></li>
+                                        <li id="MMA001_07_divMove02" class="on"><a><spring:message code="CC_데이터 처리량"/></a></li>
+	                                    <span style="float:right;margin-top:1px;">
+	                                        <a href="javascript:MMA001_07.control.selectConnTrafficOfChart();" class="btnRefresh"><spring:message code="CC_재조회"/></a>
+	                                    </span>
                                     </ul>
                                 </div>
                                 <div data-options="region:'center',border:false"  class="width80">
-                                    <div id="MMA001_07_chart_02" style="width:100%; height:153px;background-color:#efefef;"></div>
+                                    <form id="MMA001_07_form_03" name="MMA001_07_form_03" method="post">
+                                        <input type="hidden" id="DEFAULT_LANGUAGE" name="DEFAULT_LANGUAGE" value="${_MEMBER.SESSION_DEFAULT_LANGUAGE}"/>
+                                        <input type="hidden" id="COMPANY_CD" name="COMPANY_CD" value="${_MEMBER.SESSION_COMPANY_CD}"/>
+                                    </form>
+                                    <div id="MMA001_07_chart_02" style="width:100%; height:153px;background-color:#000;"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-		        </div>
-		    </div>
+                </div>
+            </div>
         </div>
     </div>
     

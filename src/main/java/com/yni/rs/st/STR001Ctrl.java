@@ -194,5 +194,49 @@ public class STR001Ctrl extends YniAbstractController {
         
         return WebAction.resultJsonMsg(success, message);
     }
+    
+    /**
+	 * 송수신 건수 조회
+	 * 
+	 * @param req
+	 * @param dataMap
+	 * @return ModelAndView
+	 * @exception Exception
+	 */
+	@RequestMapping("/rs/st/stR001_01/selectConnCountOfChart")
+	public ModelAndView selectConnCountOfChart(HttpServletRequest req, DataMap dataMap) throws Exception {
+		List resultList = null;
+		String message = null;
+		
+		try {
+			resultList = stR001.selectConnCountOfChart(DataMapHelper.getMap(dataMap));
+		} catch (Exception e) {
+			message = getExceptionMessage(req, e, this.getMessage("TXT_SYSTEM_ERROR", null, StringHelper.null2string(dataMap.get("SESSION_DEFAULT_LANGUAGE"), Constants.DEFAULT_LANGUAGE)));
+		}
 
+		return WebAction.returnDataSet(resultList, message);
+	}
+	
+	/**
+	 * 데이터 건수 조회
+	 * 
+	 * @param req
+	 * @param dataMap
+	 * @return ModelAndView
+	 * @exception Exception
+	 */
+	@RequestMapping("/rs/st/stR001_01/selectConnTrafficOfChart")
+	public ModelAndView selectConnTrafficOfChart(HttpServletRequest req, DataMap dataMap) throws Exception {
+		List resultList = null;
+		String message = null;
+		
+		try {
+			resultList = stR001.selectConnTrafficOfChart(DataMapHelper.getMap(dataMap));
+		} catch (Exception e) {
+			message = getExceptionMessage(req, e, this.getMessage("TXT_SYSTEM_ERROR", null, StringHelper.null2string(dataMap.get("SESSION_DEFAULT_LANGUAGE"), Constants.DEFAULT_LANGUAGE)));
+		}
+
+		return WebAction.returnDataSet(resultList, message);
+	}
+	
 }

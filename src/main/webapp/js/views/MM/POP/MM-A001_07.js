@@ -20,8 +20,8 @@ var MMA001_07 = {
             MMA001_07.datagrid.initGrid_1();
             MMA001_07.datagrid.initGrid_2();
             
-            MMA001_07.chart.initChart_1([]);
-            MMA001_07.chart.initChart_2([]);
+            MMA001_07.control.selectConnCountOfChart();
+            MMA001_07.control.selectConnTrafficOfChart();
         }
     }, 
     // 달력 생성
@@ -38,31 +38,54 @@ var MMA001_07 = {
             }
             
             // 데이터 생성
+            let today = new Date();
+            today.setHours(today.getHours() - 23);
+            let hours = today.getHours(); // 시
+            var i = 0;
             var arrayData = new Array();
             
-            for(var i = 0; i < 24; i++) {
+            while(i < 24) {
                 var data = new Object();
+                if(hours > 23) hours = 0;
+                var hour = (hours < 10) ? "0"+hours : hours;
                 
-                data.HOUR_TIME = i+':00';
-                data.MSG_CNT = 0;
+                data.HOUR_TIME = hours+':00';
+                data.REV_DATA_CNT = 0;
+                data.SND_DATA_CNT = 0;
+                
+                for(j = 0; j < datas.length; j++) {
+                    if(datas[j].HOUR_SPLIT == hour) {
+                        data.REV_DATA_CNT = datas[j].REV_DATA_CNT;
+                        data.SND_DATA_CNT = datas[j].SND_DATA_CNT;
+                        
+                        break;
+                    }
+                }
                 
                 arrayData.push(data);
+                
+                hours++;
+                i++;
             }
             
             //챠트생성
             var cht = chart.getChart("MMA001_07_chart_01");
-            var jsonHeader = {TICKS: "HOUR_TIME", SERIES: ["MSG_CNT"]}; // TICKS:X축 라벨이 될 컬럼명, SERIES:Y축 values)
+            var jsonHeader = {TICKS: "HOUR_TIME", SERIES: ["REV_DATA_CNT", "SND_DATA_CNT"]}; // TICKS:X축 라벨이 될 컬럼명, SERIES:Y축 values)
             
-            var series = Theme.defaultBarChart(cht, 1, "in");
+            var series = Theme.defaultBarChart(cht, 2, "in");
             
             chart.setAnimate(false);
             chart.setLeftYMinLabel(0);
-            chart.setLeftYTickInterval(500);
             chart.setChartBorder(false);
-            chart.setBackgroundColor("#393939");
-            chart.setChartLineColor("#666666");
-            chart.setSeriesColors(series, ["#d3eb3b"]);
+            chart.setBackgroundColor("#182c52");
+            chart.setChartLineColor("#7ba1fe");
+            chart.setPointLabels(series, true, 0); // 라벨을 표시할지 여부
+            chart.setPointLabels(series, false, 1); // 라벨을 표시할지 여부
+            chart.setSeriesLabel(series, "수신건수", 0);
+            chart.setSeriesLabel(series, "전송건수", 1);
+            chart.setSeriesColors(series, ["#00d89e", "#2f60b3"]);
             chart.setSmooth(series, true, 0);
+            chart.setSmooth(series, true, 1);
             
             this.chart1 = chart.createChart(cht, arrayData, null, jsonHeader);
         },
@@ -72,30 +95,45 @@ var MMA001_07 = {
             }
             
             // 데이터 생성
+            let today = new Date();
+            today.setHours(today.getHours() - 23);
+            let hours = today.getHours(); // 시
+            var i = 0;
             var arrayData = new Array();
             
-            for(var i = 0; i < 24; i++) {
+            while(i < 24) {
                 var data = new Object();
+                if(hours > 23) hours = 0;
+                var hour = (hours < 10) ? "0"+hours : hours;
                 
-                data.HOUR_TIME = i+':00';
-                data.MSG_CNT = 0;
-                //data.MSG_CNT = (Math.random())*1000;
+                data.HOUR_TIME = hours+':00';
+                data.DATA_CNT = 0;
+                
+                for(j = 0; j < datas.length; j++) {
+                    if(datas[j].HOUR_SPLIT == hour) {
+                        data.DATA_CNT = datas[j].DATA_CNT;
+                        break;
+                    }
+                }
                 
                 arrayData.push(data);
+                
+                hours++;
+                i++;
             }
             
             //챠트생성
             var cht = chart.getChart("MMA001_07_chart_02");
-            var jsonHeader = {TICKS: "HOUR_TIME", SERIES: ["MSG_CNT"]}; // TICKS:X축 라벨이 될 컬럼명, SERIES:Y축 values)
+            var jsonHeader = {TICKS: "HOUR_TIME", SERIES: ["DATA_CNT"]}; // TICKS:X축 라벨이 될 컬럼명, SERIES:Y축 values)
             
             var series = Theme.defaultBarChart(cht, 1, "in");
             
             chart.setAnimate(false);
             chart.setLeftYMinLabel(0);
-            chart.setLeftYTickInterval(500);
             chart.setChartBorder(false);
-            chart.setBackgroundColor("#393939");
-            chart.setChartLineColor("#666666");
+            chart.setShowLegend(false);
+            chart.setBackgroundColor("#203050");
+            chart.setChartLineColor("#7ba1fe");
             chart.setSeriesColors(series, ["#d4c35d"]);
             chart.setSmooth(series, true, 0);
             
@@ -169,8 +207,9 @@ var MMA001_07 = {
             var vcnt = 1000;
             
             if(!oUtil.isNull(vcnt)) {
+                // vcnt개수 이상이면 textarea를 지우고 다시 작성하도록 함
                 if(MMA001_07_sqlcount > (vcnt*2)) {
-                    MMA001_07.control.clearLog();
+                    MMA001_07.control.clearLog(out_obj);
                 }
             }
             
@@ -190,6 +229,12 @@ var MMA001_07 = {
                 
                 return;
             }
+        },
+        selectConnCountOfChart : function(datas) {
+            MMA001_07.chart.initChart_1(datas.rows); // 챠트 생성
+        },
+        selectConnTrafficOfChart : function(datas) {
+            MMA001_07.chart.initChart_2(datas.rows); // 챠트 생성
         }
     },
     // 업무구현
@@ -203,6 +248,33 @@ var MMA001_07 = {
         clearLog : function(obj) {
             obj.val('');
             MMA001_07_sqlcount = 1;
+        },
+        selectConnCountOfChart : function() {
+            if(MMA001_07.chart.chart1) {
+                MMA001_07.chart.chart1.destroy();
+            }
+            
+            var obj = form.getObject("MMA001_07_form_02");
+            
+            form.init.setURL("/rs/st/stR001_01/selectConnCountOfChart");
+            form.init.setCallBackFunction("selectConnCountOfChart");
+            form.init.setProgressFlag(false);
+            form.init.setValidationFlag(false);
+            
+            form.submit(obj);
+        },
+        selectConnTrafficOfChart : function() {
+            if(MMA001_07.chart.chart2) {
+                MMA001_07.chart.chart2.destroy();
+            }
+            var obj = form.getObject("MMA001_07_form_03");
+            
+            form.init.setURL("/rs/st/stR001_01/selectConnTrafficOfChart");
+            form.init.setCallBackFunction("selectConnTrafficOfChart");
+            form.init.setProgressFlag(false);
+            form.init.setValidationFlag(false);
+            
+            form.submit(obj);
         }
     },
     // 다이얼로그 구현

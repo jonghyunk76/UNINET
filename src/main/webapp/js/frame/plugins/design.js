@@ -103,6 +103,16 @@ $(document).ready(function(){
 		$(".icon-multi_filter").each(function(){
 			$(this).tooltip('hide');
         });
+        
+        // 시스템 구분이 RS(중계서버)인 경우에 그래프를 재로딩한다.
+        try {
+            if(TOP_SYS_ID == "RS") {
+                MMA001_07.control.selectConnCountOfChart();
+                MMA001_07.control.selectConnTrafficOfChart();
+            }
+        } catch(e) {
+            ;
+        }
     });
     
     // 대메뉴 추가시 이벤트 추가필요(2020.04.25)
