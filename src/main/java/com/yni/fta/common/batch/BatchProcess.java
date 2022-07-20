@@ -385,6 +385,7 @@ public abstract class BatchProcess {
 	public Boolean serviceBatch(Map map) throws Exception {
     	String serverStatus = StringHelper.null2string(map.get("CURRENT_STAT"), "R"); // R:기동, S:중지, E:장애
     	String snd_rev_type = StringHelper.null2void(map.get("INTERFACE_MTH")); // 데이터 송/수신(R:Receive, S:Send)
+    	String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식(By pass, Procedure, java class, URL)
     	
     	log.debug("transaction information = " + map.toString());
     	
@@ -414,45 +415,47 @@ public abstract class BatchProcess {
 	    			log.debug("Apply to user customizing parameter.");
 	    		}
 	    		
-	    		log.debug("call method result = " + impParam);
+	    		log.debug("call method result = " + impParam + ", Process type = " + process_type);
 	    		
 	    		// 2.파라메터 데이터를 JCO XML에 설정된 정보와 맵핑하고 DB에 이력 등록
 	    		Map imap = bs.getImportPrameter(batchVo, impParam);
 	    		
-	    		// 3.서버 통신방법에 따라 데이터 요청
-	    		boolean cnnrst = bs.receive(batchTarget, batchVo, pvo, imap, map); 
-	    		
-	    		if(cnnrst) {
-	    			res_data = (Map) batchVo.getReturnData();
-	    		} else {
-	    			return false;
-	    		}
-	    		
-	    		log.debug("response data = " + res_data);
-	    		
-	    		// 4.결과 수신
-	    		Map emap = bs.getExportParameter(batchVo, res_data);
-	    		
-	    		emap.put("INTERFACE_MTH", snd_rev_type);
-	    		emap.put("SERVICE_ID", map.get("SERVICE_ID"));
-	    		
-	    		// 5.요청 파라메터 클래스 호출(클래스 호출)
-	    		Map expParam = bs.callMethod("Export", "getParameter", emap); // 클래스명, 매소드명, 파라미터
-	    		
-	    		if(expParam == null || expParam.size() == 0) {
-	    			expParam = emap;
-	    		} else {
-	    			log.debug("Apply to user customizing parameter.");
-	    		}
-	    		
-	    		log.debug("result message = " + expParam.toString());
-	    		
-	    		String ercode = StringHelper.null2void(expParam.get("BATCH_STATUS")); // E:에러, S:성공, N:데이터 없음
-	    		String ermsg = StringHelper.null2void(expParam.get("ERROR_MESSAGE"));
-	    		
-	    		if(ercode.equals("E")) {
-	    			batchVo.setErrorMessage(ermsg);
-	    			return false;
+	    		if(!process_type.equals("B")) { // By pass가 아닌 경우에는 외부서버와 통신하여 값을 가져온다.
+		    		// 3.서버 통신방법에 따라 데이터 요청
+		    		boolean cnnrst = bs.receive(batchTarget, batchVo, pvo, imap, map); 
+		    		
+		    		if(cnnrst) {
+		    			res_data = (Map) batchVo.getReturnData();
+		    		} else {
+		    			return false;
+		    		}
+		    		
+		    		log.debug("response data = " + res_data);
+		    		
+		    		// 4.결과 수신
+		    		Map emap = bs.getExportParameter(batchVo, res_data);
+		    		
+		    		emap.put("INTERFACE_MTH", snd_rev_type);
+		    		emap.put("SERVICE_ID", map.get("SERVICE_ID"));
+		    		
+		    		// 5.요청 파라메터 클래스 호출(클래스 호출)
+		    		Map expParam = bs.callMethod("Export", "getParameter", emap); // 클래스명, 매소드명, 파라미터
+		    		
+		    		if(expParam == null || expParam.size() == 0) {
+		    			expParam = emap;
+		    		} else {
+		    			log.debug("Apply to user customizing parameter.");
+		    		}
+		    		
+		    		log.debug("result message = " + expParam.toString());
+		    		
+		    		String ercode = StringHelper.null2void(expParam.get("BATCH_STATUS")); // E:에러, S:성공, N:데이터 없음
+		    		String ermsg = StringHelper.null2void(expParam.get("ERROR_MESSAGE"));
+		    		
+		    		if(ercode.equals("E")) {
+		    			batchVo.setErrorMessage(ermsg);
+		    			return false;
+		    		}
 	    		}
 	    		
 	    		// 6.결과데이터 맵핑(데이터 유효성 체크 포함)

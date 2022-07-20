@@ -3,8 +3,10 @@
     <function name="NONE" desc="Salesforce 데이터 송신 테스트">
         <!-- 2.실제 송신 시 메시지 맵핑을 위한 파라메터 정보 셋팅 -->
         <import>
-            <!-- 송신전에 <table>에서 지정한 parameter name을 다른 이름으로 변경할 경우 trans를 지정함 -->
-            <parameter type="CHAR" name="result" trans="member"/>
+            <!-- 수신XML <table>에서 지정한 파라메터와 연결된 값을 찾아 import parameter로 등록함 -->
+            <parameter name="resultCode"      type="CHAR"  offset="2"    length="2"    decimals="0"  trans="RESULT_CODE" desc="처리결과"/>
+            <!-- <table>에서 지정한 parameter name을 다른 이름으로 변경할 경우 trans를 지정함(데이터 타입이 itable로 지정해야 함) -->
+            <parameter type="itable" name="result" trans="member"/>
         </import>
         <!-- 3.송신결과를 저장할 파라메터 설정정보 셋팅 -->
         <export>

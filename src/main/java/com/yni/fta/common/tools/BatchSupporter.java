@@ -422,7 +422,7 @@ public class BatchSupporter extends JcoDAO {
 					else paramMap.put(paramName, paramValue.substring(0, lang));
 				} else {
 					if(!transName.isEmpty()) paramMap.put(transName, paramValue);
-					else paramMap.put(paramName, paramValue.substring(0, lang));
+					else paramMap.put(paramName, paramValue);
 				}
 			}
 		}
@@ -443,6 +443,7 @@ public class BatchSupporter extends JcoDAO {
 	public int insertTableData(InterfaceTarget batchTarget, BatchVo batchVo, Map pmap) throws Exception {
 		int cnt = 0;
 		Map bmap = batchVo.getMap();
+		Map revMap = new HashMap(); // 수신한 Map정보
 		
 		Table tlb = jco.getFunction(0).getTable();
 		
@@ -466,7 +467,37 @@ public class BatchSupporter extends JcoDAO {
 				cnt += rlist.size();
 				
 				batchTarget.insertTransDtlData(rlist);
+			} else {
+				String transName = StringHelper.null2void(param.getTrans());
+				String defaultVal = StringHelper.null2void(param.getDefault());
+				int lang = param.getOffset();
+				String paramValue = null;
+				
+				paramValue = StringHelper.null2string(pmap.get(paramName), defaultVal);
+				
+				if(paramValue.length() > lang) {
+					if(!transName.isEmpty()) revMap.put(transName, paramValue.substring(0, lang));
+					else revMap.put(paramName, paramValue.substring(0, lang));
+				} else {
+					if(!transName.isEmpty()) revMap.put(transName, paramValue);
+					else revMap.put(paramName, paramValue);
+				}
 			}
+		}
+		
+		// 수신 파라메터 업데이트
+		if(revMap.size() > 0) {
+			String rev = JsonUtil.getViewJson(revMap);
+			
+			log.debug("Receive data = " + rev);
+			
+			Map rmap = new HashMap();
+			
+			rmap.put("RECEIVE_PARAM", rev);
+			rmap.put(Consistent.IF_BATCH_TRANS_ID, batchVo.getTransId()); // 인터페이스 이력번호
+			rmap.put(Consistent.IF_JOB_COMPANY_CD, bmap.get(Consistent.IF_JOB_COMPANY_CD));
+			
+			batchTarget.updateProcedureResult(rmap);
 		}
 		
 		return cnt;
@@ -487,6 +518,14 @@ public class BatchSupporter extends JcoDAO {
 		Table tlb = jco.getFunction(0).getTable();
 		Import imp = jco.getFunction(0).getImports();
 		
+		String rparam = batchTarget.selectSendParameterInfo(pmap); // 이력 테이블(interface_history)에서 수신된 파라메터 조회
+		
+		if(rparam != null && !rparam.isEmpty()) {
+			Map rmap = JsonUtil.getMap(rparam);
+			
+			pmap.putAll(rmap); // 수신된 파라메터 정보를 포함시킨다.
+		}
+		
 		for(int i = 0; i < tlb.getParameterCount(); i++) {
 			Parameter param = tlb.getParams(i);
 			String paramName = param.getName(); // table명
@@ -494,7 +533,7 @@ public class BatchSupporter extends JcoDAO {
 			if(param.getType() == JCO.TYPE_ITAB) {
 				pmap.put("OBJECT_NAME", paramName); // table 객체명
 				
-				List datas = batchTarget.selectSendDataList(pmap);
+				List datas = batchTarget.selectSendDataList(pmap); // 이력 테이블(interface_history_data)에서 전송할 데이터 조회
 				
 				Map tmap = new HashMap();				
 				tmap.put(paramName, datas);
@@ -509,7 +548,7 @@ public class BatchSupporter extends JcoDAO {
 					
 					String iparamName = StringHelper.null2void(iparam.getName());
 					
-					if(iparamName.equals(paramName)) {
+					if(param.getType() == JCO.TYPE_ITAB && iparamName.equals(paramName)) { // 데이터 타입이 itabe이면서 name에 같은 경우, parameter name을 변경함
 						key = StringHelper.null2string(iparam.getTrans(), iparamName);
 						break;
 					}
@@ -526,21 +565,18 @@ public class BatchSupporter extends JcoDAO {
 				}
 				
 				batchTarget.insertTransDtlData(datas);
-			} else {
-				String transName = StringHelper.null2void(param.getTrans());
-				String defaultVal = StringHelper.null2void(param.getDefault());
-				int lang = param.getOffset();
-				String paramValue = null;
+			}
+		}
+		
+		// import할 문자열 파라메터 생성
+		for(int i = 0; i < imp.getParameterCount(); i++) {
+			Parameter param = imp.getParams(i);
+			String paramName = param.getName();
+			
+			if(param.getType() != JCO.TYPE_ITAB) {
+				String paramValue = StringHelper.null2void(pmap.get(paramName));
 				
-				paramValue = StringHelper.null2string(pmap.get(paramName), defaultVal);
-				
-				if(paramValue.length() > lang) {
-					if(!transName.isEmpty()) paramMap.put(transName, paramValue.substring(0, lang));
-					else paramMap.put(paramName, paramValue.substring(0, lang));
-				} else {
-					if(!transName.isEmpty()) paramMap.put(transName, paramValue);
-					else paramMap.put(paramName, paramValue.substring(0, lang));
-				}
+				paramMap.put(paramName, paramValue);
 			}
 		}
 		
@@ -600,7 +636,7 @@ public class BatchSupporter extends JcoDAO {
 	 * JCO Import 정보에 설정된 정보를 이용하여 데이터를 송신한다.
 	 * 
 	 * @param batchVo = 배치VO
-	 * @param pmap = 배치 파라메터
+	 * @param pmap = 송신할 파라메터 정보
 	 * @param map = 인터페이스 정보
 	 * @return
 	 * @throws Exception

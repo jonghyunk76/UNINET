@@ -314,6 +314,17 @@ public class BatchDao extends YniAbstractDAO {
      * @return
      * @throws Exception
      */
+    public String selectSendParameterInfo(Map map) throws Exception {
+    	return (String) this.selectByPk("RSBATCH.selectSendParameterInfo", map);
+    }
+    
+    /**
+     * 송신할 데이터 인터페이스 이력에서 조회
+     * 
+     * @param map
+     * @return
+     * @throws Exception
+     */
     public List<Object> selectSendDataList(Map map) throws Exception {
     	int pidx = StringHelper.null2zero(map.get("PAGE_INDEX")); // 1부터 시작
     	int psize = StringHelper.null2zero(map.get("PAGE_SIZE"));

@@ -805,7 +805,27 @@ public class InterfaceTarget implements BatchService {
     }
     
     /**
-     * 송신할 데이터 인터페이스 이력에서 조회
+     * 송신할 데이터 인터페이스 이력에서 수신 파라메터 조회
+     * 
+     * @param map
+     * @return 인터페이스 정보
+     * @throws Exception
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public String selectSendParameterInfo(Map map) throws Exception {
+        String rst = null;
+
+        try {
+            rst = batchDao.selectSendParameterInfo(map);
+        } catch (Exception exp) {
+            throw exp;
+        }
+
+        return rst;
+    }
+    
+    /**
+     * 송신할 데이터 인터페이스 이력에서 데이터 조회
      * 
      * @param map
      * @return 인터페이스 정보

@@ -389,6 +389,9 @@
         <isNotNull prepend="," property="REQUEST_PARAM">
              REQUEST_PARAM = #REQUEST_PARAM:CLOB#
         </isNotNull>
+        <isNotNull prepend="," property="RECEIVE_PARAM">
+             RECEIVE_PARAM = #RECEIVE_PARAM:CLOB#
+        </isNotNull>
          WHERE INTERFACE_HISTORY_ID=#INTERFACE_HISTORY_ID#::numeric
     </update>
 

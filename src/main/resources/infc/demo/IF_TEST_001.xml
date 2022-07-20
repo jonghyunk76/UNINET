@@ -14,6 +14,7 @@
         </export>
         <!-- 4.요청 후 응답된 데이터 구조에 맞게 이력테이블에 저장할 정보 설정 -->
         <table>
+            <parameter name="resultCode"      type="CHAR"  offset="2"    length="2"    decimals="0"   desc="처리결과"/>
             <parameter type="itable" name="result">
                 <column name="dtmcanceldate"   type="DATS"  offset="10"   length="8"   decimals="0"   trans="ATTRIBUTE01" format="yyyyMMdd" desc="일자" />
                 <column name="blnapplypoint"   type="CHAR"  offset="20"   length="20"   decimals="0"   trans="ATTRIBUTE02" desc="여부" />

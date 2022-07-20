@@ -127,6 +127,11 @@ public class BatchServiceImpl extends YniAbstractService implements BatchService
     }
     
     @SuppressWarnings("rawtypes")
+	public String selectSendParameterInfo(Map map) throws Exception {
+        return batchTarget.selectSendParameterInfo(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
 	public List<Object> selectInterfaceBatchItemList(Map map) throws Exception {
         return batchTarget.selectInterfaceBatchItemList(map);
     }

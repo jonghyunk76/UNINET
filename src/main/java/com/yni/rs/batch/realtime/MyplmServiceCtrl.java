@@ -1,4 +1,4 @@
-package com.yni.rs.batch.IF_TEST_001.broker;
+package com.yni.rs.batch.realtime;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,16 +24,16 @@ import kr.yni.frame.util.StringHelper;
 import kr.yni.frame.web.action.WebAction;
 
 /**
- * 외부에서 호출되는 서버시를 연결할 Controller 클래스
+ * MY PLM 연계 Controller 클래스
  * 
  * @author ador2
  *
  */
 @Controller
-public class MessageServiceCtrl extends YniAbstractController {
+public class MyplmServiceCtrl extends YniAbstractController {
 	
-	@Resource(name="if_test_0010")
-	private MessageService service;
+	@Resource(name="myplmservice")
+	private MyplmService service;
 	
 	/**
 	 * 외부시스템 요청 수신처리
@@ -43,32 +43,16 @@ public class MessageServiceCtrl extends YniAbstractController {
 	 * @return ModelAndView
 	 * @exception Exception
 	 */
-	@RequestMapping("/rs/batch/if_test_0010/executeMemberInfo")
+	@RequestMapping("/rs/batch/myplm/executeMemberInfo")
 	public ModelAndView executeMemberInfo(HttpServletRequest req, DataMap dataMap) throws Exception {
 		Map resulMap = null;
         String message = null;
         
         try {
-        	long stime = System.currentTimeMillis();
-        	
         	Map map = DataMapHelper.getMap(dataMap);
         	resulMap = service.executeRelayBatch(map);
         	
         	log.debug("result code = " + resulMap.get("resultCode") +", message = " + resulMap.get("resultMsg"));
-        	
-        	long ftime = System.currentTimeMillis();
-        	
-        	// 중계서버인 경우 실행
-	    	if(Constants.APPLICATION_SYSTEM_ID.equals("RS")) {
-	    		// 클라이언트 요청경로를 접속중인 모든 클라이언트에게 Websocket 메시지를 보낸다.
-		    	List<Session> clients = WebsocketSupporter.clients;
-		    	
-		    	for(Session s : clients) {
-		    		WebsocketSupporter ws = new WebsocketSupporter();
-		    		
-		    		ws.handleMessage("MMA001_07"+"[REL]"+ InterfaceLogger.getRealtimeMessage(req, "R", StringHelper.null2void(map.get("SERVICE_ID")), StringHelper.null2void(resulMap.get("resultCode")), (ftime - stime)), s);
-		    	}
-	    	}
         } catch (Exception e) {
             message = getExceptionMessage(req, e, this.getMessage("TXT_SYSTEM_ERROR", null, StringHelper.null2string(dataMap.get("SESSION_DEFAULT_LANGUAGE"), Constants.DEFAULT_LANGUAGE)));
         }
@@ -84,7 +68,7 @@ public class MessageServiceCtrl extends YniAbstractController {
 	 * @return ModelAndView
 	 * @exception Exception
 	 */
-	@RequestMapping("/rs/batch/if_test_0010/insertMemberInfo")
+	@RequestMapping("/rs/batch/myplm/insertMemberInfo")
 	public ModelAndView insertMemberInfo(HttpServletRequest req, DataMap dataMap) throws Exception {
 		Map resultMap = new HashMap();
         String message = null;

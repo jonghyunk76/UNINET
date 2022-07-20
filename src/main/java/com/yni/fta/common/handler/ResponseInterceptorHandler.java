@@ -257,6 +257,33 @@ public class ResponseInterceptorHandler extends HandlerInterceptorAdapter {
                 }
             }
         }
+        
+        // 배치관련 처리인 경우에는 모니터링 정보를 보내준다.
+        if(request.getRequestURI().startsWith("/rs/batch/")) {
+        	// 중계서버인 경우에만 실행
+	    	if(Constants.APPLICATION_SYSTEM_ID.equals("RS")) {
+	        	DataMap attMap = (DataMap) request.getAttribute(Constants.DATA_MAP);
+		        
+		        String serviceId = request.getParameter("SERVICE_ID");
+		        String batchStat = request.getParameter("BATCH_STATUS");
+		        
+		        if(batchStat == null) batchStat = "0";
+		        
+		        long stime = StringHelper.null2long(StringHelper.null2void(attMap.get("RS_SERVICE_START_TIME")));
+		        long ftime = System.currentTimeMillis();
+		        
+		        log.debug("Service ID = " + serviceId + ", Batch status = " + batchStat + ", start time = " + stime + ", end time = " + ftime +", service start tiem = " + attMap.get("RS_SERVICE_START_TIME"));
+	        
+		        // 클라이언트 요청경로를 접속중인 모든 클라이언트에게 Websocket 메시지를 보낸다.
+		    	List<Session> clients = WebsocketSupporter.clients;
+		    	
+		    	for(Session s : clients) {
+		    		WebsocketSupporter ws = new WebsocketSupporter();
+		    		
+		    		ws.handleMessage("MMA001_07"+"[REL]"+ InterfaceLogger.getRealtimeMessage(request, "R", serviceId, batchStat, (ftime - stime)), s);
+		    	}
+	    	}
+        }
     }
     
     /**

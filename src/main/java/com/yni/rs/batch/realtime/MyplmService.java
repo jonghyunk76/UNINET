@@ -1,14 +1,14 @@
-package com.yni.rs.batch.IF_TEST_001.broker;
+package com.yni.rs.batch.realtime;
 
 import java.util.Map;
 
 /**
- * 서비스 인터페이스
+ * MY PLM 연계 인터페이스
  * 
  * @author ador2
  *
  */
-public interface MessageService {
+public interface MyplmService {
 	
 	/**
      * 서버간 연계 테스트 요청

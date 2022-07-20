@@ -42,6 +42,7 @@ var MMA001_07 = {
             today.setHours(today.getHours() - 23);
             let hours = today.getHours(); // 시
             var i = 0;
+            var maxNm = 0;
             var arrayData = new Array();
             
             while(i < 24) {
@@ -58,6 +59,9 @@ var MMA001_07 = {
                         data.REV_DATA_CNT = datas[j].REV_DATA_CNT;
                         data.SND_DATA_CNT = datas[j].SND_DATA_CNT;
                         
+                        if(maxNm < data.REV_DATA_CNT) maxNm = data.REV_DATA_CNT;
+                        if(maxNm < data.SND_DATA_CNT) maxNm = data.SND_DATA_CNT;
+                        
                         break;
                     }
                 }
@@ -68,6 +72,10 @@ var MMA001_07 = {
                 i++;
             }
             
+            if(maxNm < 5) maxNm = 5;
+            else if(maxNm >= 5 && maxNm < 10) maxNm = 10;
+            else maxNm = (maxNm + 10)-(maxNm%10);
+            
             //챠트생성
             var cht = chart.getChart("MMA001_07_chart_01");
             var jsonHeader = {TICKS: "HOUR_TIME", SERIES: ["REV_DATA_CNT", "SND_DATA_CNT"]}; // TICKS:X축 라벨이 될 컬럼명, SERIES:Y축 values)
@@ -77,6 +85,7 @@ var MMA001_07 = {
             chart.setAnimate(false);
             chart.setLeftYMinLabel(0);
             chart.setChartBorder(false);
+            chart.setLeftYMaxLabel(maxNm);
             chart.setBackgroundColor("#182c52");
             chart.setChartLineColor("#7ba1fe");
             chart.setPointLabels(series, true, 0); // 라벨을 표시할지 여부
@@ -99,6 +108,7 @@ var MMA001_07 = {
             today.setHours(today.getHours() - 23);
             let hours = today.getHours(); // 시
             var i = 0;
+            var maxNm = 0;
             var arrayData = new Array();
             
             while(i < 24) {
@@ -112,6 +122,9 @@ var MMA001_07 = {
                 for(j = 0; j < datas.length; j++) {
                     if(datas[j].HOUR_SPLIT == hour) {
                         data.DATA_CNT = datas[j].DATA_CNT;
+                        
+                        if(maxNm < data.DATA_CNT) maxNm = data.DATA_CNT;
+                        
                         break;
                     }
                 }
@@ -121,6 +134,10 @@ var MMA001_07 = {
                 hours++;
                 i++;
             }
+            
+            if(maxNm < 5) maxNm = 5;
+            else if(maxNm >= 5 && maxNm < 10) maxNm = 10;
+            else maxNm = (maxNm + 10)-(maxNm%10);
             
             //챠트생성
             var cht = chart.getChart("MMA001_07_chart_02");
@@ -132,6 +149,7 @@ var MMA001_07 = {
             chart.setLeftYMinLabel(0);
             chart.setChartBorder(false);
             chart.setShowLegend(false);
+            chart.setLeftYMaxLabel(maxNm);
             chart.setBackgroundColor("#203050");
             chart.setChartLineColor("#7ba1fe");
             chart.setSeriesColors(series, ["#d4c35d"]);

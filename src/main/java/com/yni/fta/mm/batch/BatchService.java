@@ -181,7 +181,16 @@ public interface BatchService {
     int updateServiceResetHistory(Map map) throws Exception;
     
     /**
-     * 송신할 데이터 인터페이스 이력에서 조회
+     * 송신할 데이터 인터페이스 이력에서 수신 파라메터 조회
+     * 
+     * @param map
+     * @return 인터페이스 정보
+     * @throws Exception
+     */
+    String selectSendParameterInfo(Map map) throws Exception;
+    
+    /**
+     * 송신할 데이터 인터페이스 이력에서 수신 데이터 조회
      * 
      * @param map
      * @return 인터페이스 정보

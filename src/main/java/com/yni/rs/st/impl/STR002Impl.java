@@ -53,10 +53,10 @@ public class STR002Impl extends YniAbstractService implements STR002 {
         	for(int i = 0; i < list.size(); i++) {
         		Map gmap = (Map) list.get(i);
         		
-        		gmap.put("PLAN_NO", (i+1));
+        		gmap.put("PLAN_NO", Integer.toString(i+1));
         		gmap.put("SERVICE_ID", StringHelper.null2void(map.get("SERVICE_ID")));
         		gmap.put("COMPANY_CD", StringHelper.null2void(map.get("COMPANY_CD")));
-        		gmap.put("SESSION_USER_ID", StringHelper.null2void(map.get("USER_ID")));
+        		gmap.put("USER_ID", StringHelper.null2void(map.get("USER_ID")));
         	}
         	
         	stR002Dao.insertServicePlan(list);

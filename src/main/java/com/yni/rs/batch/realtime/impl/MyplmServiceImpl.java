@@ -1,4 +1,4 @@
-package com.yni.rs.batch.IF_TEST_001.broker.impl;
+package com.yni.rs.batch.realtime.impl;
 
 import java.util.Map;
 
@@ -8,21 +8,21 @@ import org.springframework.stereotype.Service;
 
 import com.yni.fta.common.batch.BatchServiceCaller;
 import com.yni.fta.mm.batch.BatchService;
-import com.yni.rs.batch.IF_TEST_001.broker.MessageService;
+import com.yni.rs.batch.realtime.MyplmService;
 
 import kr.yni.frame.service.YniAbstractService;
 
 /**
- * 서비스가 수행할 로직을 구현하는 클래스
+ * MY PLM 연계 로직을 구현하는 클래스
  * 
  * @author ador2
  *
  */
-@Service("if_test_0010")
-public class MessageServiceImpl extends YniAbstractService implements MessageService {
+@Service("myplmservice")
+public class MyplmServiceImpl extends YniAbstractService implements MyplmService {
 	
-	@Resource(name="if_test_001_dao")
-	private MessageServiceDao dao;
+	@Resource(name="myplmdbo")
+	private MyplmServiceDao dao;
 	
 	@Resource(name="batchService")
 	private BatchService batch;

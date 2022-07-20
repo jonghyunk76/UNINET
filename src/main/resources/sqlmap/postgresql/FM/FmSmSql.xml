@@ -1744,7 +1744,7 @@
                AND UPPER(T.$schKeyField$) <isNotEmpty property="multiData">IN($multiData$)</isNotEmpty><isEmpty property="multiData">LIKE UPPER(#schKeyWord#)</isEmpty>
             </isNotEmpty>
         <include refid="select-paging-end" />
-        ORDER by ITEM_TYPE DESC, SORT_NO, IF_CD
+        ORDER by IF_CD, SORT_NO, IF_CD
     </select>
 
     <select id="SM7005.selectInterfaceItemMstInfo" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">

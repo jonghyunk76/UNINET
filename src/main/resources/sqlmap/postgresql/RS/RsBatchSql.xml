@@ -184,6 +184,15 @@
            AND INTERFACE_HISTORY_ID = #INTERFACE_HISTORY_ID#::numeric
     </update>
     
+    <select id="RSBATCH.selectSendParameterInfo" parameterClass="java.util.Map" resultClass="java.lang.String">
+        SELECT IH.RECEIVE_PARAM
+		  FROM INTERFACE_HISTORY IH
+		 WHERE IH.COMPANY_CD = #COMPANY_CD#
+		   AND IH.PARENT_HISTORY_ID = #SERVICE_HISTORY_ID#::numeric
+		   AND IH.SUBMIT_STATUS = 'R'
+		 LIMIT 1
+    </select>
+    
     <select id="RSBATCH.selectSendDataList" parameterClass="java.util.Map" resultClass="java.util.LinkedHashMap">
         SELECT IHD.*
 		  FROM INTERFACE_HISTORY IH
