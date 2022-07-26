@@ -100,7 +100,20 @@
         <url-pattern>/rs/*</url-pattern>
     </servlet-mapping>
     
-    <security-constraint>
+    <!-- 웝서비스 -->
+    <servlet>
+        <servlet-name>wscxf</servlet-name>
+        <servlet-class>
+            org.apache.cxf.transport.servlet.CXFServlet
+        </servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>wscxf</servlet-name>
+        <url-pattern>/ws/*</url-pattern>
+    </servlet-mapping>
+    
+    <!-- security-constraint>
         <web-resource-collection>
            <web-resource-name>NoAccess</web-resource-name>
            <url-pattern>/*</url-pattern>
@@ -108,8 +121,19 @@
              <http-method>PUT</http-method>
         </web-resource-collection>
         <auth-constraint/>
-    </security-constraint>
+    </security-constraint -->
     
+    <security-constraint> 
+	    <web-resource-collection>     
+		    <web-resource-name>CXF Jax-RS security</web-resource-name>            
+		    <url-pattern>/ws/*</url-pattern> 
+	    </web-resource-collection> 
+	    <auth-constraint>     
+	        <role-name>ROLE_ADMIN</role-name>
+	        <role-name>ROLE_USER</role-name>
+	    </auth-constraint>
+	</security-constraint>
+
     <session-config>
         <cookie-config>
             <http-only>true</http-only>

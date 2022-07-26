@@ -95,6 +95,8 @@ var STR001_02 = {
     // 업무구현
     control : {
     	insertServerListMst : function(flag){
+			form.handle.setValidateAll("STR001_02_form_01", true);
+			
     		var iflag = form.handle.getValue("STR001_02_form_01","flag"); 
     		var msg = "";
             
@@ -125,10 +127,12 @@ var STR001_02 = {
             });
     	},
     	deleteServerListMst : function(flag){
+			form.handle.setValidateAll("STR001_02_form_01", false);
+			
     		$.messager.confirm(CNFIR, resource.getMessage("MSG_CONFIRM_DELETE"), function(flag) {
                 if(flag) {
                     var obj = form.getObject("STR001_02_form_01");
-
+					
                     form.init.setURL("/rs/st/stR001_02/deleteServerMst");
                     form.init.setSucceseMessage(resource.getMessage("MSG_DELETE_SUCCESS"));
                     form.init.setFailMessage(resource.getMessage("MSG_DELETE_FAILED"));

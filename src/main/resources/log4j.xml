@@ -28,28 +28,36 @@
     
 	<!-- Application Loggers -->
 	<logger name="com.yni.fta">
-		<level value="ERROR" />
+		<level value="DEBUG" />
+	</logger>
+	
+	<logger name="com.yni.rs">
+		<level value="DEBUG" />
+	</logger>
+	
+	<logger name="com.yni.ws">
+		<level value="DEBUG" />
 	</logger>
 	
 	<logger name="kr.yni.frame">
-        <level value="ERROR" />
+        <level value="DEBUG" />
     </logger>
     
 	<!-- 3rdparty Loggers -->
 	<logger name="org.springframework.core">
-		<level value="ERROR" />
+		<level value="DEBUG" />
 	</logger>
 	
 	<logger name="org.springframework.beans">
-		<level value="ERROR" />
+		<level value="DEBUG" />
 	</logger>
 	
 	<logger name="org.springframework.context">
-		<level value="ERROR" />
+		<level value="DEBUG" />
 	</logger>
 
 	<logger name="org.springframework.web">
-		<level value="ERROR" />
+		<level value="DEBUG" />
 	</logger>
     
 	<!-- Root Logger -->

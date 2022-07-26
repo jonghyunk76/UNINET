@@ -57,13 +57,13 @@
 		                                <label>User Name</label>
 		                            </th>
 		                            <td>
-		                                <input type="text" name="USER_ID" id="USER_ID" value="sds921118@sc.or.kr.fullsb" class="easyui-validatebox" required="true" style="width:98%;"/>
+		                                <input type="text" name="USER_ID" id="USER_ID" value="if_user@hanwha.com.sandbox2" class="easyui-validatebox" required="true" style="width:98%;"/>
 		                            </td>
 		                            <th scope="row" class="point2">
 		                                <label>Password</label>
 		                            </th>
 		                            <td>
-		                                <input type="text" name="USER_PW" id="USER_PW" value="tj102030**MrThA8bjUuu6hFfYb9bVXZ4E" class="easyui-validatebox" required="true" style="width:98%;"/>
+		                                <input type="text" name="USER_PW" id="USER_PW" value="gksghkxpzmdnls1234!" class="easyui-validatebox" required="true" style="width:98%;"/>
 		                            </td>
 		                        </tr>
 		                        <tr>
@@ -71,13 +71,13 @@
 		                                <label>Client ID</label>
 		                            </th>
 		                            <td>
-		                                <input type="text" name="CLIENT_ID" id="CLIENT_ID" value="3MVG9aWdXtdHRrI1KEj7PeuYaYAhNYSzEqO74d6TVAL5H.GMjFT6sgJik.j5mCCqP73G52Eicl45efDleoYao" class="easyui-validatebox" required="true" style="width:98%;"/>
+		                                <input type="text" name="CLIENT_ID" id="CLIENT_ID" value="3MVG9rnryk9FxFMXeB1wnPvbBeE5jLTwPdN65oN7iPshLB97e_cbv9fAN1r.q736SN.NguQ45Cw5zvJjrOQQm" class="easyui-validatebox" required="true" style="width:98%;"/>
 		                            </td>
 		                            <th scope="row" class="point2">
 		                                <label>Client Secret</label>
 		                            </th>
 		                            <td>
-		                                <input type="text" name="CLIENT_SECRET" id="CLIENT_SECRET" value="0EE746BD69B95165865B247D2E46676E8A8887921C05A43D8F24B96AC1136C0F" class="easyui-validatebox" required="true" style="width:98%;"/>
+		                                <input type="text" name="CLIENT_SECRET" id="CLIENT_SECRET" value="DC704AFE25B311915270FE58142371F9831AC270D64D4972381B95DBAEE543C1" class="easyui-validatebox" required="true" style="width:98%;"/>
 		                            </td>
 		                        </tr>
 		                    </tbody>
