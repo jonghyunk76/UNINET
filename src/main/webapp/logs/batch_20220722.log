@@ -1,0 +1,22 @@
+[2022.07.22 09:15:07] finished updateServiceResetHistory().(execute time=18 msec. | result count=2)
+[2022.07.22 09:15:07] [schedule-interface mapping info :  = COMPANY_CD=TOMS SERVICE_HISTORY_ID=138 INTERFACE_HISTORY_ID=38334 SERVICE_ID=IF_TEST_001 PLAN_NO=1 IF_CD=IF_CRM_001 FILE_PATH= INTERFACE_MTH=R PROCESS_TYPE=U DATA_PATH=/services/apexrest/SCK/interface TRAN_ROW_NUM=null SERVER_ID=CRM REQ_DATA_FORMAT=JSON RES_DATA_FORMAT= SERVER_IP=sckorea--fullsb.my.salesforce.com SERVER_PORT=80 SERVER_TYPE=W SECURE_YN=Y PROXY_IP= PROXY_PORT= DATA_SOURCE= PROTOCAL=HTTP CURRENT_STAT=null SERVER_USE_YN=Y COMPANY_CD=TOMS SERVICE_HISTORY_ID=138 INTERFACE_HISTORY_ID=38335 SERVICE_ID=IF_TEST_001 PLAN_NO=2 IF_CD=IF_CRM_002 FILE_PATH= INTERFACE_MTH=S PROCESS_TYPE=U DATA_PATH=/rs/batch/if_test_0010/insertMemberInfo TRAN_ROW_NUM=100 SERVER_ID=HOMEPAGE REQ_DATA_FORMAT= RES_DATA_FORMAT=JSON SERVER_IP=localhost SERVER_PORT=8080 SERVER_TYPE=W SECURE_YN=N PROXY_IP= PROXY_PORT= DATA_SOURCE= PROTOCAL=HTTP CURRENT_STAT=null SERVER_USE_YN=Y ]
+[2022.07.22 09:15:07] finished selectServicePlanList().(execute time=17 msec. | result count=2)
+[2022.07.22 09:15:07] finished updateServiceHistoryStatus().(execute time=43 msec. | result count=1)
+[2022.07.22 09:15:07] finished insertTransInfoData().(execute time=24 msec. | result count=1)
+[2022.07.22 09:15:07] finished updateProcedureResult().(execute time=10 msec. | result count=1)
+[2022.07.22 09:15:08] result message = null
+[2022.07.22 09:15:08] finished updateFinishedTime().(execute time=9 msec. | result count=1)
+[2022.07.22 09:15:08] finished updateServiceHistoryStatus().(execute time=9 msec. | result count=1)
+[2022.07.22 09:15:10] finished updateServiceHistoryStatus().(execute time=11 msec. | result count=1)
+[2022.07.22 09:15:10] finished updateInterfaceScheduleDate().(execute time=12 msec. | result count=1)
+[2022.07.22 11:42:37] finished updateServiceResetHistory().(execute time=15 msec. | result count=2)
+[2022.07.22 11:42:37] [schedule-interface mapping info :  = COMPANY_CD=TOMS SERVICE_HISTORY_ID=138 INTERFACE_HISTORY_ID=38336 SERVICE_ID=IF_TEST_001 PLAN_NO=1 IF_CD=IF_CRM_001 FILE_PATH= INTERFACE_MTH=R PROCESS_TYPE=U DATA_PATH=/services/apexrest/SCK/interface TRAN_ROW_NUM=null SERVER_ID=CRM REQ_DATA_FORMAT=JSON RES_DATA_FORMAT= SERVER_IP=sckorea--fullsb.my.salesforce.com SERVER_PORT=80 SERVER_TYPE=W SECURE_YN=Y PROXY_IP= PROXY_PORT= DATA_SOURCE= PROTOCAL=HTTP CURRENT_STAT=null SERVER_USE_YN=Y COMPANY_CD=TOMS SERVICE_HISTORY_ID=138 INTERFACE_HISTORY_ID=38337 SERVICE_ID=IF_TEST_001 PLAN_NO=2 IF_CD=IF_CRM_002 FILE_PATH= INTERFACE_MTH=S PROCESS_TYPE=U DATA_PATH=/rs/batch/if_test_0010/insertMemberInfo TRAN_ROW_NUM=100 SERVER_ID=HOMEPAGE REQ_DATA_FORMAT= RES_DATA_FORMAT=JSON SERVER_IP=localhost SERVER_PORT=8080 SERVER_TYPE=W SECURE_YN=N PROXY_IP= PROXY_PORT= DATA_SOURCE= PROTOCAL=HTTP CURRENT_STAT=null SERVER_USE_YN=Y ]
+[2022.07.22 11:42:37] finished selectServicePlanList().(execute time=14 msec. | result count=2)
+[2022.07.22 11:42:37] finished updateServiceHistoryStatus().(execute time=14 msec. | result count=1)
+[2022.07.22 11:42:37] finished insertTransInfoData().(execute time=17 msec. | result count=1)
+[2022.07.22 11:42:37] finished updateProcedureResult().(execute time=9 msec. | result count=1)
+[2022.07.22 11:42:39] result message = null
+[2022.07.22 11:42:39] finished updateFinishedTime().(execute time=8 msec. | result count=1)
+[2022.07.22 11:42:39] finished updateServiceHistoryStatus().(execute time=10 msec. | result count=1)
+[2022.07.22 11:42:41] finished updateServiceHistoryStatus().(execute time=8 msec. | result count=1)
+[2022.07.22 11:42:41] finished updateInterfaceScheduleDate().(execute time=9 msec. | result count=1)

@@ -601,6 +601,7 @@ var MM0001_01 = {
     		
             if(TOP_SYS_ID == "RS") {
                 // 메뉴바 숨기기
+				/*
                 var $lnbBtn = $('.aside_bar .btn_open img'); // 메뉴 영역 숨기기/보이기
                 var $aside_bar = $('.aside .aside_bar'); // 좌측 대메뉴 영역 하위2
                 var $lnb = $('.aside .lnb'); // 검색+즐겨찾기 메뉴
@@ -612,6 +613,8 @@ var MM0001_01 = {
                     width: winW - $aside_bar.width() + 2,
                     left:0
                 });
+				*/
+				return;
             } else if(TOP_SYS_ID != "CC") { // 통관시스템가 아닌 경우
     			if(SESSION.APPLICATION_SERVICE_TYPE == "CL") { // 글라우드에서는 모든 다국어를 표시할 것
     				form.util.setVisible("MM0001_01_href_2", true); // 스페인어

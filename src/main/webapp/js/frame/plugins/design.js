@@ -34,7 +34,7 @@ $(document).ready(function(){
     var bodyW = $('body').width();
     var lnbStats = true;
     
-    if(TOP_SYS_ID == "RS") lnbStats = false;
+    // if(TOP_SYS_ID == "RS") lnbStats = false;  // 메뉴바 숨기기
         
     // Main > top 넓이 조절
     $(window).load(function() {            

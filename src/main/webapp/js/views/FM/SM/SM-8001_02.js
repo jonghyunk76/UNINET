@@ -14,12 +14,47 @@ var SM8001_02 = {
     
     // 초기값 설정
     init : {
-        initComponent : function() {}
+        initComponent : function() {
+			SM8001_02.combobox.initCombo_1();
+			SM8001_02.combobox.initCombo_2();
+		}
     }, 
     // 달력 생성
     calendar : {}, 
     // 콤보박스 생성
-    combobox : {},
+    combobox : {
+		data_1 : [
+        	{CODE:"paypalDoHold", NAME:resource.getMessage("CC_보류")},
+			{CODE:"paypalDoHoldCapture", NAME:resource.getMessage("CC_보류문서")},
+			{CODE:"paypalDoHoldCancel", NAME:resource.getMessage("CC_결재취소")},
+			{CODE:"paypalDoCapture", NAME:resource.getMessage("CC_결재문서")},
+			{CODE:"paypalDoRefund", NAME:resource.getMessage("CC_환불")},
+        ],
+		data_2 : [
+        	{CODE:"RouteRequest", NAME:resource.getMessage("CC_Route요청")},
+			{CODE:"Shipper", NAME:resource.getMessage("CC_Shipper")}
+        ],
+        initCombo_1 : function() {
+            var obj = combo.getObject("SM8001_02_form_01", "METHOD_NAME");
+            
+            combo.init.setData(this.data_1);
+            combo.init.setValueField("CODE");
+            combo.init.setNameField("NAME");
+            combo.init.setRequired(true);
+            
+            combo.create(obj);
+        },
+		initCombo_2 : function() {
+            var obj = combo.getObject("SM8001_02_form_03", "METHOD_NAME");
+            
+            combo.init.setData(this.data_2);
+            combo.init.setValueField("CODE");
+            combo.init.setNameField("NAME");
+            combo.init.setRequired(true);
+            
+            combo.create(obj);
+        }
+	},
     // 챠트 생성
     chart : {},
     // 툴팁 생성
@@ -31,6 +66,9 @@ var SM8001_02 = {
     	executeRelayBatch : function(data) {
             //form.handle.setValue("SM8001_02_form_02", "ACCESS_TOKEN", data.ACCESS_TOKEN);
     	},
+		executePaypalTest : function(data) {
+			
+		},
     	executeInterface : function(data) {
     		if(data.resultCode == "0") {
     			var results = [];
@@ -63,7 +101,31 @@ var SM8001_02 = {
             form.init.setProgressFlag(true);
             
             form.submit(obj);
-        }
+        },
+		executePaypalTest : function() {
+			var url = form.handle.getValue("SM8001_02_form_01", "URL");
+            var obj = form.getObject("SM8001_02_form_01");
+            
+            form.init.setURL(url);
+            form.init.setSucceseMessage(resource.getMessage("MSG_SUCCESS_BODY"));
+            form.init.setFailMessage(resource.getMessage("MSG_SAVE_FAILURE"));
+            form.init.setCallBackFunction("executePaypalTest");
+            form.init.setProgressFlag(true);
+            
+            form.submit(obj);
+		},
+		executeDhlTest : function() {
+			var url = form.handle.getValue("SM8001_02_form_03", "URL");
+            var obj = form.getObject("SM8001_02_form_03");
+            
+            form.init.setURL(url);
+            form.init.setSucceseMessage(resource.getMessage("MSG_SUCCESS_BODY"));
+            form.init.setFailMessage(resource.getMessage("MSG_SAVE_FAILURE"));
+            form.init.setCallBackFunction("executePaypalTest");
+            form.init.setProgressFlag(true);
+            
+            form.submit(obj);
+		}
     },
     // 다이얼로그 구현
     dialog : {},

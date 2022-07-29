@@ -1,0 +1,29 @@
+# Connection Information
+http.ConnectionTimeOut=5000
+http.Retry=1
+http.ReadTimeOut=30000
+http.MaxConnection=100
+
+# HTTP Proxy configuration
+# If you are using proxy set http.UseProxy to true and replace the following values with your proxy parameters
+http.UseProxy=false
+http.ProxyPort=8080
+#http.ProxyHost=127.0.0.1
+http.ProxyHost=55.200.250.10
+
+http.ProxyUserName=null
+http.ProxyPassword=null
+
+#Set this property to true if you are using the PayPal SDK within a Google App Engine java app
+http.GoogleAppEngine = false
+
+# Service Configuration
+service.EndPoint=https://api.sandbox.paypal.com
+# Live EndPoint
+#service.EndPoint=https://api.paypal.com
+
+# Credentials
+#clientID=EOJ2S-Z6OoN_le_KS1d75wsZ6y0SFdVsY9183IvxFyZp
+#clientSecret=EClusMEUk8e9ihI7ZdVLF5cZ6y0SFdVsY9183IvxFyZp
+clientID=AW9S3hC8WvLLuOtWIU801aWJ26ddlErZAX_0olHPl4FZiMXHjqmeDyl0IgYX
+clientSecret=EE22MxCnbWRKvf7oYziLfEiWE_93DOw70JPHETAy7l0dOWFBXvyViIlI947w

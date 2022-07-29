@@ -457,6 +457,13 @@
         </dependency>
         <dependency>
             <groupId>com.yni</groupId>
+            <artifactId>sap-jco3</artifactId>
+            <version>3.0.9</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/sapjco3.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
             <artifactId>jdbc-SQLServerDriver</artifactId>
             <version>4.2</version>
             <scope>system</scope>
@@ -581,10 +588,96 @@
             <scope>system</scope>
             <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/xmlsec-1.3.0.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/json-simple-1.1.jar</systemPath>
+        </dependency>
+        
+        <!-- 한화 테크윈 인터페이스 라이브러리 -->
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>Siebel</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/Siebel.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>Siebel</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/Siebel.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>SiebelJI_enu</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/SiebelJI_enu.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>SiebelStwEncryption</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/SiebelStwEncryption.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>toolkit_DHL</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/toolkit_DHL.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>paypal-core</artifactId>
+            <version>1.7.2</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/paypal-core-1.7.2.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>rest-api-sdk</artifactId>
+            <version>1.13.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/rest-api-sdk-1.13.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>newMaill</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/newMaill.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>newApproval</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/newApproval.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>NewOrg</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/NewOrg.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.yni</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.9.0</version>
+            <scope>system</scope>
+            <systemPath>C:/iFTA/workspace_2021/UNINET/src/main/webapp/WEB-INF/lib/gson-2.9.0.jar</systemPath>
+        </dependency>
         
         <!-- [즁요] 운영반영 시에는 제거할 라이브러리 -->
         <!-- 추가로, 운영적용 시 log4j-1.2.15.jar, log4jdbc-1.2.jar, slf4j-log4j12-1.6.6.jar 파일은 삭제하기 바람 -->
-        <!-- log4j start
+        <!-- log4j start -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
@@ -621,7 +714,8 @@
             <groupId>com.googlecode.log4jdbc</groupId>
             <artifactId>log4jdbc</artifactId>
             <version>1.2</version>
-        </dependency> -->
+        </dependency>
+        <!-- log4j end -->
         
     </dependencies>
     

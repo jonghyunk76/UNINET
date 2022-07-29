@@ -20,7 +20,7 @@
 	<import resource="classpath:META-INF/cxf/cxf.xml" />
     <import resource="classpath*:META-INF/cxf/cxf-extension-*.xml" />
     
-	<jaxws:endpoint id="orderProcess" implementor="com.yni.ws.demo.service.OrderProcessImpl" address="/OrderProcess">	
+	<jaxws:endpoint id="orderProcess" implementor="com.yni.ws.cxf.demo.service.OrderProcessImpl" address="/OrderProcess">	
 	    <jaxws:inInterceptors>
 		   <ref bean="authorizationInterceptor"/>
 		</jaxws:inInterceptors>
@@ -35,13 +35,14 @@
 	-->
 	
 	<bean id="authorizationInterceptor" class="org.apache.cxf.interceptor.security.SimpleAuthorizingInterceptor">
-	   <property name="methodRolesMap">
+	   <!-- com.yni.ws.cxf.demo.service.OrderProcessImpl클래스의 매소드별로 권한을 지정할 경우에 사용 -->
+	   <!-- property name="methodRolesMap">
 	      <map>
-	        <!-- entry key="processOrder" value="ROLE_USER ROLE_ADMIN"/ -->
+	        <entry key="processOrder" value="ROLE_USER ROLE_ADMIN"/>
 	        <entry key="processOrder" value="ROLE_USER"/>
 	      </map>
-	   </property>
-	   <property name="globalRoles" value="ROLE_ADMIN"/>
+	   </property -->
+	   <property name="globalRoles" value="ROLE_USER ROLE_ADMIN"/>
 	</bean>
 	
 </beans>

@@ -1,0 +1,8 @@
+package stw.eai.mySingle;
+
+import com.siebel.data.SiebelPropertySet;
+import com.siebel.eai.SiebelBusinessServiceException;
+
+public interface Client {
+	public void request(SiebelPropertySet inputs, SiebelPropertySet outputs) throws SiebelBusinessServiceException;
+}

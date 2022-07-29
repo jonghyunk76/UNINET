@@ -27,15 +27,28 @@
     </logger>
     
 	<!-- Application Loggers -->
-	<logger name="com.yni.fta">
+	<logger name="com">
 		<level value="DEBUG" />
 	</logger>
-	
-	<logger name="com.yni.rs">
+	<logger name="model">
 		<level value="DEBUG" />
 	</logger>
-	
-	<logger name="com.yni.ws">
+	<logger name="mySingle">
+		<level value="DEBUG" />
+	</logger>
+	<logger name="OutldapFindEmpLib">
+		<level value="DEBUG" />
+	</logger>
+	<logger name="OutldapFindOrgLib">
+		<level value="DEBUG" />
+	</logger>
+	<logger name="samsung">
+		<level value="DEBUG" />
+	</logger>
+	<logger name="stw">
+		<level value="DEBUG" />
+	</logger>
+	<logger name="test">
 		<level value="DEBUG" />
 	</logger>
 	

@@ -22,6 +22,10 @@ import kr.yni.frame.util.DataMapHelper;
 import kr.yni.frame.util.JsonUtil;
 import kr.yni.frame.util.StringHelper;
 import kr.yni.frame.web.action.WebAction;
+import stw.eai.dhl.RoutingProcessorTestInvoke;
+import stw.eai.dhl.ShipValidGeneratorTestInvoke;
+import stw.eai.hwt.paypal.test.HTWPaypalMain;
+import stw.eai.run.MainCls;
 
 /**
  * Salseforce 인터페이스 클래스
@@ -166,6 +170,114 @@ public class SM8001Ctrl extends YniAbstractController {
 		    		WebsocketSupporter ws = new WebsocketSupporter();
 		    		
 		    		ws.handleMessage("MMA001_07"+"[REL]"+ InterfaceLogger.getRealtimeMessage(req, "R", StringHelper.null2void(map.get("SERVICE_ID")), StringHelper.null2void(resulMap.get("resultCode")), (ftime - stime)), s);
+		    	}
+	    	}
+        } catch (Exception e) {
+            message = getExceptionMessage(req, e, this.getMessage("TXT_SYSTEM_ERROR", null, StringHelper.null2string(dataMap.get("SESSION_DEFAULT_LANGUAGE"), Constants.DEFAULT_LANGUAGE)));
+        }
+
+        return WebAction.returnMap(resulMap, message);
+    }
+    
+    /**
+     * 서버간 연계 테스트 요청
+     * 
+     * @param req - HttpServletRequest
+     * @param dataMap - DataMap
+     * @return ModelAndView
+     * @exception Exception
+     */   
+    @RequestMapping("/fm/sm/SM8001_02/executePaypalTest")
+    public ModelAndView executePaypalTest(HttpServletRequest req, DataMap dataMap) throws Exception {
+        Map resulMap = new HashMap();
+        String message = null;
+        
+        try {
+        	long stime = System.currentTimeMillis();
+        	
+        	Map map = DataMapHelper.getMap(dataMap);
+        	String methodName = StringHelper.null2void(map.get("METHOD_NAME"));
+        	
+        	HTWPaypalMain paypal = new HTWPaypalMain();
+        	
+        	if(methodName.equals("paypalDoHold")) {
+        		paypal.testDoHold(); 
+        	} else if(methodName.equals("paypalDoHoldCapture")) {
+        		paypal.testDoHoldCapture(); 
+        	} else if(methodName.equals("paypalDoHoldCancel")) {
+        		String holdID = null;
+        		
+        		paypal.testDoHoldCancel(holdID);
+        	} else if(methodName.equals("paypalDoCapture")) {
+        		String holdID = null;
+        		
+        		paypal.testDoCapture(holdID);
+        	} else if(methodName.equals("paypalDoRefund")) {
+        		String captureID = null;
+        		
+        		paypal.testDoRefund(captureID);
+        	}
+        	
+        	long ftime = System.currentTimeMillis();
+        	
+        	// 중계서버인 경우 실행
+	    	if(Constants.APPLICATION_SYSTEM_ID.equals("RS")) {
+	    		// 클라이언트 요청경로를 접속중인 모든 클라이언트에게 Websocket 메시지를 보낸다.
+		    	List<Session> clients = WebsocketSupporter.clients;
+		    	
+		    	if(clients != null) {
+			    	for(Session s : clients) {
+			    		WebsocketSupporter ws = new WebsocketSupporter();
+			    		
+			    		ws.handleMessage("MMA001_07"+"[REL]"+ InterfaceLogger.getRealtimeMessage(req, "R", StringHelper.null2void(map.get("SERVICE_ID")), StringHelper.null2void(resulMap.get("resultCode")), (ftime - stime)), s);
+			    	}
+		    	}
+	    	}
+        } catch (Exception e) {
+            message = getExceptionMessage(req, e, this.getMessage("TXT_SYSTEM_ERROR", null, StringHelper.null2string(dataMap.get("SESSION_DEFAULT_LANGUAGE"), Constants.DEFAULT_LANGUAGE)));
+        }
+
+        return WebAction.returnMap(resulMap, message);
+    }
+    
+    /**
+     * 서버간 연계 테스트 요청
+     * 
+     * @param req - HttpServletRequest
+     * @param dataMap - DataMap
+     * @return ModelAndView
+     * @exception Exception
+     */   
+    @RequestMapping("/fm/sm/SM8001_02/executeDhlTest")
+    public ModelAndView executeDhlTest(HttpServletRequest req, DataMap dataMap) throws Exception {
+        Map resulMap = new HashMap();
+        String message = null;
+        
+        try {
+        	long stime = System.currentTimeMillis();
+        	
+        	Map map = DataMapHelper.getMap(dataMap);
+        	String methodName = StringHelper.null2void(map.get("METHOD_NAME"));
+        	
+        	if(methodName.equals("RouteRequest")) {
+        		RoutingProcessorTestInvoke.requestRoute(); 
+        	} else if(methodName.equals("Shipper")) {
+        		ShipValidGeneratorTestInvoke.requestShipValid(); 
+        	}
+        	
+        	long ftime = System.currentTimeMillis();
+        	
+        	// 중계서버인 경우 실행
+	    	if(Constants.APPLICATION_SYSTEM_ID.equals("RS")) {
+	    		// 클라이언트 요청경로를 접속중인 모든 클라이언트에게 Websocket 메시지를 보낸다.
+		    	List<Session> clients = WebsocketSupporter.clients;
+		    	
+		    	if(clients != null) {
+			    	for(Session s : clients) {
+			    		WebsocketSupporter ws = new WebsocketSupporter();
+			    		
+			    		ws.handleMessage("MMA001_07"+"[REL]"+ InterfaceLogger.getRealtimeMessage(req, "R", StringHelper.null2void(map.get("SERVICE_ID")), StringHelper.null2void(resulMap.get("resultCode")), (ftime - stime)), s);
+			    	}
 		    	}
 	    	}
         } catch (Exception e) {
