@@ -94,7 +94,7 @@
                         <tr>
                             <th scope="row" class="point2"><label>Service ID</label></th>
                             <td>
-                                <input type="text" name="SERVICE_ID" id="SERVICE_ID" value="IF_TEST_001" style="width:120px;"/>
+                                <input type="text" name="SERVICE_ID" id="SERVICE_ID" style="width:120px;"/>
                             </td>
                             <th scope="row"><label>Server ID</label></th>
                             <td>
@@ -104,7 +104,7 @@
                         <tr>
                             <th scope="row" class="point2"><label>Parameter</label></th>
                             <td colspan="3">
-                                <textarea id="REQUEST_PARAM" name="REQUEST_PARAM" style="width:99.5%;height:100px">{"Interface_id": "IF-WS-ACTIVITY-VIEW-001","iRecordSeq": "a1S0p000000MjIdEAK","queryDebug":"false"}</textarea>
+                                <textarea id="REQUEST_PARAM" name="REQUEST_PARAM" style="width:99.5%;height:100px">{"RequestType": "D","Address1": "Minervum 7118","Address2":"4817ZN Breda","CountryCode": "NL","CountryName": "NETHERLANDS","PostalCode": "4817 ZN","City": "Breda","OriginCountryCode": "NL"}</textarea>
                             </td>
                         </tr>
                     </table>

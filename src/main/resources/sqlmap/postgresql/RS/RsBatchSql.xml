@@ -148,6 +148,7 @@
 		         AND SM1.SERVER_ID = SP.SERVER_ID
 		 WHERE SM.COMPANY_CD = #COMPANY_CD#
 		   AND SM.SERVICE_ID = #SERVICE_ID#
+		 ORDER BY SP.PLAN_NO
     </update>
     
     <update id="RSBATCH.updateServiceResetHistory" parameterClass="java.util.Map">

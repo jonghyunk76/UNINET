@@ -400,14 +400,15 @@ public abstract class BatchProcess {
     			return false;
     		}
     		
+    		ParameterVo pvo = batchVo.getParameter();
+    		
 	    	// 수신서버 작업
 	    	if(snd_rev_type.equals("R")) {
-	    		ParameterVo pvo = batchVo.getParameter();
 	    		Map<String, Object> res_data = null;
 	    		
 		    	// 1.요청 파라메터 클래스 호출(클래스 호출)
 	    		//   - 서비스 타입이 R(Realtime)인 경우에는 com.yni.rs.batch.서비스ID.receive.Import.getParameter() 매소드 호출
-	    		Map impParam = bs.callMethod("Import", "getParameter", map); // 클래스명, 매소드명, 파라미터
+	    		Map impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
 	    		
 	    		if(impParam == null || impParam.size() == 0) {
 	    			impParam = pvo.getMap();
@@ -439,7 +440,7 @@ public abstract class BatchProcess {
 		    		emap.put("SERVICE_ID", map.get("SERVICE_ID"));
 		    		
 		    		// 5.요청 파라메터 클래스 호출(클래스 호출)
-		    		Map expParam = bs.callMethod("Export", "getParameter", emap); // 클래스명, 매소드명, 파라미터
+		    		Map expParam = bs.callMethod("Export", "getParameter", map, emap); // 클래스명, 매소드명, 배치정보, 파라미터
 		    		
 		    		if(expParam == null || expParam.size() == 0) {
 		    			expParam = emap;
@@ -483,7 +484,7 @@ public abstract class BatchProcess {
 				Map datas = bs.getInterfaceData(batchTarget, batchVo, map);
 				
 				// 2.데이터 추가 가공을 위한 클래스 호출(개발자 수행)
-				Map impParam = bs.callMethod("Import", "getParameter", map); // 클래스명, 매소드명, 파라미터
+				Map impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
 	    		
 				if(impParam == null || impParam.size() == 0) impParam = datas;
 				

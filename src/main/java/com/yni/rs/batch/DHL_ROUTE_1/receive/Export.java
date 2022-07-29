@@ -1,4 +1,4 @@
-package com.yni.rs.batch.IF_TEST_001.receive;
+package com.yni.rs.batch.DHL_ROUTE_1.receive;
 
 import java.util.HashMap;
 import java.util.Map;

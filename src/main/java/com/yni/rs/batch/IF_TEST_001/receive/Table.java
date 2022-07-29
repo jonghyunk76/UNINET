@@ -10,7 +10,7 @@ public class Table extends YniAbstractBatch implements TablePackage {
 
 	@Override
 	public List getTable(Map map) throws Exception {
-		log.debug("IF_TEST_001 Receive Table : " + map);
+		log.debug("Receive Table : " + map);
 		
 		return null;
 	}

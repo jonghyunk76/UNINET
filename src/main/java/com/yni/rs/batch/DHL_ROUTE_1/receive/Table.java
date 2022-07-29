@@ -1,4 +1,4 @@
-package com.yni.rs.batch.IF_TEST_001.send;
+package com.yni.rs.batch.DHL_ROUTE_1.receive;
 
 import java.util.List;
 import java.util.Map;
@@ -10,7 +10,7 @@ public class Table extends YniAbstractBatch implements TablePackage {
 
 	@Override
 	public List getTable(Map map) throws Exception {
-		log.debug("Send Table : " + map);
+		log.debug("Receive Table : " + map);
 		
 		return null;
 	}

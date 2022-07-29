@@ -1,4 +1,4 @@
-package com.yni.rs.batch.IF_TEST_001.receive;
+package com.yni.rs.batch.DHL_ROUTE_1.send;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +10,7 @@ import com.yni.fta.common.parameter.YniAbstractBatch;
 import com.yni.rs.batch.ImportPackage;
 
 /**
- * 수신할 파라메터 정보 생성 클래스
+ * 전송할 파라메터 정보 생성 클래스
  * 
  * @author ador2
  *
@@ -28,7 +28,7 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 	 * @throws Exception
 	 */
 	public Map getParameter(Map map) throws Exception {
-		log.debug("Receive Import : " + map);
+		log.debug("IF_TEST_001 Send Import : " + map);
 		
 		Map rst = new HashMap();
 		

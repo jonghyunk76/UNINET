@@ -48,10 +48,8 @@ var SM7005_01 = {
         	["IF_CD"          , resource.getMessage("INF, CODE")             /*인터페이스 코드*/   , 120, "center"  , "center", true, false, null, null, null, 0, 0],
         	["IF_NAME"        , resource.getMessage("INF, NAME")             /*인터페이스 명*/    , 180, "left"  , "center", true, false, null, null, null, 0, 0],
         	["ITEM_TYPE_NAME" , resource.getMessage("TXT_ITM,TYP")           /*아이템타입*/     , 70, "center", "center", true, false, null, null, null, 0, 0],
-        	["FILE_TYPE_NAME" , resource.getMessage("DTA,TYPE")              /*데이터 타입*/     , 70, "center", "center", true, false, null, null, null, 0, 0],
-        	["SOURCE_TABLE"   , resource.getMessage("SOURC,TB")              /*시스템적용여부*/   , 130, "left"  , "center", true, false, null, null, null, 0, 0],
-        	["TARGET_TABLE"   , resource.getMessage("TANOC,TB")              /*시스템적용여부*/   , 130, "left"  , "center", true, false, null, null, null, 0, 0],
-        	["USING_YN_NAME"  , resource.getMessage("USE,ORNOT")             /*사용여부*/       , 80, "center", "center", true, false, null, null, null, 0, 0]
+        	["USING_YN_NAME"  , resource.getMessage("USE,ORNOT")             /*사용여부*/       , 80, "center", "center", true, false, null, null, null, 0, 0],
+        	["REMARK"         , resource.getMessage("DSCPT")              /*설명*/     , 300, "left", "center", true, false, null, null, null, 0, 0]
         ],
         initGrid_1 : function() {
             var dg_1 = grid.getObject("SM7005_01_grid_01");
@@ -116,7 +114,13 @@ var SM7005_01 = {
                 dialog.init.setWidth(600);
                 dialog.init.setHeight(255);
                 dialog.init.setURL("/fm/sm/sm7005_04");
-            } else if(itemType == "T") {
+            } else if(itemType == "J") {
+                dl_1 = dialog.getObject("SM7005_02_dailog_07");
+                
+                dialog.init.setWidth(600);
+                dialog.init.setHeight(255);
+                dialog.init.setURL("/fm/sm/sm7005_07");
+            }  else if(itemType == "T") {
                 dl_1 = dialog.getObject("SM7005_02_dailog_01");
                 
                 dialog.init.setWidth(1024);

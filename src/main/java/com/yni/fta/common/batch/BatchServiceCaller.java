@@ -139,11 +139,14 @@ public class BatchServiceCaller {
                 
                 if(!strParam.isEmpty()) {
                 	String dataFormat = StringHelper.null2void(plan.get("REQ_DATA_FORMAT"));
-                	
-                	log.debug("data format = " + dataFormat + ", parameter = " + strParam);
+
+                	log.debug("data format = " + dataFormat);
+                	log.debug("parameter(defore) = " + strParam);
                 	
                 	// 데이터 포맷에 맞게 파라메터 정보를 생성한다. 추후, XML/SOAP 등은 추가 예정임
                 	if(dataFormat.equals("JSON")) params = JsonUtil.getMap(strParam);
+                	
+                	log.debug("parameter(after) = " + params);
 	                
 	                paramVo.setPutAll(params);
                 }

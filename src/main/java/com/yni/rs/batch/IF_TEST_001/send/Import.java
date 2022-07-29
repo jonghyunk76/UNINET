@@ -28,7 +28,7 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 	 * @throws Exception
 	 */
 	public Map getParameter(Map map) throws Exception {
-		log.debug("IF_TEST_001 Send Import : " + map);
+		log.debug("Send Import : " + map);
 		
 		Map rst = new HashMap();
 		

@@ -778,13 +778,14 @@ public class BatchSupporter extends JcoDAO {
 	 * 
 	 * @param cname 클래스명
 	 * @param fname 호출한 매소드명
+	 * @param bmap 배치정보
 	 * @param params 매소드에 전달할 인자값(파라메터)
 	 * @return
 	 * @throws Exception
 	 */
-	public Map callMethod(String cname, String fname, Map params) throws Exception {
-		String snd_rev_type = StringHelper.null2void(params.get("INTERFACE_MTH"));
-		String ifCode = StringHelper.null2void(params.get("SERVICE_ID"));
+	public Map callMethod(String cname, String fname, Map bmap, Map params) throws Exception {
+		String snd_rev_type = StringHelper.null2void(bmap.get("INTERFACE_MTH"));
+		String ifCode = StringHelper.null2void(bmap.get("SERVICE_ID"));
 		String className = "com.yni.rs.batch.";
 		
 		try {

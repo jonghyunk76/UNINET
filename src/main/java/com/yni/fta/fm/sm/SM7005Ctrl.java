@@ -112,6 +112,20 @@ public class SM7005Ctrl extends YniAbstractController {
     }
     
     /**
+     * 
+     * 인터페이스 항목 선택 화면으로 이동
+     * 
+     * @param request
+     * @param dataMap
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping(value = "/fm/sm/sm7005_07")
+    public ModelAndView sm7005_07Move(DataMap dataMap) throws Exception {
+        return WebAction.forwarding("/SM/SM-7005_07", dataMap);
+    }
+    
+    /**
      * 인터페이스 항목 마스터 리스트 조회
      * 
      * @param req - HttpServletRequest

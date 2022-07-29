@@ -210,4 +210,26 @@ public class STR002Ctrl extends YniAbstractController {
 		return WebAction.returnDataSet(resultList, message);
 	}
 	
+	/**
+	 * 서비스 마스터 리스트 조회
+	 * 
+	 * @param req
+	 * @param dataMap
+	 * @return ModelAndView
+	 * @exception Exception
+	 */
+	@RequestMapping("/rs/st/stR002_03/selectServiceMstComboList")
+	public ModelAndView selectServiceMstComboList(HttpServletRequest req, DataMap dataMap) throws Exception {
+		List resultList = null;
+		String message = null;
+
+		try {
+			resultList = stR002.selectServiceMstList(DataMapHelper.getMap(dataMap));
+		} catch (Exception e) {
+			message = getExceptionMessage(req, e, this.getMessage("TXT_SYSTEM_ERROR", null, StringHelper.null2string(dataMap.get("SESSION_DEFAULT_LANGUAGE"), Constants.DEFAULT_LANGUAGE)));
+		}
+
+		return WebAction.returnJsonView(resultList, message);
+	}
+	
 }

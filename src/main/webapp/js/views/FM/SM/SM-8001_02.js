@@ -17,6 +17,7 @@ var SM8001_02 = {
         initComponent : function() {
 			SM8001_02.combobox.initCombo_1();
 			SM8001_02.combobox.initCombo_2();
+			SM8001_02.combobox.initCombo_3();
 		}
     }, 
     // 달력 생성
@@ -53,7 +54,17 @@ var SM8001_02 = {
             combo.init.setRequired(true);
             
             combo.create(obj);
-        }
+        },
+		initCombo_3 : function() {
+			var obj = combo.getObject("SM8001_02_form_02", "SERVICE_ID");
+			
+			combo.init.setURL("/rs/st/stR002_03/selectServiceMstComboList");
+			combo.init.setQueryParams({COMPANY_CD:SESSION.COMPANY_CD}); // COMPANY_CD는 추후에 세션에서 찾도록 변경할 것
+			combo.init.setValueField("SERVICE_ID");
+			combo.init.setNameField("SERVICE_NAME");
+			
+			combo.create(obj);
+		}
 	},
     // 챠트 생성
     chart : {},

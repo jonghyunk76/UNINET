@@ -67,6 +67,7 @@
                        <p class="h2_btn">
                            <a href="javascript:SM7005_01.dialog.openDialog('view');" class="btnSelectClick"><spring:message code="DETIL,VIWER"/><%--상세보기--%></a>
                            <a href="javascript:SM7005_01.dialog.openDialog('insert', 'T');" class="btnNewRegiste"><spring:message code="TB, REGER"/><%--테이블 등록--%></a>
+                           <a href="javascript:SM7005_01.dialog.openDialog('insert', 'J');" class="btnNewRegiste">Class <spring:message code="REGER"/><%--프로시저 등록--%></a>
                            <a href="javascript:SM7005_01.dialog.openDialog('insert', 'P');" class="btnNewRegiste"><spring:message code="PROCE, REGER"/><%--프로시저 등록--%></a>
                            <a href="javascript:SM7005_01.dialog.openDialog('insert', 'C');" class="btnNewRegiste">URL <spring:message code="REGER"/><%--등록--%></a>
                            <a href="javascript:SM7005_01.dialog.openDialog('insert', 'E');" class="btnNewRegiste">Excel <spring:message code="TB_REGER"/><%--엑셀 테이블 등록--%></a>

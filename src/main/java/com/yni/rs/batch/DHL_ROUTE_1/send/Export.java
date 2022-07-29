@@ -1,4 +1,4 @@
-package com.yni.rs.batch.IF_TEST_001.send;
+package com.yni.rs.batch.DHL_ROUTE_1.send;
 
 import java.util.Map;
 
