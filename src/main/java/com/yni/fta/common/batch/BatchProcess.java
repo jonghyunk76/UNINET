@@ -385,8 +385,8 @@ public abstract class BatchProcess {
 	public Boolean serviceBatch(Map map) throws Exception {
     	String serverStatus = StringHelper.null2string(map.get("CURRENT_STAT"), "R"); // R:기동, S:중지, E:장애
     	String snd_rev_type = StringHelper.null2void(map.get("INTERFACE_MTH")); // 데이터 송/수신(R:Receive, S:Send)
-    	String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식(By pass, Procedure, java class, URL)
-    	
+    	String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식 : Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Bypass(B), Procedure(P)
+
     	log.debug("transaction information = " + map.toString());
     	
     	boolean result = true;
@@ -423,7 +423,7 @@ public abstract class BatchProcess {
 	    		
 	    		if(!process_type.equals("B")) { // By pass가 아닌 경우에는 외부서버와 통신하여 값을 가져온다.
 		    		// 3.서버 통신방법에 따라 데이터 요청
-		    		boolean cnnrst = bs.receive(batchTarget, batchVo, pvo, imap, map); 
+		    		boolean cnnrst = bs.receive(batchTarget, batchVo, pvo, imap, map); // DBA객체, 배치VO, 사용자 파라메터, Import 파라메터, 배치정보
 		    		
 		    		if(cnnrst) {
 		    			res_data = (Map) batchVo.getReturnData();

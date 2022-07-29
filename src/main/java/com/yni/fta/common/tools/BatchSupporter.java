@@ -62,7 +62,7 @@ public class BatchSupporter extends JcoDAO {
 		Import imp = jco.getFunction(0).getImports();
 		
 		if(imp == null) {
-			return paramMap;
+			return pmap;
 		}
 		
 		for (int i = 0; i < imp.getParameterCount(); i++) {
@@ -178,7 +178,7 @@ public class BatchSupporter extends JcoDAO {
 		Export exp = jco.getFunction(0).getExports();
 		
 		if(exp == null) {
-			return paramMap;
+			return pmap;
 		}
 		
 		for (int i = 0; i < exp.getParameterCount(); i++) {
@@ -291,7 +291,7 @@ public class BatchSupporter extends JcoDAO {
 		Table tlb = jco.getFunction(0).getTable();
 		
 		if(tlb == null) {
-			return paramMap;
+			return pmap;
 		}
 		
 		for(int i = 0; i < tlb.getParameterCount(); i++) {
@@ -588,16 +588,16 @@ public class BatchSupporter extends JcoDAO {
 	/**
 	 * 데이터 요청후 수신받기
 	 * 
-	 * @param batchTarget = DB통신객체
+	 * @param batchTarget = DBO객체
 	 * @param batchVo = 배치VO
-	 * @param pvo = 배치 파라메터
+	 * @param pvo = 사용자 파라메터
 	 * @param imap = JCO Import 값
 	 * @param map = 인터페이스 정보
 	 * @return
 	 * @throws Exception
 	 */
 	public boolean receive(InterfaceTarget batchTarget, BatchVo batchVo, ParameterVo pvo, Map imap, Map map) throws Exception {
-		String reqFormat = StringHelper.null2void(map.get("REQ_DATA_FORMAT")); // 데이터 형식(JSON, JCO, SOAP, XML 등)
+		String reqFormat = StringHelper.null2void(map.get("REQ_DATA_FORMAT")); // 데이터 형식(JSON, JCO, XML 등)
 		String protocal = StringHelper.null2void(map.get("PROTOCAL")); // 통신방법(HTTP, SMTP, FTP, JCO 등)
 		
 		// 배치정보에 지정된 리턴되는 데이터 형식에 맞게 변환
