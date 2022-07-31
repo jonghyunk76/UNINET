@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import com.yni.fta.common.batch.delegate.impl.FtpTransfer;
 import com.yni.fta.common.batch.delegate.impl.HttpTransfer;
 import com.yni.fta.common.batch.delegate.impl.JcoTransfer;
+import com.yni.fta.common.batch.delegate.impl.SiebelTransfer;
 import com.yni.fta.common.batch.delegate.impl.SmtpTransfer;
 import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.batch.vo.ParameterVo;
@@ -22,17 +23,28 @@ public class DataHandler {
 	
 	private BatchVo batchVo;
 	
-	public DataHandler(BatchVo batchVo, String protocal) {
-		log.debug("Transfer protocal type = " + protocal);
+	/**
+	 *
+	 * @param batchVo
+	 * @param procType 처리타입 = Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Procedure(P), Bypass(B)
+	 */
+	public DataHandler(BatchVo batchVo, String procType) {
+		log.debug("Transfer protocal type = " + procType);
     	
-    	if(protocal.equals("HTTP")) {
+		if(procType.equals("I")) { // Siebel
+    		trans = new SiebelTransfer();
+    	} else if(procType.equals("S")) { // SOAP
+//    		trans = new JcoTransfer();
+    	} else if(procType.equals("H")) { // HTTP
     		trans = new HttpTransfer();
-    	} else if(protocal.equals("JCO")) {
-    		trans = new JcoTransfer();
-    	} else if(protocal.equals("FTP")) {
-    		trans = new FtpTransfer();
-    	} else if(protocal.equals("SMTP")) {
+    	} else if(procType.equals("T")) { // SMTP
     		trans = new SmtpTransfer();
+    	} else if(procType.equals("F")) { // FTP
+    		trans = new FtpTransfer();
+    	} else if(procType.equals("J")) { // JCO
+    		trans = new JcoTransfer();
+    	} else if(procType.equals("P")) { // Procedure
+//    		trans = new JcoTransfer();
     	}
     	
     	this.batchVo = batchVo;

@@ -138,7 +138,7 @@ public class BatchServiceCaller {
                 ParameterVo paramVo = new ParameterVo();
                 
                 if(!strParam.isEmpty()) {
-                	String dataFormat = StringHelper.null2void(plan.get("REQ_DATA_FORMAT"));
+                	String dataFormat = StringHelper.null2void(plan.get("REQ_DATA_FORMAT")); // import 파라테머
 
                 	log.debug("data format = " + dataFormat);
                 	log.debug("parameter(defore) = " + strParam);

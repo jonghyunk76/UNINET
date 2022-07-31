@@ -5,6 +5,6 @@ import java.util.Map;
 
 public interface TablePackage {
 
-	List getTable(Map map) throws Exception;
+	Object getTable(Map map) throws Exception;
 	
 }

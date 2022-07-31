@@ -44,8 +44,10 @@
               ,SP.DATA_PATH
               ,SP.TRAN_ROW_NUM
               ,SP.SERVER_ID
-              ,SP.ATTRIBUTE02 AS REQ_DATA_FORMAT
-              ,SP.ATTRIBUTE01 AS RES_DATA_FORMAT
+              ,SP.ATTRIBUTE01 AS REQ_DATA_FORMAT
+              ,SP.ATTRIBUTE02 AS IMP_DATA_FORMAT
+              ,SP.ATTRIBUTE03 AS EXP_DATA_FORMAT
+              ,SP.ATTRIBUTE04 AS RES_DATA_FORMAT
               ,SM1.SERVER_IP
               ,SM1.SERVER_PORT
               ,SM1.ATTRIBUTE01 AS SERVER_TYPE

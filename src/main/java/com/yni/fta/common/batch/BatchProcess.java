@@ -9,6 +9,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.context.ApplicationContext;
 
+import com.google.gson.JsonObject;
 import com.yni.fta.common.Consistent;
 import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.batch.vo.JobVo;
@@ -408,25 +409,45 @@ public abstract class BatchProcess {
 	    		
 		    	// 1.요청 파라메터 클래스 호출(클래스 호출)
 	    		//   - 서비스 타입이 R(Realtime)인 경우에는 com.yni.rs.batch.서비스ID.receive.Import.getParameter() 매소드 호출
-	    		Map impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
+	    		Object impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
 	    		
-	    		if(impParam == null || impParam.size() == 0) {
+	    		if(impParam == null) {
 	    			impParam = pvo.getMap();
 	    		} else {
-	    			log.debug("Apply to user customizing parameter.");
+	    			log.debug("Apply to user customizing import parameter.");
 	    		}
 	    		
-	    		log.debug("call method result = " + impParam + ", Process type = " + process_type);
+	    		if(impParam != null) log.debug("Class type = " + impParam.getClass() + ", address = " + impParam.hashCode());
+	    		log.debug("Process type = " + process_type);
+	    		log.debug("call method parameter(before) = " + impParam);
 	    		
 	    		// 2.파라메터 데이터를 JCO XML에 설정된 정보와 맵핑하고 DB에 이력 등록
-	    		Map imap = bs.getImportPrameter(batchVo, impParam);
+	    		Object iobj = null;
+	    		
+	    		if(impParam instanceof Map) {
+	    			iobj = bs.getImportPrameter(batchVo, (Map) impParam);
+	    		} else {
+	    			iobj = impParam;
+	    		}
+	    		
+	    		if(impParam.hashCode() == iobj.hashCode()) {
+	    			log.debug("call method parameter(after) parameter = No change...");
+	    		} else {
+	    			log.debug("call method parameter(after) parameter = " + iobj);
+	    		}
 	    		
 	    		if(!process_type.equals("B")) { // By pass가 아닌 경우에는 외부서버와 통신하여 값을 가져온다.
 		    		// 3.서버 통신방법에 따라 데이터 요청
-		    		boolean cnnrst = bs.receive(batchTarget, batchVo, pvo, imap, map); // DBA객체, 배치VO, 사용자 파라메터, Import 파라메터, 배치정보
+		    		boolean cnnrst = bs.receive(batchTarget, batchVo, pvo, iobj, map); // DBA객체, 배치VO, 사용자 파라메터, Import 파라메터, 배치정보
 		    		
 		    		if(cnnrst) {
-		    			res_data = (Map) batchVo.getReturnData();
+		    			Object rdata = batchVo.getReturnData();
+		    			
+		    			if(rdata instanceof JsonObject) {
+		    				res_data = JsonUtil.getMap(rdata.toString());
+		    			} else {
+		    				res_data = (Map) rdata;
+		    			}
 		    		} else {
 		    			return false;
 		    		}
@@ -440,12 +461,12 @@ public abstract class BatchProcess {
 		    		emap.put("SERVICE_ID", map.get("SERVICE_ID"));
 		    		
 		    		// 5.요청 파라메터 클래스 호출(클래스 호출)
-		    		Map expParam = bs.callMethod("Export", "getParameter", map, emap); // 클래스명, 매소드명, 배치정보, 파라미터
+		    		Map expParam = (Map) bs.callMethod("Export", "getParameter", map, emap); // 클래스명, 매소드명, 배치정보, 파라미터
 		    		
 		    		if(expParam == null || expParam.size() == 0) {
 		    			expParam = emap;
 		    		} else {
-		    			log.debug("Apply to user customizing parameter.");
+		    			log.debug("Apply to user customizing export parameter.");
 		    		}
 		    		
 		    		log.debug("result message = " + expParam.toString());
@@ -484,14 +505,14 @@ public abstract class BatchProcess {
 				Map datas = bs.getInterfaceData(batchTarget, batchVo, map);
 				
 				// 2.데이터 추가 가공을 위한 클래스 호출(개발자 수행)
-				Map impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
+				Object impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
 	    		
-				if(impParam == null || impParam.size() == 0) impParam = datas;
+				if(impParam == null) impParam = datas;
 				
 				log.debug("send finally data = " + impParam);
 				
 	    		// 4.데이터 전송
-				boolean cnnrst = bs.send(batchTarget, batchVo, impParam, map);
+				boolean cnnrst = bs.send(batchTarget, batchVo, (Map) impParam, map);
 				
 	    		// 5.전송결과 실패인 경우 하위 로직은 수행하지 않음
 				if(!cnnrst) {

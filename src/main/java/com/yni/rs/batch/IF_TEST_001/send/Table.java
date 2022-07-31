@@ -9,7 +9,7 @@ import com.yni.rs.batch.TablePackage;
 public class Table extends YniAbstractBatch implements TablePackage {
 
 	@Override
-	public List getTable(Map map) throws Exception {
+	public Object getTable(Map map) throws Exception {
 		log.debug("Send Table : " + map);
 		
 		return null;

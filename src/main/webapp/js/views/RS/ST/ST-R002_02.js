@@ -139,7 +139,7 @@ var STR002_02 = {
             grid.event.setOnClickCell(dg_1);
             grid.event.setOnCellEdit(dg_1); 
             
-            Theme.defaultGrid(dg_1, {params:{HEADER_ID:"header1"}}); // DB에서 그리드 해더 정보 획득
+            Theme.defaultGrid(dg_1, {params:{HEADER_ID:"header1"}}, {params:{HEADER_ID:"header2"}}); // DB에서 그리드 해더 정보 획득
     	}
     },
     // 이벤트 처리
@@ -329,8 +329,11 @@ var STR002_02 = {
     },
     util : {
         getInitRowData : function(idx) {
+            var dg_1 = grid.getObject("STR002_02_grid_01");
+            var rowCnt = grid.handle.getRowCount(dg_1);
             var hcell = new Object();
             
+            hcell.PLAN_NO            = rowCnt+1;
             hcell.IF_CD              = null;
             hcell.INTERFACE_MTH      = null;
             hcell.INTERFACE_MTH_NAME = null;
@@ -341,10 +344,10 @@ var STR002_02 = {
             hcell.DATA_PATH          = null;
             hcell.TRAN_ROW_NUM       = null;
             hcell.PLAN_DESC          = null;
-            hcell.ATTRIBUTE01        = null;
-            hcell.ATTRIBUTE02        = null;
-            hcell.ATTRIBUTE03        = null;
-            hcell.ATTRIBUTE04        = null;
+            hcell.ATTRIBUTE01        = "NONE";
+            hcell.ATTRIBUTE02        = "NONE";
+            hcell.ATTRIBUTE03        = "NONE";
+            hcell.ATTRIBUTE04        = "NONE";
             hcell.ATTRIBUTE05        = null;
             hcell.ATTRIBUTE06        = null;
             hcell.ATTRIBUTE07        = null;
@@ -352,7 +355,10 @@ var STR002_02 = {
             hcell.ATTRIBUTE09        = null;
             hcell.ATTRIBUTE10        = null;
             hcell.PLAN_DESC          = null;
-            
+            hcell.REQ_FORMAT_NAME    = "None";
+            hcell.IMP_FORMAT_NAME    = "None";
+            hcell.EXP_FORMAT_NAME    = "None";
+            hcell.RES_FORMAT_NAME    = "None";
             return hcell;
         }
     }

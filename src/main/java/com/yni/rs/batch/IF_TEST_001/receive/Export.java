@@ -23,12 +23,12 @@ public class Export extends YniAbstractBatch implements ExportPackage {
 		log.debug("Receive Export : " + map);
 		
 		Map rmap = new HashMap();
-		String ercode = StringHelper.null2void(map.get("BATCH_STATUS")); // E:에러, S:성공, N:데이터 없음
-		String ermsg = StringHelper.null2void(map.get("ERROR_MESSAGE"));
+		String code = StringHelper.null2void(map.get("BATCH_STATUS"));
+		String msg = StringHelper.null2void(map.get("ERROR_MESSAGE"));
 		
-		if(ercode.equals("1")) {
-			rmap.put("BATCH_STATUS", "E");
-			rmap.put("ERROR_MESSAGE", ermsg);
+		if(code.equals("1")) {
+			rmap.put("BATCH_STATUS", "E"); // E:에러, S:성공, N:데이터 없음
+			rmap.put("ERROR_MESSAGE", msg);
 		}
 		
 		return rmap;

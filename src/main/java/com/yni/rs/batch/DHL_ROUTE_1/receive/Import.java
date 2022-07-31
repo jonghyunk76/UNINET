@@ -31,7 +31,7 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map getParameter(Map map) throws Exception {
+	public Object getParameter(Map map) throws Exception {
 		log.debug("Receive Import : " + map);
 		
 		Map rst = new HashMap();
@@ -67,20 +67,7 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 		psSiebelMessage.addChild(psRouting);
 		psInput.addChild(psSiebelMessage);
 		
-		/*
-		SiebelPropertySet psOutput = new SiebelPropertySet();
-		STWDhlClient sendRouting = new STWDhlClient();
-		log.debug("inputs");
-		
-		sendRouting.doInvokeMethod("Routing", psInput, psOutput);
-		
-		log.debug("outputs");
-		log.debug(psOutput.toString());
-		*/
-		
-		rst.put("REQ_PARAM", psInput);
-		
-		return rst; 
+		return psInput; 
 	}
 	
 }
