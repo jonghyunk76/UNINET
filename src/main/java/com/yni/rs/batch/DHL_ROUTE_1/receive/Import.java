@@ -7,6 +7,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.siebel.data.SiebelPropertySet;
+import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.parameter.YniAbstractBatch;
 import com.yni.rs.batch.ImportPackage;
 
@@ -68,6 +69,11 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 		psInput.addChild(psSiebelMessage);
 		
 		return psInput; 
+	}
+
+	@Override
+	public void executeBatch(Object batchVo) throws Exception {
+		log.debug("Send Batch : " + batchVo);
 	}
 	
 }

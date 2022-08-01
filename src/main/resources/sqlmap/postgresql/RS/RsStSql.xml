@@ -472,7 +472,7 @@
                   ,IH.SCHEDULE_CD
                   ,IH.IF_CD
                   ,IIM.IF_NAME 
-                  ,IH.TOTAL_ROWS
+                  ,TO_CHAR(IH.TOTAL_ROWS/1000, 'FM999,999,990.09999') AS TOTAL_ROWS
                   ,IH.FROM_DATE
                   ,SUBSTRING(IH.FROM_DATE, 1, 6) AS YYYYMM
                   ,IH.TO_DATE

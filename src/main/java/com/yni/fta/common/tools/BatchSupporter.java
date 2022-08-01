@@ -522,79 +522,100 @@ public class BatchSupporter extends JcoDAO {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map getInterfaceData(InterfaceTarget batchTarget, BatchVo batchVo, Map pmap) throws Exception {
-		Map<String, Object> paramMap = new HashMap<String, Object>();
+	public boolean getInterfaceData(InterfaceTarget batchTarget, BatchVo batchVo, Map pmap) throws Exception {
+		boolean result = true;
+		ParameterVo pvo = batchVo.getParameter();
 		
-		if(jco == null) return paramMap;
-		
-		Table tlb = jco.getFunction(0).getTable();
-		Import imp = jco.getFunction(0).getImports();
-		
-		String rparam = batchTarget.selectSendParameterInfo(pmap); // 이력 테이블(interface_history)에서 수신된 파라메터 조회
-		
-		if(rparam != null && !rparam.isEmpty()) {
-			Map rmap = JsonUtil.getMap(rparam);
+		try {
+			String rparam = batchTarget.selectSendParameterInfo(pmap); // 이력 테이블(interface_history)에서 수신된 파라메터 조회
 			
-			pmap.putAll(rmap); // 수신된 파라메터 정보를 포함시킨다.
-		}
-		
-		for(int i = 0; i < tlb.getParameterCount(); i++) {
-			Parameter param = tlb.getParams(i);
-			String paramName = param.getName(); // table명
+			log.debug("send data(before) = " + rparam);
 			
-			if(param.getType() == JCO.TYPE_ITAB) {
-				pmap.put("OBJECT_NAME", paramName); // table 객체명
+			if(rparam != null && !rparam.isEmpty()) {
+				Map rmap = JsonUtil.getMap(rparam);
 				
-				List datas = batchTarget.selectSendDataList(pmap); // 이력 테이블(interface_history_data)에서 전송할 데이터 조회
+				log.debug("send data(after) = " + rmap);
 				
-				Map tmap = new HashMap();				
-				tmap.put(paramName, datas);
+				pvo.setPutAll(rmap); // 수신된 파라메터 정보를 포함시킨다.
+			}
+			
+			Map<String, Object> paramMap = new HashMap<String, Object>();
+			
+			// 전송할 데이터에 대한 JCO Map이 있는 경우에만 아래 로직을 수행함
+			if(jco == null) {
+				return result;
+			}
+			
+			Table tlb = jco.getFunction(0).getTable();
+			Import imp = jco.getFunction(0).getImports();
+			
+			for(int i = 0; i < tlb.getParameterCount(); i++) {
+				Parameter param = tlb.getParams(i);
+				String paramName = param.getName(); // table명
 				
-				paramMap = this.getTableData(batchVo, tmap);
-				
-				String key = paramName;
-				
-				// 전송될 데이터명 구하기
-				for(int p = 0; p < imp.getParameterCount(); p++) {
-					Parameter iparam = imp.getParams(p);
+				if(param.getType() == JCO.TYPE_ITAB) {
+					pmap.put("OBJECT_NAME", paramName); // table 객체명
 					
-					String iparamName = StringHelper.null2void(iparam.getName());
+					List datas = batchTarget.selectSendDataList(pmap); // 이력 테이블(interface_history_data)에서 전송할 데이터 조회
 					
-					if(param.getType() == JCO.TYPE_ITAB && iparamName.equals(paramName)) { // 데이터 타입이 itabe이면서 name에 같은 경우, parameter name을 변경함
-						key = StringHelper.null2string(iparam.getTrans(), iparamName);
-						break;
+					Map tmap = new HashMap();				
+					tmap.put(paramName, datas);
+					
+					paramMap = this.getTableData(batchVo, tmap);
+					
+					String key = paramName;
+					
+					// 전송될 데이터명 구하기
+					for(int p = 0; p < imp.getParameterCount(); p++) {
+						Parameter iparam = imp.getParams(p);
+						
+						String iparamName = StringHelper.null2void(iparam.getName());
+						
+						if(param.getType() == JCO.TYPE_ITAB && iparamName.equals(paramName)) { // 데이터 타입이 itabe이면서 name에 같은 경우, parameter name을 변경함
+							key = StringHelper.null2string(iparam.getTrans(), iparamName);
+							break;
+						}
 					}
-				}
-				
-				// 전송할 인터페이스 이력등록
-				for(int j = 0; j < datas.size(); j++) {
-					Map colMap = (Map) datas.get(j);
 					
-					colMap.put(Consistent.IF_BATCH_TRANS_DATA_ID, "_" + key); // 전송되는 테이블명(_+테이블명)
-	                colMap.put(Consistent.IF_BATCH_TRANS_ID, batchVo.getTransId()); // 인터페이스 이력번호
-	                
-	                log.debug("Data("+colMap.get("ROW_SEQ")+") >>> " + colMap);
+					// 전송할 인터페이스 이력등록
+					for(int j = 0; j < datas.size(); j++) {
+						Map colMap = (Map) datas.get(j);
+						
+						colMap.put(Consistent.IF_BATCH_TRANS_DATA_ID, "_" + key); // 전송되는 테이블명(_+테이블명)
+		                colMap.put(Consistent.IF_BATCH_TRANS_ID, batchVo.getTransId()); // 인터페이스 이력번호
+		                
+		                log.debug("Data("+colMap.get("ROW_SEQ")+") >>> " + colMap);
+					}
+					
+					batchTarget.insertTransDtlData(datas);
 				}
-				
-				batchTarget.insertTransDtlData(datas);
 			}
-		}
-		
-		// import할 문자열 파라메터 생성
-		for(int i = 0; i < imp.getParameterCount(); i++) {
-			Parameter param = imp.getParams(i);
-			String paramName = param.getName();
 			
-			if(param.getType() != JCO.TYPE_ITAB) {
-				String paramValue = StringHelper.null2void(pmap.get(paramName));
+			// import할 문자열 파라메터 생성
+			for(int i = 0; i < imp.getParameterCount(); i++) {
+				Parameter param = imp.getParams(i);
+				String paramName = param.getName();
 				
-				paramMap.put(paramName, paramValue);
+				if(param.getType() != JCO.TYPE_ITAB) {
+					String paramValue = StringHelper.null2void(pmap.get(paramName));
+					
+					paramMap.put(paramName, paramValue);
+				}
 			}
+			
+			log.debug("Result parameter = " + paramMap.size() + ", data = " + paramMap);
+			
+			pvo.setPutAll(paramMap);
+			batchVo.setBatchStatus("S");
+		} catch(Exception e) {
+			result = false;
+			log.error(e.getCause());
+			
+			batchVo.setBatchStatus("E");
+			batchVo.setErrorMessage(e.getMessage());
 		}
 		
-		log.debug("Result parameter = " + paramMap.size() + ", data = " + paramMap);
-		
-		return paramMap;
+		return result;
 	}
 	
 	/**
@@ -621,7 +642,7 @@ public class BatchSupporter extends JcoDAO {
 			pvo.clear(); // 요청 파라메터는 초기화 후 재생성함
 			
 			if(reqFormat.equals("OBJECT")) {
-				reqMap.put("REQ_PARAMS", iobj); // Json타입의 문자열 변환
+				reqMap.put("REQ_PARAMS", iobj); // Object 객체를 그대로 적용
 			} else if(reqFormat.equals("JSON")) {
 				if(iobj instanceof Map) reqMap.put("REQ_PARAMS", JsonUtil.getViewJson((Map) iobj)); // Json타입의 문자열 변환
 				else if(iobj instanceof List) reqMap.put("REQ_PARAMS", JsonUtil.getViewJson((List) iobj)); // Json타입의 문자열 변환
@@ -629,8 +650,8 @@ public class BatchSupporter extends JcoDAO {
 			} else if(reqFormat.equals("FILE")) {
 				reqMap.put("REQ_PARAMS", iobj);
 			} else if(reqFormat.equals("XML")) {
-				if(iobj instanceof String) reqMap.put("REQ_PARAMS", JsonUtil.getXMLMap(iobj.toString()));
-				else log.error("XML 타입으로 변환 가능한 객체가 아닙니다.(문자열 또는 XML format 오류)");
+				if(iobj instanceof String) reqMap.put("REQ_PARAMS", JsonUtil.getXMLMap(iobj.toString())); // XML로 변환
+				else log.error("XML 타입으로 변환 가능한 객체가 아닙니다.(XML format 오류)");
 			}
 			
 			pvo.setPutAll(reqMap);
@@ -650,8 +671,8 @@ public class BatchSupporter extends JcoDAO {
 		try {
 			Object robj = batchVo.getReturnData();
 			
-			if(iobj != null) resMap.put("REQUEST_PARAM", iobj.toString()); // 수신측 요청 파라메터
-			if(robj != null) resMap.put("RECEIVE_PARAM", robj.toString()); // 수신측 응답 데이터
+			if(iobj != null) resMap.put("REQUEST_PARAM", iobj.toString()); // 수신측 요청 파라메터(요청측 데이터 원본 - 문자열)
+			if(robj != null) resMap.put("RECEIVE_PARAM", robj.toString()); // 수신측 응답 데이터(Json타입의 데이터 - 문자열)
 		} catch(Exception e) {
 			log.error(e.getMessage());
 		}
@@ -672,15 +693,17 @@ public class BatchSupporter extends JcoDAO {
 	 * @throws Exception
 	 */
 	public boolean send(InterfaceTarget batchTarget, BatchVo batchVo, Map pmap, Map map) throws Exception {
-		String resFormat = StringHelper.null2void(map.get("EXP_DATA_FORMAT")); // Export 데이터 형식(JSON, JCO, SOAP, XML 등)
-    	String protocal = StringHelper.null2void(map.get("PROTOCAL")); // 통신방법(HTTP, SMTP, FTP, JCO 등)
+		if(jco != null) return true;
+		
+		String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식 : Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Bypass(B), Procedure(P)
+		String resFormat = StringHelper.null2void(map.get("RES_DATA_FORMAT")); // Import 데이터 형식 : JSON, FILE, XML, OBJECT
+    	int pageNum = StringHelper.null2zero(map.get("TRAN_ROW_NUM")); // 한번에 전송할 데이터건수
     	String trandId = batchVo.getTransId();
     	
-		Import imp = jco.getFunction(0).getImports();
-		
-		int cnt = 0;
 		Map commVal = new HashMap();
 		Map<String, List> listMap = new HashMap<String, List>();
+		
+		Import imp = jco.getFunction(0).getImports();
 		
 		// 공통으로 넘겨줄 문자열로 지정된 데이터를 찾음
 		for(int i = 0; i < imp.getParameterCount(); i++) {
@@ -715,8 +738,6 @@ public class BatchSupporter extends JcoDAO {
 		
 		// 리스트로 저장된 값인 경우에는 한번에 전송가능한 건수만큼 Loop로 전송함
 		if(listMap != null && listMap.size() > 0) {
-			int pageNum = StringHelper.null2zero(pmap.get("TRAN_ROW_NUM")); // 한번에 전송할 데이터건수
-			
 			log.debug("Send info[size = " + listMap.size() + ", data " + listMap + "]");
 			
 			for (Iterator it = listMap.entrySet().iterator(); it.hasNext();) {
@@ -772,17 +793,13 @@ public class BatchSupporter extends JcoDAO {
 					}
 					
 					// 프로토콜에 따라 데이터를 전송
-					DataHandler dh = new DataHandler(batchVo, protocal);
+					DataHandler dh = new DataHandler(batchVo, process_type);
 					
 					boolean rst = dh.send(map, sendData);
 					
 					if(!rst) return false;
 				}
-				
-				cnt += totalCnt;
 			}
-			
-			batchVo.setTotalRows(Integer.toString(cnt));
 		}
 		
 		// 전송되는 모든 데이터를 기록한다.
@@ -813,7 +830,7 @@ public class BatchSupporter extends JcoDAO {
 	 * @return
 	 * @throws Exception
 	 */
-	public Object callMethod(String cname, String fname, Map bmap, Map params) throws Exception {
+	public Object callMethod(String cname, String fname, Map bmap, Object params) throws Exception {
 		String snd_rev_type = StringHelper.null2void(bmap.get("INTERFACE_MTH"));
 		String ifCode = StringHelper.null2void(bmap.get("SERVICE_ID"));
 		String className = "com.yni.rs.batch.";

@@ -114,6 +114,24 @@ public class BatchVo {
         this.batchMap.put(Consistent.IF_BATCH_RETURN_DATA, datas);
     }
     
+    // 배치 실행 후 직접 데이터 리턴
+    public Object getImportData() {
+        return batchMap.get("IMPORT_DATA");
+    }
+
+    public void setImportData(Object datas) {
+        this.batchMap.put("IMPORT_DATA", datas);
+    }
+    
+    // 배치 실행 후 직접 데이터 리턴
+    public Object getExportData() {
+        return batchMap.get("EXPORT_DATA");
+    }
+
+    public void setExportData(Object datas) {
+        this.batchMap.put("EXPORT_DATA", datas);
+    }
+    
     // 전송ID
     public String getTransId() {
         return StringHelper.null2void(batchMap.get(Consistent.IF_BATCH_TRANS_ID));

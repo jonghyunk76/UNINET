@@ -6,6 +6,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.parameter.YniAbstractBatch;
 import com.yni.rs.batch.ImportPackage;
 
@@ -35,6 +36,11 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 		// 파라메터에 등록할 데이터를 생성하는 프로그램 구현
 		
 		return rst; 
+	}
+
+	@Override
+	public void executeBatch(Object batchVo) throws Exception {
+		log.debug("Send Batch : " + batchVo);
 	}
 	
 }

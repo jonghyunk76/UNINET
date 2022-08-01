@@ -1,7 +1,6 @@
 package com.yni.fta.common.batch;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,16 +10,20 @@ import org.springframework.context.ApplicationContext;
 
 import com.google.gson.JsonObject;
 import com.yni.fta.common.Consistent;
+import com.yni.fta.common.batch.delegate.DataHandler;
 import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.batch.vo.JobVo;
 import com.yni.fta.common.batch.vo.ParameterVo;
 import com.yni.fta.common.beans.target.InterfaceTarget;
 import com.yni.fta.common.tools.BatchSupporter;
+import com.yni.fta.common.tools.ObjectSupporter;
 
 import kr.yni.frame.batch.logger.BatchLogger;
 import kr.yni.frame.batch.logger.impl.BatchLoggerImpl;
 import kr.yni.frame.context.ApplicationContextFactory;
 import kr.yni.frame.exception.FrameException;
+import kr.yni.frame.mapper.ParamReader;
+import kr.yni.frame.mapper.element.Jco;
 import kr.yni.frame.mapper.util.JcoMapValidator;
 import kr.yni.frame.util.DataMapHelper;
 import kr.yni.frame.util.JsonUtil;
@@ -35,7 +38,7 @@ import kr.yni.frame.util.StringHelper;
 public abstract class BatchProcess {
 
     protected Log log = LogFactory.getLog(this.getClass());
-
+    
     protected InterfaceTarget batchTarget;
 
     protected BatchLogger logger;
@@ -387,9 +390,10 @@ public abstract class BatchProcess {
     	String serverStatus = StringHelper.null2string(map.get("CURRENT_STAT"), "R"); // R:기동, S:중지, E:장애
     	String snd_rev_type = StringHelper.null2void(map.get("INTERFACE_MTH")); // 데이터 송/수신(R:Receive, S:Send)
     	String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식 : Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Bypass(B), Procedure(P)
-
+    	
     	log.debug("transaction information = " + map.toString());
     	
+    	Jco jco = ParamReader.getJcoParameter(batchVo.getJcoId());;
     	boolean result = true;
     	int rstCnt = 0;
     	String message = "";
@@ -402,6 +406,7 @@ public abstract class BatchProcess {
     		}
     		
     		ParameterVo pvo = batchVo.getParameter();
+    		long data_size = 0;
     		
 	    	// 수신서버 작업
 	    	if(snd_rev_type.equals("R")) {
@@ -424,7 +429,7 @@ public abstract class BatchProcess {
 	    		// 2.파라메터 데이터를 JCO XML에 설정된 정보와 맵핑하고 DB에 이력 등록
 	    		Object iobj = null;
 	    		
-	    		if(impParam instanceof Map) {
+	    		if(jco != null && impParam instanceof Map) {
 	    			iobj = bs.getImportPrameter(batchVo, (Map) impParam);
 	    		} else {
 	    			iobj = impParam;
@@ -435,6 +440,8 @@ public abstract class BatchProcess {
 	    		} else {
 	    			log.debug("call method parameter(after) parameter = " + iobj);
 	    		}
+	    		
+	    		data_size += ObjectSupporter.getObjectSize(iobj); // 요청 데이터 크기
 	    		
 	    		if(!process_type.equals("B")) { // By pass가 아닌 경우에는 외부서버와 통신하여 값을 가져온다.
 		    		// 3.서버 통신방법에 따라 데이터 요청
@@ -455,7 +462,10 @@ public abstract class BatchProcess {
 		    		log.debug("response data = " + res_data);
 		    		
 		    		// 4.결과 수신
-		    		Map emap = bs.getExportParameter(batchVo, res_data);
+		    		Map emap = null;
+		    		
+		    		if(jco != null) emap = bs.getExportParameter(batchVo, res_data);
+		    		else emap = res_data;
 		    		
 		    		emap.put("INTERFACE_MTH", snd_rev_type);
 		    		emap.put("SERVICE_ID", map.get("SERVICE_ID"));
@@ -481,18 +491,22 @@ public abstract class BatchProcess {
 	    		}
 	    		
 	    		// 6.결과데이터 맵핑(데이터 유효성 체크 포함)
-	    		Map rmap = bs.getTableData(batchVo, res_data);
+	    		Map rmap = null;
+	    		if(jco != null) rmap = bs.getTableData(batchVo, res_data);
+	    		else rmap = res_data;
+	    				
+	    		if(rmap != null) data_size += ObjectSupporter.getObjectSize(rmap); // 결과 데이터 크기
 	    		
-	    		log.debug("result table data = " + rmap.toString());
+	    		log.debug("result table size = " + data_size + ", data = " + rmap.toString());
 	    		
-	    		// 7.이력 테이블에 저장
-	    		int cnt = 0;
+	    		// 7.이력 테이블에 저장(중계서버에는 사용하지 않음)
+//	    		int cnt = 0;
+//	    		
+//	    		if (rmap != null) {
+//	    			cnt = bs.insertTableData(batchTarget, batchVo, rmap);
+//	            }
 	    		
-	    		if (rmap != null) {
-	    			cnt = bs.insertTableData(batchTarget, batchVo, rmap);
-	            }
-	    		
-	    		batchVo.setTotalRows(Integer.toString(cnt)); // 전체건수
+	    		batchVo.setTotalRows(Long.toString(data_size)); // 데이터 크기(byte)
 	    		batchVo.setSubmitStatus(snd_rev_type); // 통신유형
 	    		
 	    		// 8.전체건수 업데이트
@@ -501,23 +515,49 @@ public abstract class BatchProcess {
 	    	
 	    	// 송신서버 작업
 	    	if(snd_rev_type.equals("S")) {
-				// 1.데이터 추출(서비스 ID로 연결된 인터페이스 이력 테이블에서 테이블명(INTERFACE_HISTORY_DATA_ID)과 import파라메터 name이 같은 데이터를 조회함)
-				Map datas = bs.getInterfaceData(batchTarget, batchVo, map);
+	    		String resFormat = StringHelper.null2void(map.get("RES_DATA_FORMAT")); // Import 데이터 형식 : JSON, FILE, XML, OBJECT
+	    		
+	    		// 1.데이터 추출(서비스 ID로 연결된 인터페이스 이력 테이블에서 테이블명(INTERFACE_HISTORY_DATA_ID)과 import파라메터 name이 같은 데이터를 조회함)
+				boolean rst = bs.getInterfaceData(batchTarget, batchVo, map);
+				
+				if(!rst) {
+					return false;
+				}
 				
 				// 2.데이터 추가 가공을 위한 클래스 호출(개발자 수행)
-				Object impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
+				Object impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터+전송할 데이터
 	    		
-				if(impParam == null) impParam = datas;
+				if(impParam == null) {
+	    			impParam = pvo.getMap();
+	    		} else {
+	    			log.debug("Apply to user customizing import parameter.");
+	    		}
 				
 				log.debug("send finally data = " + impParam);
 				
+				batchVo.setTotalRows(Long.toString(ObjectSupporter.getObjectSize(impParam)));
+				
 	    		// 4.데이터 전송
-				boolean cnnrst = bs.send(batchTarget, batchVo, (Map) impParam, map);
+				boolean cnnrst = true;
+				
+				if(jco != null) {
+					cnnrst = bs.send(batchTarget, batchVo, (Map) impParam, map);
+				} else {
+					batchVo.setImportData(impParam);
+					
+					bs.callMethod("Import", "executeBatch", map, batchVo);
+					
+					if(batchVo.getBatchStatus().equals("E")) {
+						cnnrst = false;
+					}
+				}
 				
 	    		// 5.전송결과 실패인 경우 하위 로직은 수행하지 않음
 				if(!cnnrst) {
 	    			return false;
 	    		}
+				
+				// Map expParam = (Map) bs.callMethod("Export", "getParameter", map, emap); // 클래스명, 매소드명, 배치정보, 파라미터
 				
 				// 6.전체건수 업데이트
 	    		batchTarget.updateJcoCountData(batchVo);
@@ -654,5 +694,5 @@ public abstract class BatchProcess {
     }
 
     protected abstract boolean applyBatch() throws Exception;
-
+    
 }
