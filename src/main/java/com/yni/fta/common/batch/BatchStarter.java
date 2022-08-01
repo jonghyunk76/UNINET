@@ -1235,7 +1235,7 @@ public class BatchStarter implements Job {
 	    				// 1.2 PASS에 원산지 확인서 요청(웹서비스 통신)
 			        	File xml_file = null;
 						try {
-							xml_file = WebServiceClient.getResponseXML(reqInfo);
+							xml_file = null; //WebServiceClient.getResponseXML(reqInfo);
 						} catch(Exception e) {
 							log.error(e.getMessage());
 						}

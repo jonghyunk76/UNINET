@@ -27,6 +27,6 @@ public interface Transfer {
 	 * @return
 	 * @throws Exception
 	 */
-	boolean send(BatchVo batchVo, Map map, Map params) throws Exception;
+	boolean send(BatchVo batchVo, Map map, Object datas) throws Exception;
 	
 }

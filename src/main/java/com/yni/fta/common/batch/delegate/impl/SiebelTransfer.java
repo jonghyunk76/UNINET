@@ -58,7 +58,7 @@ public class SiebelTransfer implements Transfer {
 	}
 
 	@Override
-	public boolean send(BatchVo batchVo, Map map, Map params) throws Exception {
+	public boolean send(BatchVo batchVo, Map map, Object datas) throws Exception {
 		// TODO Auto-generated method stub
 		return false;
 	}

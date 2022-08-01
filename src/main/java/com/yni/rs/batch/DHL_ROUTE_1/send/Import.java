@@ -6,9 +6,12 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.yni.fta.common.batch.delegate.DataHandler;
 import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.parameter.YniAbstractBatch;
 import com.yni.rs.batch.ImportPackage;
+
+import kr.yni.frame.util.StringHelper;
 
 /**
  * 전송할 파라메터 정보 생성 클래스
@@ -32,17 +35,30 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 		log.debug("User Import : " + map);
 		
 		// 파라메터에 등록할 데이터를 생성하는 프로그램 구현
-		Map rst = (Map) map.get("SiebelMessage");
+		Map impParam = (Map) map.get("SiebelMessage");
 		
-		return rst; 
+		return impParam; 
 	}
 
 	@Override
-	public void executeBatch(Object batchVo) throws Exception {
+	public void executeBatch(Object batchVo) throws Exception {		
 		BatchVo bvo = (BatchVo) batchVo;
+		Map map = bvo.getMap();
+		Object datas = bvo.getImportData();
 		
-		log.debug("Import data : " + bvo.getImportData());
+		String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식 : Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Bypass(B), Procedure(P)
 		
+		log.debug("Import type= " + process_type + ", data : " + datas);
+		
+		// 프로토콜에 따라 데이터를 전송
+		DataHandler dh = new DataHandler(bvo, process_type);
+		boolean rst = dh.send(map, datas);
+		
+		if(rst) {
+			bvo.setBatchStatus("S");
+		} else {
+			bvo.setBatchStatus("E");
+		}
 	}
 	
 }

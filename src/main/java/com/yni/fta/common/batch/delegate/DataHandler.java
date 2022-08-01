@@ -74,7 +74,7 @@ public class DataHandler {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean send(Map map, Map datas) throws Exception {
+	public boolean send(Map map, Object datas) throws Exception {
     	if(trans == null || batchVo == null) {
     		return false;
     	} else {
