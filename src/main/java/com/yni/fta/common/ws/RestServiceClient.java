@@ -29,6 +29,8 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
 
+import com.yni.fta.common.batch.vo.BatchVo;
+
 import kr.yni.frame.config.Configurator;
 import kr.yni.frame.config.ConfiguratorFactory;
 import kr.yni.frame.util.JsonUtil;
@@ -98,6 +100,8 @@ public class RestServiceClient {
 		String token = this.getTokenId(serverId);
 		
 		if(token != null && !token.isEmpty()) {
+			log.debug("Old Token data = " + token);
+			
 			return token;
 		}
 		
@@ -123,7 +127,7 @@ public class RestServiceClient {
 	        JSONObject json_auth = new JSONObject(EntityUtils.toString(response.getEntity()));
 	        token = json_auth.getString("access_token");
 	        
-	        log.debug("Create Token data = " + token);
+	        log.debug("New Token data = " + token);
 	        
 	        this.setTokenId(serverId, token);
 		} catch (Exception e) {
@@ -169,6 +173,100 @@ public class RestServiceClient {
 	        String json_req = StringHelper.null2void(map.get("REQ_PARAMS"));
 	        
 	        log.debug("Request parameter = " + json_req + ", URL = " + httpPost.getURI().getPath());
+	        
+	        // 한글 인코딩을 위하여 인코딩 정보를 설정한다.
+	        httpPost.setEntity(new StringEntity(json_req, "utf-8"));
+	        
+	        response = httpclient.execute(httpPost);
+	        int statusCode = response.getStatusLine().getStatusCode();
+	        
+	        // 실패한 경우에 Token를 다시 받은 후 재실행을 요청한다.
+	        if(statusCode != 200) {
+	        	this.tokens.remove(serverId);
+	        	token = this.getToken4Property(serverId);
+	        	
+	        	httpPost.setHeader("Authorization", "OAuth " + token);
+	        	
+	        	response = httpclient.execute(httpPost);
+		        statusCode = response.getStatusLine().getStatusCode();
+	        }
+	        
+	        if(log.isDebugEnabled()) {
+	            log.debug("\nSending 'POST' request to URL : " + httpPost.getURI());            
+	            log.debug("Post parameters : " + httpPost.getEntity().toString());
+	            log.debug("Response Code : " + statusCode );
+	        }
+	        
+	        BufferedReader rd = null;
+	    	String line = null;
+	    	StringBuffer buf = new StringBuffer();
+	    	
+	        if(statusCode == 200) { // 정상적으로 처리된 경우
+	        	try {
+	    	    	rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "utf-8"));
+	    	        
+	    	        while ((line = rd.readLine()) != null) {
+	    	        	buf.append(line);
+	    	        }
+	        	} catch(Exception e) {
+	        		throw e;
+	        	} finally {
+	        		if(rd != null) rd.close();
+	        	}
+	        } else {
+	        	throw new Exception("Not found access token.");
+	        }
+	        
+	        log.debug("Reponse data = " + buf.toString());
+	        
+	        if(buf.length() > 0) {
+	        	result = JsonUtil.getMap(buf.toString());
+	        }
+        } catch(Exception e) {
+        	log.error(e);
+        	throw e;
+        }
+        
+		return result;
+    }
+	
+	/**
+	 * TOKEN 인증을 적용한 데이터 통신
+	 * 
+	 * @param map
+	 * @return 응답결과를 Map에 담아 리턴
+	 * @throws Exception
+	 */
+	public Map executeInterface(BatchVo batchVo, String url, Object data, String token) throws Exception {
+		CloseableHttpResponse response = null;
+		Map result = null;
+		
+        try {
+        	Map batchMap = batchVo.getMap();
+        	
+        	String serverId = StringHelper.null2void(batchMap.get("SERVER_ID"));
+        	CloseableHttpClient httpclient = null;
+        	
+        	if(url.startsWith("https://")) {
+        		SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(
+        			     SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build(), 
+        			        NoopHostnameVerifier.INSTANCE);
+        		
+        		httpclient = HttpClients.custom().setSSLSocketFactory(scsf).build();
+        	} else {
+        		httpclient = HttpClientBuilder.create().build();
+        	}
+        	
+            HttpPost httpPost = new HttpPost(url);
+            
+	    	httpPost.setHeader("Content-Type", "application/json");
+	        httpPost.setHeader("Cache-Control", "no-cache");
+	        httpPost.setHeader("Authorization", "OAuth " + token);
+	        
+	        String json_req = StringHelper.null2void(data);
+	        
+	        log.debug("URL = " + url + ", Path = " + httpPost.getURI().getPath());
+	        log.debug("Request parameter = " + json_req);
 	        
 	        // 한글 인코딩을 위하여 인코딩 정보를 설정한다.
 	        httpPost.setEntity(new StringEntity(json_req, "utf-8"));

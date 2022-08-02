@@ -14,15 +14,15 @@ public class FtpTransfer implements Transfer {
 	private static Log log = LogFactory.getLog(FtpTransfer.class);
 	
 	@Override
-	public boolean receive(BatchVo batchVo, Map map, ParameterVo pvo) throws Exception {
+	public Object receive(BatchVo batchVo, Map map, Object datas) throws Exception {
 		// TODO Auto-generated method stub
-		return false;
+		return null;
 	}
 
 	@Override
-	public boolean send(BatchVo batchVo, Map map, Object datas) throws Exception {
+	public Object send(BatchVo batchVo, Map map, Object datas) throws Exception {
 		// TODO Auto-generated method stub
-		return false;
+		return null;
 	}
 
 }

@@ -39,8 +39,8 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 	}
 
 	@Override
-	public void executeBatch(Object batchVo) throws Exception {
-		log.debug("Send Batch : " + batchVo);
+	public void executeBatch(Object vo) throws Exception {
+		log.debug("Send Batch : " + vo);
 	}
 	
 }

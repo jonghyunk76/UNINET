@@ -524,6 +524,7 @@ public class BatchSupporter extends JcoDAO {
 	 */
 	public boolean getInterfaceData(InterfaceTarget batchTarget, BatchVo batchVo, Map pmap) throws Exception {
 		boolean result = true;
+		String reqFormat = StringHelper.null2void(pmap.get("REQ_DATA_FORMAT")); // 요청 데이터 형식 : JSON, FILE, XML, OBJECT (수신측 응답 데이터 형식과 동일함)
 		ParameterVo pvo = batchVo.getParameter();
 		
 		try {
@@ -532,19 +533,17 @@ public class BatchSupporter extends JcoDAO {
 			log.debug("send data(before) = " + rparam);
 			
 			if(rparam != null && !rparam.isEmpty()) {
-				Map rmap = JsonUtil.getMap(rparam);
+				pvo.clear();
 				
-				log.debug("send data(after) = " + rmap);
-				
-				pvo.setPutAll(rmap); // 수신된 파라메터 정보를 포함시킨다.
+				pvo.setPutAll(DataConvertUtil.getConvertMap(rparam, reqFormat));
 			}
-			
-			Map<String, Object> paramMap = new HashMap<String, Object>();
 			
 			// 전송할 데이터에 대한 JCO Map이 있는 경우에만 아래 로직을 수행함
 			if(jco == null) {
 				return result;
 			}
+			
+			Map<String, Object> paramMap = new HashMap<String, Object>();
 			
 			Table tlb = jco.getFunction(0).getTable();
 			Import imp = jco.getFunction(0).getImports();
@@ -619,7 +618,7 @@ public class BatchSupporter extends JcoDAO {
 	}
 	
 	/**
-	 * 데이터 요청후 수신받기
+	 * 데이터 요청 후 결과정보 수신받기
 	 * 
 	 * @param batchTarget = DBO객체
 	 * @param batchVo = 배치정보
@@ -629,55 +628,39 @@ public class BatchSupporter extends JcoDAO {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean receive(InterfaceTarget batchTarget, BatchVo batchVo, ParameterVo pvo, Object iobj, Map map) throws Exception {
-//		String protocal = StringHelper.null2void(map.get("PROTOCAL")); // 통신방법 : HTTP, SMTP, FTP, JCO
-		String reqFormat = StringHelper.null2void(map.get("IMP_DATA_FORMAT")); // Import 데이터 형식 : JSON, FILE, XML, OBJECT
-		String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식 : Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Bypass(B), Procedure(P)
-		String trandId = batchVo.getTransId();
-		
-		// 배치정보에 지정된 리턴되는 데이터 형식에 맞게 변환
+	public boolean receive(BatchVo batchVo, ParameterVo pvo, Map map) throws Exception {
 		Map reqMap = new HashMap();
-		
-		if(iobj != null) {
-			pvo.clear(); // 요청 파라메터는 초기화 후 재생성함
-			
-			if(reqFormat.equals("OBJECT")) {
-				reqMap.put("REQ_PARAMS", iobj); // Object 객체를 그대로 적용
-			} else if(reqFormat.equals("JSON")) {
-				if(iobj instanceof Map) reqMap.put("REQ_PARAMS", JsonUtil.getViewJson((Map) iobj)); // Json타입의 문자열 변환
-				else if(iobj instanceof List) reqMap.put("REQ_PARAMS", JsonUtil.getViewJson((List) iobj)); // Json타입의 문자열 변환
-				else log.error("JSON 타입으로 변환 가능한 객체가 아닙니다.(Map 또는 List 객체 필요)");
-			} else if(reqFormat.equals("FILE")) {
-				reqMap.put("REQ_PARAMS", iobj);
-			} else if(reqFormat.equals("XML")) {
-				if(iobj instanceof String) reqMap.put("REQ_PARAMS", JsonUtil.getXMLMap(iobj.toString())); // XML로 변환
-				else log.error("XML 타입으로 변환 가능한 객체가 아닙니다.(XML format 오류)");
-			}
-			
-			pvo.setPutAll(reqMap);
-        }
+		Object iobj = batchVo.getImportData();
 		
 		log.debug("Receive import parameter = " + pvo.getMap());
 		
     	// 4.서버 통신방법에 따라 데이터 요청
-		DataHandler dh = new DataHandler(batchVo, process_type);
-		boolean result = dh.receive(map, pvo);
+		DataHandler dh = new DataHandler(batchVo);
+		boolean result = dh.receive(map, iobj);
 		
-		// 수신 결과데이터 업데이트
-		Map resMap = new HashMap();
+		return result;
+	}
+	
+	/**
+	 * 데이터 전송 후 결과정보 수신받기
+	 * 
+	 * @param batchTarget = DBO객체
+	 * @param batchVo = 배치정보
+	 * @param pvo = User Parameter
+	 * @param iobj = JCO Import parameter(User parameter를 변환시킨 결과)
+	 * @param map = 인터페이스 정보 > batchVo.getMap();
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean send(InterfaceTarget batchTarget, BatchVo batchVo, ParameterVo pvo, Map map) throws Exception {
+		Map reqMap = new HashMap();
+		Object iobj = batchVo.getImportData();
 		
-		resMap.put("INTERFACE_HISTORY_ID", trandId);
+		log.debug("Receive import parameter = " + pvo.getMap());
 		
-		try {
-			Object robj = batchVo.getReturnData();
-			
-			if(iobj != null) resMap.put("REQUEST_PARAM", iobj.toString()); // 수신측 요청 파라메터(요청측 데이터 원본 - 문자열)
-			if(robj != null) resMap.put("RECEIVE_PARAM", robj.toString()); // 수신측 응답 데이터(Json타입의 데이터 - 문자열)
-		} catch(Exception e) {
-			log.error(e.getMessage());
-		}
-		
-		batchTarget.updateProcedureResult(resMap);
+    	// 4.서버 통신방법에 따라 데이터 요청
+		DataHandler dh = new DataHandler(batchVo);
+		boolean result = dh.send(map, iobj);
 		
 		return result;
 	}
@@ -692,7 +675,7 @@ public class BatchSupporter extends JcoDAO {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean send(InterfaceTarget batchTarget, BatchVo batchVo, Map pmap, Map map) throws Exception {
+	public boolean sendByJCO(InterfaceTarget batchTarget, BatchVo batchVo, Map pmap, Map map) throws Exception {
 		if(jco != null) return true;
 		
 		String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식 : Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Bypass(B), Procedure(P)
@@ -793,8 +776,7 @@ public class BatchSupporter extends JcoDAO {
 					}
 					
 					// 프로토콜에 따라 데이터를 전송
-					DataHandler dh = new DataHandler(batchVo, process_type);
-					
+					DataHandler dh = new DataHandler(batchVo);
 					boolean rst = dh.send(map, sendData);
 					
 					if(!rst) return false;

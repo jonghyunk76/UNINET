@@ -42,8 +42,8 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 	}
 
 	@Override
-	public void executeBatch(Object batchVo) throws Exception {
-		BatchVo bvo = (BatchVo) batchVo;
+	public void executeBatch(Object vo) throws Exception {
+		BatchVo bvo = (BatchVo) vo;
 		Map map = bvo.getMap();
 		
 		String process_type = StringHelper.null2void(map.get("PROCESS_TYPE")); // 처리방식 : Siebel(I), SOAP(S), HTTP(H), SMTP(T), FTP(F), JCO(J), Bypass(B), Procedure(P)
@@ -51,7 +51,7 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 		log.debug("Import type= " + process_type + ", data : " + bvo.getImportData());
 		
 		// 프로토콜에 따라 데이터를 전송
-		DataHandler dh = new DataHandler(bvo, process_type);
+		DataHandler dh = new DataHandler(bvo);
 		boolean rst = dh.send(map, bvo.getImportData());
 		
 		if(rst) {

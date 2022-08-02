@@ -46,8 +46,7 @@ public class HttpServiceClient extends YniAbstractDAO {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean executeInterface(BatchVo batchVo, String url, Map datas, String key) throws Exception {
-		boolean rst = true;
+	public Object executeInterface(BatchVo batchVo, String url, Map datas, String key) throws Exception {
     	Map returnMap = new HashMap();
     	
     	try {	
@@ -62,8 +61,6 @@ public class HttpServiceClient extends YniAbstractDAO {
 	        	
 	        	if(returnList != null && returnList.size() > 0) {
 	        		returnMap = (Map) returnList.get(0);
-	        		
-	        		batchVo.setReturnData(returnMap);
 	        	}
 	        } else {
 	        	if(statusCode == 404) {
@@ -73,25 +70,17 @@ public class HttpServiceClient extends YniAbstractDAO {
 	        	}
 	        	
 	        	returnMap.put("SERVICE_OPER_YN", "N");
-	        	
-	        	batchVo.setReturnData(returnMap);
-	        	
-	        	rst = false;
 	        }
     	} catch(Exception e) {
     		if(log.isErrorEnabled()) log.error(e);
     		batchVo.setErrorMessage(e.getMessage());
     		
     		returnMap.put("SERVER_CONNECT_YN", "N");
-        	
-        	batchVo.setReturnData(returnMap);
-        	
-        	rst = false;
     	}
         
     	log.debug("return value = " + batchVo.getReturnData());
     	
-        return rst;
+        return returnMap;
 	}
 	
 	/**

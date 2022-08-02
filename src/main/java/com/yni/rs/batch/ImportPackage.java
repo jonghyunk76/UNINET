@@ -20,10 +20,10 @@ public interface ImportPackage {
 	 * 직접 요청하기 위한 매소드
 	 * - JCO XML 설정이 없는 경우에만 실행됨
 	 * 
-	 * @param batchVo
+	 * @param vo BatchVO 객체
 	 * @return
 	 * @throws Exception
 	 */
-	void executeBatch(Object batchVo) throws Exception;
+	void executeBatch(Object vo) throws Exception;
 	
 }

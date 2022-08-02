@@ -7,6 +7,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.siebel.data.SiebelPropertySet;
+import com.yni.fta.common.batch.delegate.DataHandler;
 import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.parameter.YniAbstractBatch;
 import com.yni.rs.batch.ImportPackage;
@@ -70,10 +71,22 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 		
 		return psInput; 
 	}
-
+	
+	/**
+	 * Siebel을 통한 데이터 요청 실행
+	 * 
+	 * @params vo BatchVo객체(배치정보)
+	 */
 	@Override
-	public void executeBatch(Object batchVo) throws Exception {
-		log.debug("Send Batch : " + batchVo);
+	public void executeBatch(Object vo) throws Exception {
+		BatchVo batchVo = (BatchVo) vo;
+		Map map = batchVo.getMap();
+		
+		log.debug("Execute batch parameter : " + batchVo.getImportData());
+		
+		DataHandler dh = new DataHandler(batchVo);
+		boolean result = dh.receive(map, batchVo.getImportData());
+		
 	}
 	
 }

@@ -11,22 +11,22 @@ public interface Transfer {
 	 * 데이터 수신
 	 * 
 	 * @param batchVo 배치정보
-	 * @param map
-	 * @param pvo
+	 * @param map 인터페이스 정보
+	 * @param datas 요청할 데이터
 	 * @return 배치결과
 	 * @throws Exception
 	 */
-	boolean receive(BatchVo batchVo, Map map, ParameterVo pvo) throws Exception;
+	Object receive(BatchVo batchVo, Map map, Object datas) throws Exception;
 	
 	/**
 	 * 데이터 전송
 	 * 
-	 * @param batchVo = 배치정보
-	 * @param map = 인터페이스 정보
-	 * @param params = 전송할 데이터
-	 * @return
+	 * @param batchVo 배치정보
+	 * @param map 인터페이스 정보
+	 * @param datas 전송할 데이터
+	 * @return 배치결과
 	 * @throws Exception
 	 */
-	boolean send(BatchVo batchVo, Map map, Object datas) throws Exception;
+	Object send(BatchVo batchVo, Map map, Object datas) throws Exception;
 	
 }

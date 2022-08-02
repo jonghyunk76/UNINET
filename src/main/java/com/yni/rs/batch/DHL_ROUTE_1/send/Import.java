@@ -41,8 +41,8 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 	}
 
 	@Override
-	public void executeBatch(Object batchVo) throws Exception {		
-		BatchVo bvo = (BatchVo) batchVo;
+	public void executeBatch(Object vo) throws Exception {		
+		BatchVo bvo = (BatchVo) vo;
 		Map map = bvo.getMap();
 		Object datas = bvo.getImportData();
 		
@@ -51,7 +51,7 @@ public class Import extends YniAbstractBatch implements ImportPackage {
 		log.debug("Import type= " + process_type + ", data : " + datas);
 		
 		// 프로토콜에 따라 데이터를 전송
-		DataHandler dh = new DataHandler(bvo, process_type);
+		DataHandler dh = new DataHandler(bvo);
 		boolean rst = dh.send(map, datas);
 		
 		if(rst) {

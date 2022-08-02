@@ -10,6 +10,7 @@ import org.apache.commons.logging.LogFactory;
 import com.yni.fta.common.batch.delegate.Transfer;
 import com.yni.fta.common.batch.vo.BatchVo;
 import com.yni.fta.common.batch.vo.ParameterVo;
+import com.yni.fta.common.tools.DataConvertUtil;
 import com.yni.fta.common.ws.HttpServiceClient;
 import com.yni.fta.common.ws.RestServiceClient;
 import com.yni.fta.common.ws.WebServiceClient;
@@ -28,13 +29,14 @@ public class HttpTransfer implements Transfer {
 	 * 
 	 * @param batchVo 배치정보
 	 * @param map
-	 * @param pvo
+	 * @param datas Map타입의 전송정보
 	 * @return 배치결과
 	 * @throws Exception
 	 */
-	public boolean receive(BatchVo batchVo, Map map, ParameterVo pvo) throws Exception {
-		boolean result = true;
+	public Object receive(BatchVo batchVo, Map map, Object datas) throws Exception {
+		Object res_data = null;
 		
+		String impFormat = StringHelper.null2void(map.get("IMP_DATA_FORMAT")); // Import 데이터 형식 : JSON, FILE, XML, OBJECT
     	String secure = StringHelper.null2string(map.get("SECURE_YN"), "N"); // 보안설정(https) 적용여부
     	String serverId = StringHelper.null2void(map.get("SERVER_ID"));
     	String ip = StringHelper.null2void(map.get("SERVER_IP"));
@@ -46,7 +48,6 @@ public class HttpTransfer implements Transfer {
 			
 		log.debug("Receive protocal info = " + cnnType + ", server id = " + serverId);
 		
-		Map httpMap = pvo.getMap();
 		String reqURL = null;
 		
 		if(port == 80) reqURL = ip + path;
@@ -61,28 +62,20 @@ public class HttpTransfer implements Transfer {
 				RestServiceClient client = new RestServiceClient();
 				String token = client.getToken4Property(serverId); // Access Token 구하기
 				
-				httpMap.put("SERVER_ID", serverId);
-				httpMap.put("REQ_URL", reqURL);
-				httpMap.put("ACCESS_TOKEN", token);
-				
-				log.debug("http receive parameter = " + httpMap);
-				
-				Map res_data = client.executeInterface(httpMap);
-				
-				batchVo.setReturnData(res_data);
+				res_data = client.executeInterface(batchVo, reqURL, datas, token);
 			} else if(cnnType.equals("SOAP")) { // SOAP 통신
-				Map res_data = null;
+				WebServiceClient client = new WebServiceClient();
 				
-				batchVo.setReturnData(res_data);
-			} else if(cnnType.equals("AES")) { // 암호화
+				res_data = null;
+			} else if(cnnType.equals("BASIC")) { // 암호화
 				HttpServiceClient client = new HttpServiceClient();
 				String key = StringHelper.null2void(configurator.getString(serverId + ".secure.aes.secret.key"));
 				
-				result = client.executeInterface(batchVo, reqURL, httpMap, key);
+				res_data = client.executeInterface(batchVo, reqURL, DataConvertUtil.getConvertMap(datas, impFormat), key);
 			} else { // SSL, TLS 통신
 				HttpServiceClient client = new HttpServiceClient();
 				
-				result = client.executeInterface(batchVo, reqURL, httpMap, null);
+				res_data = client.executeInterface(batchVo, reqURL, DataConvertUtil.getConvertMap(datas, impFormat), null);
 			}
 		} catch(Exception e) {
 			log.error(e);
@@ -90,7 +83,7 @@ public class HttpTransfer implements Transfer {
 			batchVo.setErrorMessage("서버와의 통신이 실패했습니다.");
 		}
 		
-		return result;
+		return res_data;
 	}
 	
 	/**
@@ -102,10 +95,10 @@ public class HttpTransfer implements Transfer {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean send(BatchVo batchVo, Map map, Object datas) throws Exception {
-		boolean result = true;
+	public Object send(BatchVo batchVo, Map map, Object datas) throws Exception {
+		Object res_data = null;
 		
-		String resFormat = StringHelper.null2void(map.get("RES_DATA_FORMAT")); // Import 데이터 형식 : JSON, FILE, XML, OBJECT
+		String impFormat = StringHelper.null2void(map.get("IMP_DATA_FORMAT")); // Import 데이터 형식 : JSON, FILE, XML, OBJECT
 		int pageNum = StringHelper.null2zero(map.get("TRAN_ROW_NUM")); // 한번에 전송할 데이터건수
 		String secure = StringHelper.null2string(map.get("SECURE_YN"), "N"); // 보안설정(https) 적용여부
     	String serverId = StringHelper.null2void(map.get("SERVER_ID"));
@@ -115,7 +108,7 @@ public class HttpTransfer implements Transfer {
     	
     	// 서비스 호출방식은 properties을 적용함
 		Configurator configurator = ConfiguratorFactory.getInstance().getConfigurator();
-    	String cnnType = StringHelper.null2void(configurator.getString(serverId + ".secure.type")); // TOKEN, SOAP, AES
+    	String cnnType = StringHelper.null2void(configurator.getString(serverId + ".secure.type")); // TOKEN, SOAP, BASIC, Rest
 			
 		log.debug("Send protocal info = " + cnnType + ", server id = " + serverId);
 		
@@ -129,45 +122,34 @@ public class HttpTransfer implements Transfer {
 		else reqURL = "http://" + reqURL;
 		
 		try {
-			List plist = new ArrayList();
+			List<Object> plist = new ArrayList<Object>();
 			
 			// 응답요청을 위한 파라메터 변경 수행
-			if(datas instanceof Map) {
-				plist.add((Map) datas);
-			} else if(datas instanceof List) {
+			if(datas instanceof List) {
 				plist = (List) datas;
+			} else {
+				plist.add(datas);
 			}
 			
 			for(int i = 0; i < plist.size(); i++) {
-				Map params = (Map) plist.get(i);
-				
 				if(cnnType.equals("TOKEN")) { // 토큰 인증서 연결
-					Map httpMap = params;
 					RestServiceClient client = new RestServiceClient();
 					String token = client.getToken4Property(serverId); // Access Token 구하기
 					
-					httpMap.put("SERVER_ID", serverId);
-					httpMap.put("REQ_URL", reqURL);
-					httpMap.put("ACCESS_TOKEN", token);
-					
-					log.debug("http send parameter = " + httpMap);
-					
-					Map res_data = client.executeInterface(httpMap);
-					
-					batchVo.setReturnData(res_data);
+					res_data = client.executeInterface(batchVo, reqURL, plist.get(i), token);
 				} else if(cnnType.equals("SOAP")) { // SOAP 통신
 					WebServiceClient client = new WebServiceClient();
 					
-					result = client.doInvoke(batchVo, reqURL, map);
-				} else if(cnnType.equals("AES")) { // 암호화
+					res_data = null;
+				} else if(cnnType.equals("BASIC")) { // 암호화
 					HttpServiceClient client = new HttpServiceClient();
 					String key = StringHelper.null2void(configurator.getString(serverId + ".secure.aes.secret.key"));
 					
-					result = client.executeInterface(batchVo, reqURL, params, key);
+					res_data = client.executeInterface(batchVo, reqURL, DataConvertUtil.getConvertMap(plist.get(i), impFormat), key);
 				} else { // SSL, TLS 통신
 					HttpServiceClient client = new HttpServiceClient();
 					
-					result = client.executeInterface(batchVo, reqURL, params, null);
+					res_data = client.executeInterface(batchVo, reqURL, DataConvertUtil.getConvertMap(plist.get(i), impFormat), null);
 				}
 			}
 		} catch(Exception e) {
@@ -176,7 +158,7 @@ public class HttpTransfer implements Transfer {
 			batchVo.setErrorMessage("서버와의 통신이 실패했습니다.");
 		}
 		
-		return result;
+		return res_data;
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.yni.fta.common.batch;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import com.yni.fta.common.batch.vo.JobVo;
 import com.yni.fta.common.batch.vo.ParameterVo;
 import com.yni.fta.common.beans.target.InterfaceTarget;
 import com.yni.fta.common.tools.BatchSupporter;
+import com.yni.fta.common.tools.DataConvertUtil;
 import com.yni.fta.common.tools.ObjectSupporter;
 
 import kr.yni.frame.batch.logger.BatchLogger;
@@ -414,7 +416,7 @@ public abstract class BatchProcess {
 	    		
 		    	// 1.요청 파라메터 클래스 호출(클래스 호출)
 	    		//   - 서비스 타입이 R(Realtime)인 경우에는 com.yni.rs.batch.서비스ID.receive.Import.getParameter() 매소드 호출
-	    		Object impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 파라미터
+	    		Object impParam = bs.callMethod("Import", "getParameter", map, pvo.getMap()); // 클래스명, 매소드명, 배치정보, 서비스 요청 파라미터
 	    		
 	    		if(impParam == null) {
 	    			impParam = pvo.getMap();
@@ -441,20 +443,41 @@ public abstract class BatchProcess {
 	    			log.debug("call method parameter(after) parameter = " + iobj);
 	    		}
 	    		
+	    		batchVo.setImportData(iobj); // import할 파리메터 저장
+	    		
 	    		data_size += ObjectSupporter.getObjectSize(iobj); // 요청 데이터 크기
 	    		
-	    		if(!process_type.equals("B")) { // By pass가 아닌 경우에는 외부서버와 통신하여 값을 가져온다.
-		    		// 3.서버 통신방법에 따라 데이터 요청
-		    		boolean cnnrst = bs.receive(batchTarget, batchVo, pvo, iobj, map); // DBA객체, 배치VO, 사용자 파라메터, Import 파라메터, 배치정보
+	    		// 3.서버 통신방법에 따라 데이터 요청(bypass는 제외)
+	    		if(!process_type.equals("B")) {
+		    		boolean cnnrst = true;
+		    		
+		    		if(jco != null) {
+						cnnrst = bs.receive(batchVo, pvo, map); // DBA객체, 배치VO, 사용자 파라메터, Import 파라메터, 배치정보
+					} else {
+						bs.callMethod("Import", "executeBatch", map, batchVo);
+						
+						if(batchVo.getBatchStatus().equals("E")) {
+							cnnrst = false;
+						}
+					}
+		    		
+		    		// 이력 데이터 업데이트
+		    		Map resMap = new HashMap();
+		    		resMap.put("INTERFACE_HISTORY_ID", batchVo.getTransId());
+		    		
+		    		try {
+		    			Object robj = batchVo.getReturnData();
+		    			
+		    			if(iobj != null) resMap.put("REQUEST_PARAM", iobj.toString()); // 수신측 요청 파라메터(요청측 데이터 원본 - 문자열)
+		    			if(robj != null) resMap.put("RECEIVE_PARAM", robj.toString()); // 수신측 응답 데이터(Json타입의 데이터 - 문자열)
+		    		} catch(Exception e) {
+		    			log.error(e.getMessage());
+		    		}
+		    		
+		    		batchTarget.updateProcedureResult(resMap);
 		    		
 		    		if(cnnrst) {
-		    			Object rdata = batchVo.getReturnData();
-		    			
-		    			if(rdata instanceof JsonObject) {
-		    				res_data = JsonUtil.getMap(rdata.toString());
-		    			} else {
-		    				res_data = (Map) rdata;
-		    			}
+		    			res_data = DataConvertUtil.getObjectToMap(batchVo.getReturnData());
 		    		} else {
 		    			return false;
 		    		}
@@ -515,8 +538,6 @@ public abstract class BatchProcess {
 	    	
 	    	// 송신서버 작업
 	    	if(snd_rev_type.equals("S")) {
-	    		String resFormat = StringHelper.null2void(map.get("RES_DATA_FORMAT")); // Import 데이터 형식 : JSON, FILE, XML, OBJECT
-	    		
 	    		// 1.데이터 추출(서비스 ID로 연결된 인터페이스 이력 테이블에서 테이블명(INTERFACE_HISTORY_DATA_ID)과 import파라메터 name이 같은 데이터를 조회함)
 				boolean rst = bs.getInterfaceData(batchTarget, batchVo, map);
 				
@@ -535,16 +556,15 @@ public abstract class BatchProcess {
 				
 				log.debug("send finally data = " + impParam);
 				
+				batchVo.setImportData(impParam); // import할 파리메터 저장
 				batchVo.setTotalRows(Long.toString(ObjectSupporter.getObjectSize(impParam)));
 				
 	    		// 4.데이터 전송
 				boolean cnnrst = true;
 				
 				if(jco != null) {
-					cnnrst = bs.send(batchTarget, batchVo, (Map) impParam, map);
+					cnnrst = bs.sendByJCO(batchTarget, batchVo, batchVo.getParameter().getMap(), map);
 				} else {
-					batchVo.setImportData(impParam);
-					
 					bs.callMethod("Import", "executeBatch", map, batchVo);
 					
 					if(batchVo.getBatchStatus().equals("E")) {
@@ -552,6 +572,21 @@ public abstract class BatchProcess {
 					}
 				}
 				
+				// 이력 데이터 업데이트
+	    		Map resMap = new HashMap();
+	    		resMap.put("INTERFACE_HISTORY_ID", batchVo.getTransId());
+	    		
+	    		try {
+	    			Object robj = batchVo.getReturnData();
+	    			
+	    			if(impParam != null) resMap.put("REQUEST_PARAM", impParam.toString()); // 수신측 요청 파라메터(요청측 데이터 원본 - 문자열)
+	    			if(robj != null) resMap.put("RECEIVE_PARAM", robj.toString()); // 수신측 응답 데이터(Json타입의 데이터 - 문자열)
+	    		} catch(Exception e) {
+	    			log.error(e.getMessage());
+	    		}
+	    		
+	    		batchTarget.updateProcedureResult(resMap);
+	    		
 	    		// 5.전송결과 실패인 경우 하위 로직은 수행하지 않음
 				if(!cnnrst) {
 	    			return false;

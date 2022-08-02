@@ -100,7 +100,7 @@ public class BatchServiceCaller {
             for(int p = 0; p < plans.size(); p++) {
             	Map<String, String> plan = (Map<String, String>) plans.get(p);
             	
-            	log.debug("======================================================================================" + now);
+            	log.debug("====================================== " + (p+1) + "차 - " + now + "===========================================");
             	
             	plan.put("TRNAS_READTIME", now); // 현재일시를 저장시켜 서비스 실행단위의 그룹를 정의하는데 사용함
             	
@@ -109,7 +109,7 @@ public class BatchServiceCaller {
             	int port = StringHelper.null2zero(plan.get("SERVER_PORT"));
                 String useYn = StringHelper.null2string(plan.get("SERVER_USE_YN"), "Y");
                 String serverState = "2";
-                		
+                
                 // 서버 연결상태를 확인한다.
             	if(useYn.equals("N")) {
             		serverState = "5";
@@ -175,7 +175,7 @@ public class BatchServiceCaller {
 	                
 	    	        // 직접 데이터를 리턴하는 경우에는 해당 값을 최종으로 리턴시킴
 	                if(batchVo.getReturnData() != null) {
-	                	resultMap.put(Consistent.IF_BATCH_RETURN_DATA, batchVo.getReturnData());
+	                	resultMap.put(Consistent.IF_BATCH_RETURN_DATA, batchVo.getReturnData().toString());
 	                }
 	                
 	                if (result) {
