@@ -203,7 +203,7 @@
         <dependency>
             <groupId>javax.servlet.jsp</groupId>
             <artifactId>jsp-api</artifactId>
-            <version>2.1</version>
+            <version>2.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -731,8 +731,8 @@
                 <res_dir>src/main/resources</res_dir>
                 <db_type>mssql</db_type>
                 <is_global>false</is_global>
-                <config_excludes></config_excludes>
-                <packaging_excludes></packaging_excludes>
+                <config_excludes/>
+                <packaging_excludes/>
             </properties>
         </profile>    
         <profile>        
