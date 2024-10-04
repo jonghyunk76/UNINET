@@ -127,12 +127,12 @@
         <dependency>
 		    <groupId>org.apache.poi</groupId>
 		    <artifactId>poi</artifactId>
-		    <version>5.2.2</version>
+		    <version>5.2.5</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.apache.poi</groupId>
 		    <artifactId>poi-ooxml</artifactId>
-		    <version>5.2.2</version>
+		    <version>5.2.5</version>
 		</dependency>
         
         <!-- commons-fileuploads-->
@@ -731,8 +731,8 @@
                 <res_dir>src/main/resources</res_dir>
                 <db_type>mssql</db_type>
                 <is_global>false</is_global>
-                <config_excludes></config_excludes>
-                <packaging_excludes></packaging_excludes>
+                <config_excludes/>
+                <packaging_excludes/>
             </properties>
         </profile>    
         <profile>        
